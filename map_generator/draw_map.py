@@ -31,8 +31,9 @@ def draw_tiles(screen, width, height, map = None):
     hex_radius = config.hex["radius"]
     offsetX = config.map_settings["offsetX"]
     offsetY = config.map_settings["offsetY"]
-    px, py = axial_to_pixel(0, 0, hex_radius, height)
-    corners = calc_hex_corners(px, py, hex_radius)
+    for column in range(width):
+        x, y = axial_to_pixel(column, 0, hex_radius, height)
+        corners = calc_hex_corners(x, y, hex_radius)
 
-    pygame.draw.polygon(screen, (100, 200, 100), corners, 0)
-    pygame.draw.polygon(screen, (0, 0, 0), corners, 2)
+        pygame.draw.polygon(screen, (100, 200, 100), corners, 0)
+        pygame.draw.polygon(screen, (0, 0, 0), corners, 2)
