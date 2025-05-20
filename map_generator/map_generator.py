@@ -21,5 +21,8 @@ class HexMap:
                 z = column
                 self.tiles[(x, y, z)] = Tile(x, y, z)
                 print(x, y, z)
-
-map = HexMap(6, 6)
+    def get_tile(self, row, column):
+        x = row - int(column / 2)
+        y = -x - column
+        z = column
+        return self.tiles[(x, y, z)]
