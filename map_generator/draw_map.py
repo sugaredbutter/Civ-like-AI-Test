@@ -1,6 +1,7 @@
 import pygame
 import math
-import map_generator.config as config
+import interactions.config as config
+import interactions.utils as utils
 
 def axial_to_pixel(q, r, radius, map_pixel_height):
     width = math.sqrt(3) * radius
@@ -31,14 +32,34 @@ def draw_tiles(screen, width, height, map = None):
     hex_radius = config.hex["radius"]
     offsetX = config.map_settings["offsetX"]
     offsetY = config.map_settings["offsetY"]
+    mouse_x, mouse_y = pygame.mouse.get_pos()
+    q, r, s = utils.click_to_hex(mouse_x, mouse_y)
     for column in range(map.width):
         for row in range(map.height):
-            x, y = axial_to_pixel(column, row, hex_radius, height)
+            x, y= axial_to_pixel(column, row, hex_radius, height)
             x += offsetX
             y += offsetY
             corners = calc_hex_corners(x, y, hex_radius)
-            draw_hex(screen, corners, map.get_tile(row, column))
+            if map.get_tile(row, column).get_coords() == (q, r, s):
+                draw_hex(screen, corners, map.get_tile(row, column), True)
+            else:
+                draw_hex(screen, corners, map.get_tile(row, column))
+            place_coords(screen, (x, y), map.get_tile(row, column))
+            
+def draw_hex(screen, corners, tile, hover = False):
+    if hover:
+        pygame.draw.polygon(screen, (150, 255, 150), corners, 0)  # lighter green
+        pygame.draw.polygon(screen, (0, 0, 0), corners, 2)
+    else:
+        pygame.draw.polygon(screen, (100, 200, 100), corners, 0)  # normal green
+        pygame.draw.polygon(screen, (0, 0, 0), corners, 2)
+        
+def place_coords(screen, center, tile):
+    font = pygame.font.SysFont(None, 24)  # Or use pygame.font.Font("path_to_ttf", size)
+    label = font.render(f"{tile.x},{tile.y},{tile.z}", True, (0, 0, 0))  # Black text
 
-def draw_hex(screen, corners, tile):
-    pygame.draw.polygon(screen, (100, 200, 100), corners, 0)
-    pygame.draw.polygon(screen, (0, 0, 0), corners, 2)
+    # Center text (optional)
+    label_rect = label.get_rect(center=center)
+
+    # Draw it
+    screen.blit(label, label_rect)

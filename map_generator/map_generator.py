@@ -1,5 +1,6 @@
 import math
 import pygame
+import interactions.utils as utils
 class Tile:
     def __init__(self, x, y, z, biome = "plain", terrain = "flat"):
         self.x = x
@@ -7,6 +8,9 @@ class Tile:
         self.z = z
         self.biome = biome
         self.terrain = terrain
+        
+    def get_coords(self):
+        return (self.x, self.y, self.z)
 
 class HexMap:
     def __init__(self, width, height):
@@ -14,15 +18,13 @@ class HexMap:
         self.width = width
         self.height = height
         for row in range(height): 
-            for column in range(width):    
+            for column in range(width):     
                 print("Orig", row, column) 
-                x = row - int(column / 2)
-                y = -x - column
-                z = column
+                x, y, z = utils.coord_to_hex_coord(row, column)
                 self.tiles[(x, y, z)] = Tile(x, y, z)
                 print(x, y, z)
     def get_tile(self, row, column):
-        x = row - int(column / 2)
-        y = -x - column
-        z = column
+        x = column - int(row / 2)
+        y = -x - row
+        z = row
         return self.tiles[(x, y, z)]
