@@ -13,7 +13,7 @@ pygame.display.set_caption("Hex Map")
 
 BACKGROUND_COLOR = (255, 255, 255)  # White
 map = generate_map.HexMap(ROWS, COLUMNS)
-mouse_controls = controls.mouse_controls(screen)
+mouse_controls = controls.MouseControls(screen)
 
 running = True
 clicked = False
@@ -29,15 +29,11 @@ while running:
             running = False
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:  # 1 = left click
-                clicked = True
-                mouse_controls.set_init(event)
+                mouse_controls.left_click(event)
         elif event.type == pygame.MOUSEBUTTONUP:    
-            dragging = False
-            clicked = False
+            mouse_controls.left_click_up(event)
         elif event.type == pygame.MOUSEMOTION:
-            if clicked:
-                dragging = True
-                mouse_controls.move_map(event)
+            mouse_controls.mouse_move(event)
         elif event.type == pygame.MOUSEWHEEL:
             mouse_controls.zoom(event)
 

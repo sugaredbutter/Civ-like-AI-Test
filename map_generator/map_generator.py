@@ -8,6 +8,9 @@ class Tile:
         self.z = z
         self.biome = biome
         self.terrain = terrain
+        self.movement = 1
+        self.defense = 0
+        self.offense = 0
         
     def get_coords(self):
         return (self.x, self.y, self.z)
