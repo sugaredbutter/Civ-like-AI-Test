@@ -1,6 +1,6 @@
 import pygame
 import map_generator.map_generator as generate_map
-import map_generator.draw_map as draw_map
+import interactions.draw_map as draw_map
 import interactions.config as config
 import interactions.utils as utils
 import interactions.controls as controls
@@ -13,9 +13,10 @@ screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Hex Map")
 
 BACKGROUND_COLOR = (255, 255, 255)  # White
-map = generate_map.HexMap(ROWS, COLUMNS)
+generated_map = generate_map.HexMap(ROWS, COLUMNS)
+map = draw_map.Map(screen)
 user_interface = ui.UserInterface(screen)
-mouse_controls = controls.MouseControls(screen, user_interface)
+mouse_controls = controls.MouseControls(screen, user_interface, map)
 running = True
 clicked = False
 dragging = False
@@ -39,7 +40,7 @@ while running:
             mouse_controls.zoom(event)
 
 
-    draw_map.draw_tiles(screen, WIDTH, HEIGHT, map)
+    map.draw_tiles(WIDTH, HEIGHT, generated_map)
     user_interface.painter(False)
 
 
