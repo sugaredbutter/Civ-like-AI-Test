@@ -44,11 +44,17 @@ class Map:
                 x += offsetX
                 y += offsetY
                 corners = self.calc_hex_corners(x, y, hex_radius)
-                if map.get_tile(row, column).get_coords() == (q, r, s):
-                    self.draw_hex(corners, map.get_tile(row, column), True)
+                tile = map.get_tile(row, column)
+                if tile.get_coords() == (q, r, s):
+                    self.draw_hex(corners, tile, True)
+                    if tile.terrain == "Hill":
+                        self.draw_terrain((x, y), corners, tile, True)
                 else:
-                    self.draw_hex(corners, map.get_tile(row, column))
-                self.place_coords((x, y), map.get_tile(row, column))
+                    self.draw_hex(corners, tile)
+                    if tile.terrain == "Hill":
+                        self.draw_terrain((x, y), corners, tile)
+                
+                self.place_coords((x, y), tile)
                 
     def draw_hex(self, corners, tile, hover = False):
         if hover:
@@ -57,6 +63,33 @@ class Map:
             pygame.draw.polygon(self.screen, tile_types_config.biomes[tile.biome]["biome_color"], corners, 0)
         pygame.draw.polygon(self.screen, (0, 0, 0), corners, 2)
             
+    def draw_terrain(self, center, corners, tile, hover = False):
+        if hover:
+            self.draw_hill_ridges(center, tile, hover)
+        else:
+            self.draw_hill_ridges(center, tile)
+
+    def draw_hill_ridges(self, center, tile, hover = False):
+        x, y = center
+        radius = config.hex["radius"]
+
+        for i in range(3):
+            arc_height = radius * 0.15
+            arc_width = radius * 0.6
+            offset_y = i * (arc_height + 2)
+
+            rect = pygame.Rect(
+                x - arc_width / 2,
+                y - offset_y - arc_height / 2,
+                arc_width,
+                arc_height
+            )
+            if hover:
+                pygame.draw.arc(self.screen, tile_types_config.terrain[tile.terrain]["hover_color"], rect, 0, math.pi, 2)
+            else:
+                pygame.draw.arc(self.screen, tile_types_config.terrain[tile.terrain]["terrain_color"], rect, 0, math.pi, 2)
+
+        
     def place_coords(self, center, tile):
         font = pygame.font.SysFont(None, 24)  
         label = font.render(f"{tile.x},{tile.y},{tile.z}", True, (0, 0, 0))  

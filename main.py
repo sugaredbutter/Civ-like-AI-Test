@@ -15,7 +15,7 @@ pygame.display.set_caption("Hex Map")
 BACKGROUND_COLOR = (255, 255, 255)  # White
 generated_map = generate_map.HexMap(ROWS, COLUMNS)
 map = draw_map.Map(screen)
-user_interface = ui.UserInterface(screen)
+user_interface = ui.UserInterface(screen, generated_map)
 mouse_controls = controls.MouseControls(screen, user_interface, map, generated_map)
 running = True
 clicked = False
@@ -41,7 +41,7 @@ while running:
 
 
     map.draw_tiles(WIDTH, HEIGHT, generated_map)
-    user_interface.painter(False)
+    user_interface.active_menu.create_menu()
 
 
     pygame.display.flip()

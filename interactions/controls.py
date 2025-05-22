@@ -18,24 +18,23 @@ class MouseControls:
 
     def left_click(self, event):
         self.clicked = True
-        if self.user_interface.is_clicked(event):
+        if self.user_interface.active_menu.is_clicked():
             self.clicked_button = True
-            print("yeah")
-        elif self.user_interface.active_button != None:
-            self.user_interface.paint_biome(self.generated_map)
+        elif self.user_interface.active_menu.active_button != None:
+            self.user_interface.active_menu.interaction()
         self.set_init(event)
 
     def left_click_up(self, event):
         mouse_x, mouse_y = pygame.mouse.get_pos()
 
-        if self.clicked_button and self.user_interface.is_clicked(event):
-            self.user_interface.button_clicked()   
+        if self.clicked_button and self.user_interface.active_menu.is_clicked():
+            self.user_interface.active_menu.button_clicked()   
         #elif self.dragging == False and self.generated_map.get_tile(utils.click_to_hex(mouse_x, mouse_y)) != False:
 
         self.dragging = False
         self.clicked = False
         self.clicked_button = False
-        self.user_interface.valid_hover = True
+        self.user_interface.active_menu.valid_hover = True
 
     def right_click(self, event):
         return
@@ -45,7 +44,7 @@ class MouseControls:
     
     def mouse_move(self, event):
         if self.clicked and not self.clicked_button:
-            self.user_interface.valid_hover = False
+            self.user_interface.active_menu.valid_hover = False
             self.move_map(event)
         
     def zoom(self, event):
@@ -61,8 +60,8 @@ class MouseControls:
             config.map_settings["offsetY"] -= ZOOM_SCALE * ROWS
 
     def move_map(self, event):
-        if self.user_interface.active_button != None:
-            self.user_interface.paint_biome(self.generated_map)
+        if self.user_interface.active_menu.active_button != None:
+            self.user_interface.active_menu.interaction()
         else:
             self.dragging = True
             config.map_settings["offsetX"] += event.pos[0] - self.initX

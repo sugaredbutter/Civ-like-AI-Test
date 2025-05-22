@@ -2,7 +2,7 @@ import math
 import pygame
 import interactions.utils as utils
 class Tile:
-    def __init__(self, x, y, z, biome = "Plain", terrain = "flat", vegetation = "none"):
+    def __init__(self, x, y, z, biome = "Plain", terrain = "Flat", vegetation = "none"):
         self.x = x
         self.y = y
         self.z = z

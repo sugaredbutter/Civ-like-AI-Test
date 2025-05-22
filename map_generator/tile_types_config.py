@@ -8,3 +8,9 @@ biomes = {
         "hover_color": (252, 245, 45)
     }
 }
+terrain = {
+    "Hill": {
+        "terrain_color": (1, 64, 7),
+        "hover_color": (0, 92, 9)
+    }
+}
