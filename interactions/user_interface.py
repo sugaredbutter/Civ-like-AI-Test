@@ -13,7 +13,7 @@ class UserInterface:
         self.button_width = 100
         self.button_height = 40
         self.padding = 10
-        self.valid_hover = False
+        self.valid_hover = True
         self.active_button = None
         self.terrain_buttons = {
             "Desert": pygame.Rect(WIDTH - self.button_width - self.padding, self.padding, self.button_width, self.button_height),

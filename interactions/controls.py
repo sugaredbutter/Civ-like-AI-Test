@@ -4,9 +4,10 @@ import interactions.config as config
 ROWS, COLUMNS = config.map_settings["tile_height"], config.map_settings["tile_width"]
 ZOOM_SCALE = config.map_settings["zoom"]
 class MouseControls:
-    def __init__(self, screen, user_interface):
+    def __init__(self, screen, user_interface, map):
         self.screen = screen
         self.user_interface = user_interface
+        self.map = map
         self.initX = 0
         self.initY = 0
         self.clicked = False
