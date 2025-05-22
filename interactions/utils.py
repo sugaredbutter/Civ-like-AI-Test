@@ -32,8 +32,12 @@ def click_to_hex(pos_x, pos_y):
     return (iX, iY, iZ)
 
 def coord_to_hex_coord(row, column):
-    x = row - int(column / 2)
-    y = -x - column
-    z = column
+    x = column - int(row / 2)
+    y = -x - row
+    z = row
     return (x, y, z)
     
+def hex_coord_to_coord(x, y, z):
+    row = z
+    column = x + int(row / 2)
+    return (row, column)

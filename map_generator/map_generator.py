@@ -2,7 +2,7 @@ import math
 import pygame
 import interactions.utils as utils
 class Tile:
-    def __init__(self, x, y, z, biome = "plain", terrain = "flat", vegetation = "none"):
+    def __init__(self, x, y, z, biome = "Plain", terrain = "flat", vegetation = "none"):
         self.x = x
         self.y = y
         self.z = z
@@ -32,5 +32,5 @@ class HexMap:
         x = column - int(row / 2)
         y = -x - row
         z = row
-        return self.tiles[(x, y, z)]
+        return self.tiles.get((x, y, z), None)
     

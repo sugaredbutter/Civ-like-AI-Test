@@ -2,7 +2,7 @@ import pygame
 import math
 import interactions.config as config
 import interactions.utils as utils
-
+import map_generator.tile_types_config as tile_types_config
 class Map:
     def __init__(self, screen):
         self.screen = screen
@@ -52,18 +52,15 @@ class Map:
                 
     def draw_hex(self, corners, tile, hover = False):
         if hover:
-            pygame.draw.polygon(self.screen, (150, 255, 150), corners, 0)  # lighter green
-            pygame.draw.polygon(self.screen, (0, 0, 0), corners, 2)
+            pygame.draw.polygon(self.screen, tile_types_config.biomes[tile.biome]["hover_color"], corners, 0)
         else:
-            pygame.draw.polygon(self.screen, (100, 200, 100), corners, 0)  # normal green
-            pygame.draw.polygon(self.screen, (0, 0, 0), corners, 2)
+            pygame.draw.polygon(self.screen, tile_types_config.biomes[tile.biome]["biome_color"], corners, 0)
+        pygame.draw.polygon(self.screen, (0, 0, 0), corners, 2)
             
     def place_coords(self, center, tile):
-        font = pygame.font.SysFont(None, 24)  # Or use pygame.font.Font("path_to_ttf", size)
-        label = font.render(f"{tile.x},{tile.y},{tile.z}", True, (0, 0, 0))  # Black text
+        font = pygame.font.SysFont(None, 24)  
+        label = font.render(f"{tile.x},{tile.y},{tile.z}", True, (0, 0, 0))  
 
-        # Center text (optional)
         label_rect = label.get_rect(center=center)
 
-        # Draw it
         self.screen.blit(label, label_rect)

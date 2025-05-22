@@ -1,5 +1,6 @@
 import pygame
 import interactions.config as config
+import interactions.utils as utils
 
 WHITE = (255, 255, 255)
 GRAY = (180, 180, 180)
@@ -22,7 +23,6 @@ class UserInterface:
     def painter(self, is_hovered):
         for key in self.terrain_buttons.keys():
             self.draw_button(key, self.terrain_buttons[key], self.active_button == key)
-
 
     def draw_button(self, text, rect, is_hovered):
         font = pygame.font.SysFont(None, 24)
@@ -55,6 +55,18 @@ class UserInterface:
                     self.active_button = None
                 else:
                     self.active_button = key
+
+    def paint_biome(self, generated_map):
+        print("hi")
+        mouse_x, mouse_y = pygame.mouse.get_pos()
+        x, y, z = utils.click_to_hex(mouse_x, mouse_y)
+        row, column = utils.hex_coord_to_coord(x, y, z)
+        tile = generated_map.get_tile(row, column)
+        print(row, column)
+        if tile != None:
+            tile.biome = self.active_button
+            print(tile.biome)
+        return
                 
         
         
