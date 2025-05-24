@@ -47,12 +47,8 @@ class Map:
                 tile = map.get_tile(row, column)
                 if tile.get_coords() == (q, r, s):
                     self.draw_hex(corners, tile, True)
-                    if tile.terrain == "Hill":
-                        self.draw_terrain((x, y), corners, tile, True)
                 else:
                     self.draw_hex(corners, tile)
-                    if tile.terrain == "Hill":
-                        self.draw_terrain((x, y), corners, tile)
                 
                 self.place_coords((x, y), tile)
                 
@@ -63,13 +59,7 @@ class Map:
             pygame.draw.polygon(self.screen, tile_types_config.biomes[tile.biome]["biome_color"], corners, 0)
         pygame.draw.polygon(self.screen, (0, 0, 0), corners, 2)
             
-    def draw_terrain(self, center, corners, tile, hover = False):
-        if hover:
-            self.draw_hill_ridges(center, tile, hover)
-        else:
-            self.draw_hill_ridges(center, tile)
-
-    def draw_hill_ridges(self, center, tile, hover = False):
+    def draw_hill(self, center, tile, hover = False):
         x, y = center
         radius = config.hex["radius"]
 
