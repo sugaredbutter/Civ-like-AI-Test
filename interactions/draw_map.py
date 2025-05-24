@@ -39,45 +39,64 @@ class Map:
         offsetY = config.map_settings["offsetY"]
         mouse_x, mouse_y = pygame.mouse.get_pos()
         q, r, s = utils.click_to_hex(mouse_x, mouse_y)
+
+        saved_info = {}
         for column in range(map.width):
             for row in range(map.height):
                 x, y= self.axial_to_pixel(column, row, hex_radius, height)
                 x += offsetX
                 y += offsetY
                 corners = self.calc_hex_corners(x, y, hex_radius)
+                saved_info[(row, column)] = (corners, (x,y))
                 tile = map.get_tile(row, column)
                 if tile.get_coords() == (q, r, s):
                     self.draw_hex(corners, tile, True)
                 else:
                     self.draw_hex(corners, tile)
                 
+        for column in range(map.width):
+            for row in range(map.height):
+                info = saved_info[(row, column)]
+                corners = info[0]
+                x, y = info[1]
+                tile = map.get_tile(row, column)
+                if tile.terrain != "Flat":
+                    if tile.get_coords() == (q, r, s):
+                        self.draw_hill(corners, tile, True)
+                    else:
+                        self.draw_hill(corners, tile)
                 self.place_coords((x, y), tile)
-                
+
     def draw_hex(self, corners, tile, hover = False):
         if hover:
             pygame.draw.polygon(self.screen, tile_types_config.biomes[tile.biome]["hover_color"], corners, 0)
         else:
             pygame.draw.polygon(self.screen, tile_types_config.biomes[tile.biome]["biome_color"], corners, 0)
+
         pygame.draw.polygon(self.screen, (0, 0, 0), corners, 2)
             
-    def draw_hill(self, center, corners, tile, num_hills, hover = False):
-        rng = random.Random((tile.x, tile.y, tile.z))
+    def draw_hill(self, corners, tile, hover = False):
         radius = config.hex["radius"]
-        hills_list = []
         min_x = corners[3][0]
-        min_y = corners[3][1]
-        max_x = corners[0][0] - radius/2
+        min_y = (corners[2][1] + corners[3][1]) / 2
+        max_x = corners[0][0]
         max_y = corners[0][1]
 
-        for i in range(num_hills):
-            left_corner = (rng.random(0, 0.5), rng.random(0, 1))
-            right_corner = (rng.random(left_corner[0] + .2, 1), left_corner[1])
-            top = (right_corner[0] - left_corner[0], rng.random(left_corner[1] + .2, 1))
+        for i in tile.hills_list:
+            left_corner = (min_x + (max_x - min_x) * i[0][0], min_y + (max_y - min_y) * i[0][1])
+            right_corner = (min_x + (max_x - min_x) * i[1][0], min_y + (max_y - min_y) * i[1][1])
+            top = (min_x + (max_x - min_x) * i[2][0], min_y + (max_y - min_y) * i[2][1])
+            if hover:
+                pygame.draw.polygon(self.screen, tile_types_config.biomes[tile.biome][tile.terrain]["hover_color"], [left_corner, right_corner, top])
+                pygame.draw.polygon(self.screen, (0, 0, 0), [left_corner, right_corner, top], width=1)
+            else:
+                pygame.draw.polygon(self.screen, tile_types_config.biomes[tile.biome][tile.terrain]["terrain_color"], [left_corner, right_corner, top])
+                pygame.draw.polygon(self.screen, (0, 0, 0), [left_corner, right_corner, top], width=1)
             
-        if hover:
-            pygame.draw.arc(self.screen, tile_types_config.terrain[tile.terrain]["hover_color"], rect, 0, math.pi, 2)
-        else:
-            pygame.draw.arc(self.screen, tile_types_config.terrain[tile.terrain]["terrain_color"], rect, 0, math.pi, 2)
+        #if hover:
+        #    pygame.draw.arc(self.screen, tile_types_config.terrain[tile.terrain]["hover_color"], rect, 0, math.pi, 2)
+        #else:
+        #    pygame.draw.arc(self.screen, tile_types_config.terrain[tile.terrain]["terrain_color"], rect, 0, math.pi, 2)
 
     def place_coords(self, center, tile):
         font = pygame.font.SysFont(None, 24)  
