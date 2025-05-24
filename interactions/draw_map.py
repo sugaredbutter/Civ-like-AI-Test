@@ -1,5 +1,6 @@
 import pygame
 import math
+import random
 import interactions.config as config
 import interactions.utils as utils
 import map_generator.tile_types_config as tile_types_config
@@ -59,27 +60,25 @@ class Map:
             pygame.draw.polygon(self.screen, tile_types_config.biomes[tile.biome]["biome_color"], corners, 0)
         pygame.draw.polygon(self.screen, (0, 0, 0), corners, 2)
             
-    def draw_hill(self, center, tile, hover = False):
-        x, y = center
+    def draw_hill(self, center, corners, tile, num_hills, hover = False):
+        rng = random.Random((tile.x, tile.y, tile.z))
         radius = config.hex["radius"]
+        hills_list = []
+        min_x = corners[3][0]
+        min_y = corners[3][1]
+        max_x = corners[0][0] - radius/2
+        max_y = corners[0][1]
 
-        for i in range(3):
-            arc_height = radius * 0.15
-            arc_width = radius * 0.6
-            offset_y = i * (arc_height + 2)
+        for i in range(num_hills):
+            left_corner = (rng.random(0, 0.5), rng.random(0, 1))
+            right_corner = (rng.random(left_corner[0] + .2, 1), left_corner[1])
+            top = (right_corner[0] - left_corner[0], rng.random(left_corner[1] + .2, 1))
+            
+        if hover:
+            pygame.draw.arc(self.screen, tile_types_config.terrain[tile.terrain]["hover_color"], rect, 0, math.pi, 2)
+        else:
+            pygame.draw.arc(self.screen, tile_types_config.terrain[tile.terrain]["terrain_color"], rect, 0, math.pi, 2)
 
-            rect = pygame.Rect(
-                x - arc_width / 2,
-                y - offset_y - arc_height / 2,
-                arc_width,
-                arc_height
-            )
-            if hover:
-                pygame.draw.arc(self.screen, tile_types_config.terrain[tile.terrain]["hover_color"], rect, 0, math.pi, 2)
-            else:
-                pygame.draw.arc(self.screen, tile_types_config.terrain[tile.terrain]["terrain_color"], rect, 0, math.pi, 2)
-
-        
     def place_coords(self, center, tile):
         font = pygame.font.SysFont(None, 24)  
         label = font.render(f"{tile.x},{tile.y},{tile.z}", True, (0, 0, 0))  
