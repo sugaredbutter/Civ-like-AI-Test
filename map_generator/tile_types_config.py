@@ -11,8 +11,8 @@ biomes = {
         "biome_color": (199, 192, 0),
         "hover_color": (252, 245, 45),
         "Hill": {
-            "terrain_color": (1, 64, 7),
-            "hover_color": (0, 92, 9)
+            "terrain_color": (173, 157, 7),
+            "hover_color": (204, 186, 12)
         }
     }
 }

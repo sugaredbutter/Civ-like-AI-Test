@@ -5,8 +5,11 @@ import interactions.config as config
 import interactions.utils as utils
 import map_generator.tile_types_config as tile_types_config
 class Map:
-    def __init__(self, screen):
+    def __init__(self, screen, map, players, units):
         self.screen = screen
+        self.map = map
+        self.players = players
+        self.units = units
         
     def axial_to_pixel(self, q, r, radius, map_pixel_height):
         width = math.sqrt(3) * radius
@@ -33,7 +36,7 @@ class Map:
         return corners
 
 
-    def draw_tiles(self, width, height, map = None):
+    def draw_tiles(self, width, height):
         hex_radius = config.hex["radius"]
         offsetX = config.map_settings["offsetX"]
         offsetY = config.map_settings["offsetY"]
@@ -41,32 +44,52 @@ class Map:
         q, r, s = utils.click_to_hex(mouse_x, mouse_y)
 
         saved_info = {}
-        for column in range(map.width):
-            for row in range(map.height):
+        
+        # Draw hexagons
+        for column in range(self.map.width):
+            for row in range(self.map.height):
                 x, y= self.axial_to_pixel(column, row, hex_radius, height)
                 x += offsetX
                 y += offsetY
                 corners = self.calc_hex_corners(x, y, hex_radius)
                 saved_info[(row, column)] = (corners, (x,y))
-                tile = map.get_tile(row, column)
+                tile = self.map.get_tile(row, column)
                 if tile.get_coords() == (q, r, s):
                     self.draw_hex(corners, tile, True)
                 else:
                     self.draw_hex(corners, tile)
-                
-        for column in range(map.width):
-            for row in range(map.height):
+              
+        # Draw hills  
+        for column in range(self.map.width):
+            for row in range(self.map.height):
                 info = saved_info[(row, column)]
                 corners = info[0]
                 x, y = info[1]
-                tile = map.get_tile(row, column)
+                tile = self.map.get_tile(row, column)
                 if tile.terrain != "Flat":
                     if tile.get_coords() == (q, r, s):
                         self.draw_hill(corners, tile, True)
                     else:
                         self.draw_hill(corners, tile)
-                self.place_coords((x, y), tile)
-
+                self.place_coords((x, y + hex_radius/2), tile)
+        
+        # Draw Units
+        for column in range(self.map.width):
+            for row in range(self.map.height):
+                tile = self.map.get_tile(row, column)
+                if tile.unit_id != None:
+                    x, y = self.axial_to_pixel(column, row, hex_radius, height)
+                    x += offsetX
+                    y += offsetY
+                    pygame.draw.circle(self.screen, self.players.get_player(self.units.get_unit(tile.unit_id).owner_id).color, (int(x), int(y)), hex_radius/10)
+        hovered_tile = self.map.selected_tile
+        if hovered_tile is not None:
+            q, r = utils.hex_coord_to_coord(hovered_tile.x, hovered_tile.y, hovered_tile.z)
+            x, y = self.axial_to_pixel(r, q, hex_radius, height)
+            x += offsetX
+            y += offsetY
+            pygame.draw.circle(self.screen, (255, 0, 0), (int(x), int(y)), hex_radius/1.2, width=2)
+            
     def draw_hex(self, corners, tile, hover = False):
         if hover:
             pygame.draw.polygon(self.screen, tile_types_config.biomes[tile.biome]["hover_color"], corners, 0)

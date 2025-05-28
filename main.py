@@ -5,6 +5,8 @@ import interactions.config as config
 import interactions.utils as utils
 import interactions.controls as controls
 import interactions.user_interface as ui
+import players.units as unit_handler
+import players.player_handler as player_handler
 pygame.init()
 
 WIDTH, HEIGHT = config.map_settings["pixel_width"], config.map_settings["pixel_height"]
@@ -14,9 +16,16 @@ pygame.display.set_caption("Hex Map")
 
 BACKGROUND_COLOR = (255, 255, 255)  # White
 generated_map = generate_map.HexMap(ROWS, COLUMNS)
-map = draw_map.Map(screen)
-user_interface = ui.UserInterface(screen, generated_map)
-mouse_controls = controls.MouseControls(screen, user_interface, map, generated_map)
+
+units = unit_handler.UnitHandler()
+players = player_handler.PlayerHandler(generated_map, units)
+players.add_player((255, 0, 0))  # Red player
+user_interface = ui.UserInterface(screen, generated_map, players, units)
+tile_click_controls = controls.TileClickControls(screen, user_interface, generated_map, players, units)
+mouse_controls = controls.MouseControls(screen, user_interface, generated_map, tile_click_controls)
+
+map = draw_map.Map(screen, generated_map, players, units)
+
 running = True
 clicked = False
 dragging = False
@@ -40,7 +49,7 @@ while running:
             mouse_controls.zoom(event)
 
 
-    map.draw_tiles(WIDTH, HEIGHT, generated_map)
+    map.draw_tiles(WIDTH, HEIGHT)
     user_interface.active_menu.create_menu()
 
 

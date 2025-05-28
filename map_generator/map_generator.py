@@ -13,6 +13,7 @@ class Tile:
         self.movement = 1
         self.defense = 0
         self.offense = 0
+        self.unit_id = None
         self.hills_list = []
         self.init_hill()
         
@@ -36,6 +37,7 @@ class HexMap:
         self.tiles = {}
         self.width = width
         self.height = height
+        self.selected_tile = None
         for row in range(height): 
             for column in range(width):     
                 print("Orig", row, column) 
@@ -47,5 +49,8 @@ class HexMap:
         x = column - int(row / 2)
         y = -x - row
         z = row
+        return self.tiles.get((x, y, z), None)
+    
+    def get_tile_hex(self, x, y, z):
         return self.tiles.get((x, y, z), None)
     
