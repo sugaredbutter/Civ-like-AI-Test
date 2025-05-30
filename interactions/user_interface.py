@@ -300,6 +300,8 @@ class UnitControlMenu:
         self.player_handler = player_handler
         self.unit_handler = unit_handler
         
+        self.active_tile = None
+        
         self.button_width = 100
         self.button_height = 40
         self.padding = 10
@@ -362,17 +364,8 @@ class UnitControlMenu:
         x, y, z = utils.click_to_hex(mouse_x, mouse_y)
         row, column = utils.hex_coord_to_coord(x, y, z)
         tile = self.generated_map.get_tile(row, column)
-        if tile != None:
-            if self.active_button == "Remove":
-                if tile.unit_id is not None:
-                    self.player_handler.get_player(self.unit_handler.get_unit(tile.unit_id).owner_id).remove_unit(tile.unit_id)
-                    self.unit_handler.remove_unit(tile.unit_id)
-                    tile.unit_id = None
-            else:
-                if tile.unit_id is not None and (currPlayer != self.unit_handler.get_unit(tile.unit_id).owner_id or self.unit_handler.get_unit(tile.unit_id).type != self.active_button):
-                    self.player_handler.get_player(self.unit_handler.get_unit(tile.unit_id).owner_id).remove_unit(tile.unit_id)
-                    self.unit_handler.remove_unit(tile.unit_id)
-                    self.player_handler.get_player(currPlayer).place_unit(self.active_button, x, y, z)
-                elif tile.unit_id is None:
-                    self.player_handler.get_player(currPlayer).place_unit(self.active_button, x, y, z)
+        if self.active_tile != None:
+            if self.active_button == "Move":
+                self.unit_handler.get_unit(self.active_tile.unit_id).move_to((x, y, z))
+                
         return

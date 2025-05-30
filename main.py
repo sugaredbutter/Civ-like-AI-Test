@@ -17,7 +17,7 @@ pygame.display.set_caption("Hex Map")
 BACKGROUND_COLOR = (255, 255, 255)  # White
 generated_map = generate_map.HexMap(ROWS, COLUMNS)
 
-units = unit_handler.UnitHandler()
+units = unit_handler.UnitHandler(generated_map)
 players = player_handler.PlayerHandler(generated_map, units)
 players.add_player((255, 0, 0))  # Red player
 user_interface = ui.UserInterface(screen, generated_map, players, units)

@@ -41,3 +41,13 @@ def hex_coord_to_coord(x, y, z):
     row = z
     column = x + int(row / 2)
     return (row, column)
+
+
+CUBE_DIRECTIONS = [
+    (+1, -1, 0),   # direction 0
+    (+1, 0, -1),   # direction 1
+    (0, +1, -1),   # direction 2
+    (-1, +1, 0),   # direction 3
+    (-1, 0, +1),   # direction 4
+    (0, -1, +1)    # direction 5
+]

@@ -34,9 +34,9 @@ class MouseControls:
             self.user_interface.active_menu.button_clicked()   
         elif self.clicked and self.dragging == False and self.generated_map.get_tile_hex(*utils.click_to_hex(mouse_x, mouse_y)) != None and self.user_interface.active_menu.active_button == None:
             self.tile_click_controls.click()
-            print("here")
         elif self.clicked and self.dragging == False:
             self.tile_click_controls.reset()
+
         self.dragging = False
         self.clicked = False
         self.clicked_button = False
@@ -95,21 +95,24 @@ class TileClickControls:
         row, column = utils.hex_coord_to_coord(x, y, z)
         tile = self.generated_map.get_tile(row, column)
         if tile != None and tile.unit_id is not None:
+            self.unit_menu.active_tile = tile
             self.unit_menu.parent_menu = self.user_interface.active_menu if self.user_interface.active_menu != self.unit_menu else self.unit_menu.parent_menu
             self.user_interface.active_menu = self.unit_menu
             self.unit_controls.unit_clicked(tile)
             self.generated_map.selected_tile = tile
         else:
             self.user_interface.active_menu = self.unit_menu.parent_menu
+            self.unit_menu.active_tile = None
             self.unit_controls.unit_selected = False
             self.unit_controls.selected_unit = None
             self.generated_map.selected_tile = None
             
     def reset(self):
-        self.user_interface.active_menu = self.unit_menu.parent_menu
-        self.unit_controls.unit_selected = False
-        self.unit_controls.selected_unit = None
-        self.generated_map.selected_tile = None
+        if self.user_interface.active_menu == self.unit_menu:
+            self.user_interface.active_menu = self.unit_menu.parent_menu
+            self.unit_controls.unit_selected = False
+            self.unit_controls.selected_unit = None
+            self.generated_map.selected_tile = None
             
             
             

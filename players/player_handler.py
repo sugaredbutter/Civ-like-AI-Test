@@ -10,7 +10,7 @@ class Player:
         self.units = []
     
     def place_unit(self, unit_type, x, y, z):
-        new_unit = self.unit_handler.add_unit(self.id, unit_type, UnitConfig.units[unit_type]["health"])
+        new_unit = self.unit_handler.add_unit(self.id, unit_type, UnitConfig.units[unit_type]["health"], (x, y, z))
         self.units.append(new_unit)
         self.generated_map.get_tile_hex(x, y, z).unit_id = new_unit
         return new_unit
