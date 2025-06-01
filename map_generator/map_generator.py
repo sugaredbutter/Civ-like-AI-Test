@@ -2,6 +2,7 @@ import math
 import pygame
 import interactions.utils as utils
 import random
+import map_generator.tile_types_config as tile_types_config
 class Tile:
     def __init__(self, x, y, z, biome = "Plain", terrain = "Flat", vegetation = "none"):
         self.x = x
@@ -15,10 +16,19 @@ class Tile:
         self.offense = 0
         self.unit_id = None
         self.hills_list = []
+        
+        self.path = False
+        self.neighbor = False
+        
         self.init_hill()
         
     def get_coords(self):
         return (self.x, self.y, self.z)
+    
+    def set_terrain(self, terrain):
+        self.terrain = terrain
+        self.movement = tile_types_config.biomes[self.biome][terrain]["movement"]
+        
 
     def init_hill(self, num_hills = -1):
         rng = random.Random(f"{self.x},{self.y},{self.z}")

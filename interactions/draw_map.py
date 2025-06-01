@@ -93,6 +93,8 @@ class Map:
     def draw_hex(self, corners, tile, hover = False):
         if hover:
             pygame.draw.polygon(self.screen, tile_types_config.biomes[tile.biome]["hover_color"], corners, 0)
+        elif tile.path:
+            pygame.draw.polygon(self.screen, (100, 100, 100), corners, 0)
         else:
             pygame.draw.polygon(self.screen, tile_types_config.biomes[tile.biome]["biome_color"], corners, 0)
 

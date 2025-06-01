@@ -52,7 +52,9 @@ class MouseControls:
         if self.clicked and not self.clicked_button:
             self.user_interface.active_menu.valid_hover = False
             self.move_map(event)
-        
+        if not self.clicked and self.user_interface.active_menu.active_button != None:
+            self.user_interface.active_menu.tile_hover()
+         
     def zoom(self, event):
         if event.y > 0 and config.hex["radius"] < config.hex["max_radius"]:
             config.hex["radius"] += 5

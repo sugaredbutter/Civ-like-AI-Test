@@ -117,6 +117,9 @@ class PainterMenu:
             if self.button_menu[key].collidepoint(mouse_x, mouse_y):
                 return True
         return False
+    
+    def tile_hover(self):
+        pass
 
     def button_clicked(self):
         mouse_x, mouse_y = pygame.mouse.get_pos()
@@ -198,13 +201,16 @@ class TerrainMenu:
                 else:
                     self.active_button = key
 
+    def tile_hover(self):
+        pass
+
     def interaction(self):
         mouse_x, mouse_y = pygame.mouse.get_pos()
         x, y, z = utils.click_to_hex(mouse_x, mouse_y)
         row, column = utils.hex_coord_to_coord(x, y, z)
         tile = self.generated_map.get_tile(row, column)
         if tile != None:
-            tile.terrain = self.active_button
+            tile.set_terrain(self.active_button)
         return
     
 class UnitMenu:
@@ -255,6 +261,9 @@ class UnitMenu:
             if self.button_menu[key].collidepoint(mouse_x, mouse_y):
                 return True
         return False
+    
+    def tile_hover(self):
+        pass
 
     def button_clicked(self):
         mouse_x, mouse_y = pygame.mouse.get_pos()
@@ -267,6 +276,9 @@ class UnitMenu:
                     self.active_button = None
                 else:
                     self.active_button = key
+                    
+    def tile_hover(self):
+        pass
 
     def interaction(self):
         currPlayer = 0
@@ -357,6 +369,17 @@ class UnitControlMenu:
                     self.active_button = None
                 else:
                     self.active_button = key
+                    
+    def tile_hover(self):
+        mouse_x, mouse_y = pygame.mouse.get_pos()
+        x, y, z = utils.click_to_hex(mouse_x, mouse_y)
+        row, column = utils.hex_coord_to_coord(x, y, z)
+        tile = self.generated_map.get_tile(row, column)
+        if self.active_tile != None:
+            if self.active_button == "Move":
+                self.unit_handler.get_unit(self.active_tile.unit_id).move_to_hover((x, y, z))
+        pass
+
 
     def interaction(self):
         currPlayer = 0
