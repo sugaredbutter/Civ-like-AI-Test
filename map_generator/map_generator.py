@@ -19,6 +19,7 @@ class Tile:
         
         self.path = False
         self.neighbor = False
+        self.turn = False
         
         self.init_hill()
         

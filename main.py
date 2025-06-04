@@ -21,8 +21,9 @@ units = unit_handler.UnitHandler(generated_map)
 players = player_handler.PlayerHandler(generated_map, units)
 players.add_player((255, 0, 0))  # Red player
 user_interface = ui.UserInterface(screen, generated_map, players, units)
+game_control_interface = ui.GameControlsInterface(screen)
 tile_click_controls = controls.TileClickControls(screen, user_interface, generated_map, players, units)
-mouse_controls = controls.MouseControls(screen, user_interface, generated_map, tile_click_controls)
+mouse_controls = controls.MouseControls(screen, user_interface, generated_map, tile_click_controls, game_control_interface)
 
 map = draw_map.Map(screen, generated_map, players, units)
 
@@ -50,6 +51,7 @@ while running:
 
 
     map.draw_tiles(WIDTH, HEIGHT)
+    game_control_interface.create_menu()
     user_interface.active_menu.create_menu()
 
 

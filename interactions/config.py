@@ -13,3 +13,7 @@ map_settings = {
     "pixel_width": 800,
     "pixel_height": 600
 }
+in_game = False
+num_players = 2
+min_players = 2
+max_players = 4

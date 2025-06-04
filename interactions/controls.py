@@ -6,7 +6,7 @@ import interactions.user_interface as ui
 ROWS, COLUMNS = config.map_settings["tile_height"], config.map_settings["tile_width"]
 ZOOM_SCALE = config.map_settings["zoom"]
 class MouseControls:
-    def __init__(self, screen, user_interface, generated_map, tile_click_controls):
+    def __init__(self, screen, user_interface, generated_map, tile_click_controls, game_control_interface):
         self.screen = screen
         self.user_interface = user_interface
         self.generated_map = generated_map
@@ -16,10 +16,15 @@ class MouseControls:
         self.dragging = False
         self.clicked_button = False
         self.tile_click_controls = tile_click_controls
+        self.game_control_interface = game_control_interface
         
     
     
     def left_click(self, event):
+        self.game_control_interface.left_click(event)
+        if not self.game_control_interface.clicked_button:
+            self.user_interface.active_menu.left_click(event)
+        return
         self.clicked = True
         if self.user_interface.active_menu.is_clicked():
             self.clicked_button = True
@@ -28,6 +33,10 @@ class MouseControls:
         self.set_init(event)
 
     def left_click_up(self, event):
+        self.game_control_interface.left_click_up()
+        if not self.game_control_interface.clicked_button:
+            self.user_interface.active_menu.left_click_up()
+        return
         mouse_x, mouse_y = pygame.mouse.get_pos()
 
         if self.clicked_button and self.user_interface.active_menu.is_clicked():
@@ -49,6 +58,8 @@ class MouseControls:
         return
     
     def mouse_move(self, event):
+        self.user_interface.active_menu.mouse_move(event)
+        return
         if self.clicked and not self.clicked_button:
             self.user_interface.active_menu.valid_hover = False
             self.move_map(event)
@@ -92,6 +103,8 @@ class TileClickControls:
         self.unit_menu = ui.UnitControlMenu(screen, user_interface, user_interface, generated_map, self.unit_controls, players, units)
         
     def click(self):
+        if config.in_game == False:
+            return
         mouse_x, mouse_y = pygame.mouse.get_pos()
         x, y, z = utils.click_to_hex(mouse_x, mouse_y)
         row, column = utils.hex_coord_to_coord(x, y, z)
@@ -135,3 +148,5 @@ class UnitControls:
     def unit_clicked(self, tile):
         self.unit_selected = True
         self.selected_unit = tile.unit_id
+
+

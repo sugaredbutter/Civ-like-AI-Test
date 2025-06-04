@@ -22,15 +22,13 @@ class Unit:
     def hex_heuristic(self, a, b):
         return max(abs(a[0] - b[0]), abs(a[1] - b[1]), abs(a[2] - b[2]))
 
-    def A_star(self, destination, click = False):
+    def A_star(self, destination):
         to_visit = []
         heapq.heappush(to_visit, (0, 0, self.coord, None))
         visited = {}
         path = {}
         while to_visit:
             current_score, current_distance, current_coord, parent_coord = heapq.heappop(to_visit)
-            if click:
-                print(current_coord, current_distance, current_score)   
             if current_coord in visited and current_distance >= visited[current_coord]:
                 continue
             path[current_coord] = parent_coord
@@ -42,19 +40,16 @@ class Unit:
                 tile = self.map.get_tile_hex(*neighbor_coord)
                 if tile is not None and (neighbor_coord not in visited or current_distance + tile.movement < visited.get(neighbor_coord, float('inf'))):
                     heapq.heappush(to_visit, (current_distance + tile.movement + self.hex_heuristic(neighbor_coord, destination), current_distance + tile.movement, neighbor_coord, current_coord))
-                    if click:
-                        print("neighbor:", neighbor_coord, "parent:", current_coord, "distance:", current_distance + tile.movement)
         return path
         
     def move_to(self, destination):
         self.destination = destination
-        path = self.A_star(destination, True)
+        path = self.A_star(destination)
         
         if destination in path:
             current = destination
             full_path = []
             while current != self.coord:
-                print(current, "parent:", path[current])
                 full_path.append(current)
                 current = path[current]
             full_path.append(self.coord)
@@ -122,8 +117,6 @@ class UnitHandler:
     def remove_unit(self, id):
         if id in self.units:
             del self.units[id]
-            print(len(self.units))
-
             return True
         return False
     
