@@ -7,6 +7,7 @@ import interactions.controls as controls
 import interactions.user_interface as ui
 import players.units as unit_handler
 import players.player_handler as player_handler
+import game_manager.game_manager as game
 pygame.init()
 
 WIDTH, HEIGHT = config.map_settings["pixel_width"], config.map_settings["pixel_height"]
@@ -19,11 +20,14 @@ generated_map = generate_map.HexMap(ROWS, COLUMNS)
 
 units = unit_handler.UnitHandler(generated_map)
 players = player_handler.PlayerHandler(generated_map, units)
-players.add_player((255, 0, 0))  # Red player
+players.add_player()  # Red player
+players.add_player()  # Red player
 user_interface = ui.UserInterface(screen, generated_map, players, units)
-game_control_interface = ui.GameControlsInterface(screen)
 tile_click_controls = controls.TileClickControls(screen, user_interface, generated_map, players, units)
-mouse_controls = controls.MouseControls(screen, user_interface, generated_map, tile_click_controls, game_control_interface)
+game_manager = game.GameManager(players, units, generated_map)
+game_control_interface = ui.GameControlsInterface(screen, game_manager)
+
+mouse_controls = controls.MouseControls(screen, user_interface, generated_map, tile_click_controls, game_control_interface, game_manager)
 
 map = draw_map.Map(screen, generated_map, players, units)
 
@@ -52,7 +56,9 @@ while running:
 
     map.draw_tiles(WIDTH, HEIGHT)
     game_control_interface.create_menu()
-    user_interface.active_menu.create_menu()
+
+    if game_manager.type == None:
+        user_interface.active_menu.create_menu()
 
 
     pygame.display.flip()

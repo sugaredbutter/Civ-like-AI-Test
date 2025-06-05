@@ -6,7 +6,7 @@ import interactions.user_interface as ui
 ROWS, COLUMNS = config.map_settings["tile_height"], config.map_settings["tile_width"]
 ZOOM_SCALE = config.map_settings["zoom"]
 class MouseControls:
-    def __init__(self, screen, user_interface, generated_map, tile_click_controls, game_control_interface):
+    def __init__(self, screen, user_interface, generated_map, tile_click_controls, game_control_interface, game_manager):
         self.screen = screen
         self.user_interface = user_interface
         self.generated_map = generated_map
@@ -17,13 +17,15 @@ class MouseControls:
         self.clicked_button = False
         self.tile_click_controls = tile_click_controls
         self.game_control_interface = game_control_interface
+        self.game_manager = game_manager
         
     
     
     def left_click(self, event):
         self.game_control_interface.left_click(event)
         if not self.game_control_interface.clicked_button:
-            self.user_interface.active_menu.left_click(event)
+            if self.game_manager.type == None:
+                self.user_interface.active_menu.left_click(event)
         return
         self.clicked = True
         if self.user_interface.active_menu.is_clicked():
@@ -35,7 +37,8 @@ class MouseControls:
     def left_click_up(self, event):
         self.game_control_interface.left_click_up()
         if not self.game_control_interface.clicked_button:
-            self.user_interface.active_menu.left_click_up()
+            if self.game_manager.type == None:
+                self.user_interface.active_menu.left_click_up()
         return
         mouse_x, mouse_y = pygame.mouse.get_pos()
 
@@ -58,7 +61,8 @@ class MouseControls:
         return
     
     def mouse_move(self, event):
-        self.user_interface.active_menu.mouse_move(event)
+        if self.game_manager.type == None:
+            self.user_interface.active_menu.mouse_move(event)
         return
         if self.clicked and not self.clicked_button:
             self.user_interface.active_menu.valid_hover = False

@@ -18,6 +18,16 @@ class Unit:
 
         self.alive = True
         self.fortified = False
+        
+        #self.movement = utils.units[type]["movement"]
+        #self.remaining_movement = self.movement
+        
+        self.skip_turn = False
+    
+    def remove(self):
+        tile = self.map.get_tile_hex(*self.coord)
+        tile.unit_id = None
+        
     
     def hex_heuristic(self, a, b):
         return max(abs(a[0] - b[0]), abs(a[1] - b[1]), abs(a[2] - b[2]))
@@ -116,6 +126,7 @@ class UnitHandler:
 
     def remove_unit(self, id):
         if id in self.units:
+            self.units[id].remove()
             del self.units[id]
             return True
         return False

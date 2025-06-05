@@ -573,7 +573,6 @@ class UnitMenu:
                 else:
                     self.active_button = key  
         for i, key in enumerate(self.player_button_menu.keys()):
-            print(i, key)
             if i >= config.num_players:
                 break
             if self.player_button_menu[key].collidepoint(mouse_x, mouse_y):
@@ -582,9 +581,8 @@ class UnitMenu:
         for key in self.adjust_num_players_menu.keys():
             if self.adjust_num_players_menu[key].collidepoint(mouse_x, mouse_y):
                 if key == "+" and config.num_players < 4:
-                    print("fuck")
                     config.num_players += 1
-                    self.player_handler.add_player((255, 0, 0))
+                    self.player_handler.add_player()
 
                     if config.num_players == 4:
                         del self.adjust_num_players_menu["+"]
@@ -619,7 +617,6 @@ class UnitMenu:
                 if tile.unit_id is not None:
                     self.player_handler.get_player(self.unit_handler.get_unit(tile.unit_id).owner_id).remove_unit(tile.unit_id)
                     self.unit_handler.remove_unit(tile.unit_id)
-                    tile.unit_id = None
             else:
                 if tile.unit_id is not None and (currPlayer != self.unit_handler.get_unit(tile.unit_id).owner_id or self.unit_handler.get_unit(tile.unit_id).type != self.active_button):
                     self.player_handler.get_player(self.unit_handler.get_unit(tile.unit_id).owner_id).remove_unit(tile.unit_id)
@@ -792,8 +789,9 @@ class UnitControlMenu:
         return
     
 class GameControlsInterface:
-    def __init__(self, screen):
+    def __init__(self, screen, game_manager):
         self.screen = screen
+        self.game_manager = game_manager
         
         self.initX = 0
         self.initY = 0
@@ -887,8 +885,11 @@ class GameControlsInterface:
         if self.button_menu[self.active_button].collidepoint(mouse_x, mouse_y):
             if self.active_button == "Start":
                 self.active_button = "End"
+                self.game_manager.start_game("Test")
             else:
                 self.active_button = "Start"
+                self.game_manager.end_game()
+
 
     
     
