@@ -1,11 +1,12 @@
 import interactions.config as config
 import game_manager.turn_manager as turn_manager
 class GameManager:
-    def __init__(self, players, units, generated_map):
+    def __init__(self, players, units, generated_map, test_user_interface):
         self.type = None
         self.players = players
         self.units = units
         self.generated_map = generated_map
+        self.test_user_interface = test_user_interface
         self.turn_manager = turn_manager.TurnManager(players, units, generated_map)
         
         self.game_types = ["Test", "PvAI, AIvAI"]
@@ -20,6 +21,7 @@ class GameManager:
         self.turn_manager.current_turn = 0
         self.turn_manager.current_player = 0
         print("Game started successfully with type:", game_type)
+        config.game_type = game_type
         return True
 
     def start_game_check(self, game_type):
@@ -46,6 +48,11 @@ class GameManager:
         self.turn_manager.in_game = False
         self.turn_manager.current_turn = 0
         self.turn_manager.current_player = 0
+        self.generated_map.end_game_reset()
+        self.units.end_game_reset()
+        self.test_user_interface.end_game_reset()
+        
+        config.game_type = None
         
         
 # To DO:

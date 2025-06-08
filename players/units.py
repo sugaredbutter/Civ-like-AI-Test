@@ -1,4 +1,5 @@
 import interactions.utils as utils
+import players.units_config as units_config
 import heapq
 
 class Unit:
@@ -8,6 +9,7 @@ class Unit:
         self.type = type
         self.health = health
         self.map = map
+        self.init_coord = coord
         self.coord = coord
         
         self.hover_destination = None
@@ -19,16 +21,24 @@ class Unit:
         self.alive = True
         self.fortified = False
         
-        #self.movement = utils.units[type]["movement"]
-        #self.remaining_movement = self.movement
+        self.movement = units_config.units[type]["movement"]
+        self.remaining_movement = self.movement
         
         self.skip_turn = False
     
     def remove(self):
         tile = self.map.get_tile_hex(*self.coord)
-        tile.unit_id = None
+        tile.unit_id = None if tile.unit_id == self.id else tile.unit_id
         
-    
+    def reset_location(self):
+        self.coord = self.init_coord
+        tile = self.map.get_tile_hex(*self.coord)
+        tile.unit_id = self.id
+        self.destination = None
+        self.path = None
+        self.hover_destination = None
+        self.hover_path = None        
+
     def hex_heuristic(self, a, b):
         return max(abs(a[0] - b[0]), abs(a[1] - b[1]), abs(a[2] - b[2]))
 
@@ -41,6 +51,9 @@ class Unit:
             current_score, current_distance, current_coord, parent_coord = heapq.heappop(to_visit)
             if current_coord in visited and current_distance >= visited[current_coord]:
                 continue
+            movement_remaining = (self.movement - current_distance) % self.movement
+            if current_coord == self.coord:
+                movement_remaining = self.movement
             path[current_coord] = parent_coord
             visited[current_coord] = current_distance
             if current_coord == destination:
@@ -49,7 +62,10 @@ class Unit:
                 neighbor_coord = tuple(x + y for x, y in zip(current_coord, neighbor))
                 tile = self.map.get_tile_hex(*neighbor_coord)
                 if tile is not None and (neighbor_coord not in visited or current_distance + tile.movement < visited.get(neighbor_coord, float('inf'))):
-                    heapq.heappush(to_visit, (current_distance + tile.movement + self.hex_heuristic(neighbor_coord, destination), current_distance + tile.movement, neighbor_coord, current_coord))
+                    additional_cost = 0 if movement_remaining >= tile.movement else self.movement - movement_remaining
+                    if movement_remaining - tile.movement <= 0 and tile.unit_id is not None:
+                        continue
+                    heapq.heappush(to_visit, (current_distance + tile.movement + self.hex_heuristic(neighbor_coord, destination) + additional_cost, current_distance + tile.movement + additional_cost, neighbor_coord, current_coord))
         return path
         
     def move_to(self, destination):
@@ -81,20 +97,29 @@ class Unit:
                 current = path[current]
             full_path.append(self.coord)
             full_path.reverse()
-            movement_cost = 0
-            for x in range(len(full_path) - 1):
+            movement_left = self.movement
+            turned_reached = 0
+            for x in range(len(full_path)):
                 tile = self.map.get_tile_hex(*full_path[x])
                 if (tile.x, tile.y, tile.z) == self.coord:
                     tile.neighbor = self.map.get_tile_hex(*full_path[x + 1])
                     tile.path = True
-                    continue
+                    
                 elif (tile.x, tile.y, tile.z) == destination:
                     tile.path = True
-                    continue
+                    break
                 else:
-                    movement_cost += tile.movement
                     tile.neighbor = self.map.get_tile_hex(*full_path[x + 1])
                     tile.path = True
+                
+                next_tile = self.map.get_tile_hex(*full_path[x + 1])
+                if movement_left - next_tile.movement < 0:
+                    tile.turn_reached = turned_reached + 1
+                    turned_reached += 1
+                    movement_left = self.movement - next_tile.movement
+                    print(tile.x, tile.y, tile.z, "Turn Reached", tile.turn_reached)
+                else:
+                    movement_left -= next_tile.movement
             self.hover_path = full_path
 
         
@@ -131,4 +156,7 @@ class UnitHandler:
             return True
         return False
     
+    def end_game_reset(self):
+        for unit in self.units.values():
+            unit.reset_location()
     

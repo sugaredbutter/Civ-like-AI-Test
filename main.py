@@ -5,6 +5,7 @@ import interactions.config as config
 import interactions.utils as utils
 import interactions.controls as controls
 import interactions.user_interface as ui
+import interactions.test_user_interface as test_ui
 import players.units as unit_handler
 import players.player_handler as player_handler
 import game_manager.game_manager as game
@@ -23,11 +24,12 @@ players = player_handler.PlayerHandler(generated_map, units)
 players.add_player()  # Red player
 players.add_player()  # Red player
 user_interface = ui.UserInterface(screen, generated_map, players, units)
+test_user_interface = test_ui.UserInterface(screen, generated_map, players, units)
 tile_click_controls = controls.TileClickControls(screen, user_interface, generated_map, players, units)
-game_manager = game.GameManager(players, units, generated_map)
+game_manager = game.GameManager(players, units, generated_map, test_user_interface)
 game_control_interface = ui.GameControlsInterface(screen, game_manager)
 
-mouse_controls = controls.MouseControls(screen, user_interface, generated_map, tile_click_controls, game_control_interface, game_manager)
+mouse_controls = controls.MouseControls(screen, user_interface, test_user_interface, generated_map, tile_click_controls, game_control_interface, game_manager)
 
 map = draw_map.Map(screen, generated_map, players, units)
 
@@ -59,7 +61,8 @@ while running:
 
     if game_manager.type == None:
         user_interface.active_menu.create_menu()
-
+    if game_manager.type == "Test":
+        test_user_interface.active_menu.create_menu()
 
     pygame.display.flip()
     

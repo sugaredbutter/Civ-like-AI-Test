@@ -6,9 +6,10 @@ import interactions.user_interface as ui
 ROWS, COLUMNS = config.map_settings["tile_height"], config.map_settings["tile_width"]
 ZOOM_SCALE = config.map_settings["zoom"]
 class MouseControls:
-    def __init__(self, screen, user_interface, generated_map, tile_click_controls, game_control_interface, game_manager):
+    def __init__(self, screen, user_interface, test_user_interface, generated_map, tile_click_controls, game_control_interface, game_manager):
         self.screen = screen
         self.user_interface = user_interface
+        self.test_user_interface = test_user_interface
         self.generated_map = generated_map
         self.initX = 0
         self.initY = 0
@@ -26,6 +27,8 @@ class MouseControls:
         if not self.game_control_interface.clicked_button:
             if self.game_manager.type == None:
                 self.user_interface.active_menu.left_click(event)
+            elif self.game_manager.type == "Test":
+                self.test_user_interface.active_menu.left_click(event)
         return
         self.clicked = True
         if self.user_interface.active_menu.is_clicked():
@@ -39,6 +42,8 @@ class MouseControls:
         if not self.game_control_interface.clicked_button:
             if self.game_manager.type == None:
                 self.user_interface.active_menu.left_click_up()
+            elif self.game_manager.type == "Test":
+                self.test_user_interface.active_menu.left_click_up()
         return
         mouse_x, mouse_y = pygame.mouse.get_pos()
 
@@ -63,6 +68,8 @@ class MouseControls:
     def mouse_move(self, event):
         if self.game_manager.type == None:
             self.user_interface.active_menu.mouse_move(event)
+        elif self.game_manager.type == "Test":
+            self.test_user_interface.active_menu.mouse_move(event)
         return
         if self.clicked and not self.clicked_button:
             self.user_interface.active_menu.valid_hover = False

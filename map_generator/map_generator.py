@@ -19,7 +19,7 @@ class Tile:
         
         self.path = False
         self.neighbor = False
-        self.turn = False
+        self.turn_reached = -1
         
         self.init_hill()
         
@@ -42,6 +42,11 @@ class Tile:
             right_corner = (rng.uniform(left_corner[0] + .2, min(left_corner[0] + .6, 1)), left_corner[1])
             top = ((right_corner[0] + left_corner[0]) / 2, rng.uniform(left_corner[1] + (right_corner[0] - left_corner[0]) / 5, left_corner[1] + (right_corner[0] - left_corner[0]) / 2.5))
             self.hills_list.append((left_corner, right_corner, top))
+            
+    def end_game_reset_tile(self):
+        self.unit_id = None
+        self.path = False
+        self.neighbor = False
 
 class HexMap:
     def __init__(self, width, height):
@@ -64,4 +69,9 @@ class HexMap:
     
     def get_tile_hex(self, x, y, z):
         return self.tiles.get((x, y, z), None)
+    
+    def end_game_reset(self):
+        for tile in self.tiles.values():
+            tile.end_game_reset_tile()
+        self.selected_tile = None
     
