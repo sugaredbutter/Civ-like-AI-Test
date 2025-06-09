@@ -52,7 +52,7 @@ class Unit:
             if current_coord in visited and current_distance >= visited[current_coord]:
                 continue
             movement_remaining = (self.movement - current_distance) % self.movement
-            if current_coord == self.coord:
+            if movement_remaining == 0:
                 movement_remaining = self.movement
             path[current_coord] = parent_coord
             visited[current_coord] = current_distance
@@ -63,7 +63,10 @@ class Unit:
                 tile = self.map.get_tile_hex(*neighbor_coord)
                 if tile is not None and (neighbor_coord not in visited or current_distance + tile.movement < visited.get(neighbor_coord, float('inf'))):
                     additional_cost = 0 if movement_remaining >= tile.movement else self.movement - movement_remaining
-                    if movement_remaining - tile.movement <= 0 and tile.unit_id is not None:
+                    temp_movement_remaining = movement_remaining
+                    if additional_cost > 0:
+                        temp_movement_remaining = self.movement
+                    if temp_movement_remaining - tile.movement <= 0 and tile.unit_id is not None:
                         continue
                     heapq.heappush(to_visit, (current_distance + tile.movement + self.hex_heuristic(neighbor_coord, destination) + additional_cost, current_distance + tile.movement + additional_cost, neighbor_coord, current_coord))
         return path
@@ -101,13 +104,12 @@ class Unit:
             turned_reached = 0
             for x in range(len(full_path)):
                 tile = self.map.get_tile_hex(*full_path[x])
-                if (tile.x, tile.y, tile.z) == self.coord:
-                    tile.neighbor = self.map.get_tile_hex(*full_path[x + 1])
-                    tile.path = True
-                    
-                elif (tile.x, tile.y, tile.z) == destination:
+                if (tile.x, tile.y, tile.z) == destination:
                     tile.path = True
                     break
+                elif (tile.x, tile.y, tile.z) == self.coord:
+                    tile.neighbor = self.map.get_tile_hex(*full_path[x + 1])
+                    tile.path = True
                 else:
                     tile.neighbor = self.map.get_tile_hex(*full_path[x + 1])
                     tile.path = True
