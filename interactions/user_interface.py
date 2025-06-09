@@ -757,6 +757,11 @@ class UnitControlMenu:
                     self.unit_controls.unit_selected = False
                     self.unit_controls.selected_unit = None
                     self.generated_map.selected_tile = None
+                    self.initX = 0
+                    self.initY = 0
+                    self.clicked = False
+                    self.dragging = False
+                    self.clicked_button = False
                 elif self.active_button == key:
                     self.active_button = None
                 else:
@@ -784,7 +789,25 @@ class UnitControlMenu:
         if self.active_tile != None:
             if self.active_button == "Move":
                 unit.clear_hover_path()
-                unit.move_to((x, y, z))
+                movement_remaining = unit.move_to((x, y, z))
+                self.active_button = None
+                if movement_remaining == 0:
+                    self.main_menu.active_menu = self.parent_menu
+                    self.active_button = None
+                    self.unit_controls.unit_selected = False
+                    self.unit_controls.selected_unit = None
+                    self.generated_map.selected_tile = None
+                    self.initX = 0
+                    self.initY = 0
+                    self.clicked = False
+                    self.dragging = False
+                    self.clicked_button = False
+
+                else:
+                    self.active_tile = self.generated_map.get_tile_hex(*unit.coord)
+                    self.generated_map.selected_tile = self.active_tile
+
+                
                 
         return
     

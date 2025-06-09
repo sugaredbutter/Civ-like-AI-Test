@@ -39,6 +39,18 @@ class Unit:
         self.hover_destination = None
         self.hover_path = None        
 
+    def valid_destination(self, destination):
+        tile = self.map.get_tile_hex(*destination)
+        if tile is None:
+            return False
+        # need to implement unit swapping 
+        if tile.unit_id is not None:
+            return False
+        if destination == self.coord:
+            return False
+        return True
+
+    
     def hex_heuristic(self, a, b):
         return max(abs(a[0] - b[0]), abs(a[1] - b[1]), abs(a[2] - b[2]))
 
@@ -72,6 +84,8 @@ class Unit:
         return path
         
     def move_to(self, destination):
+        if not self.valid_destination(destination):
+            return
         self.destination = destination
         path = self.A_star(destination)
         
@@ -84,11 +98,34 @@ class Unit:
             full_path.append(self.coord)
             full_path.reverse()
             self.path = full_path
+            movement_left = self.remaining_movement
+            turned_reached = 0
+            orig_tile = self.map.get_tile_hex(*self.coord)
+            for x in range(len(full_path)):
+                tile = self.map.get_tile_hex(*full_path[x])
+                if (tile.x, tile.y, tile.z) == destination:
+                    orig_tile.unit_id = None
+                    tile.unit_id = self.id
+                    self.coord = (tile.x, tile.y, tile.z)
+                    break
+                
+                next_tile = self.map.get_tile_hex(*full_path[x + 1])
+                if movement_left - next_tile.movement < 0:
+                    orig_tile.unit_id = None
+                    tile.unit_id = self.id
+                    self.coord = (tile.x, tile.y, tile.z)
+                    break
+                else:
+                    movement_left -= next_tile.movement
+            self.remaining_movement = movement_left
+        return self.remaining_movement
 
                     
     def move_to_hover(self, destination):
         if self.hover_destination != destination and self.hover_destination is not None:
             self.clear_hover_path()
+        if not self.valid_destination(destination):
+            return
             
         self.hover_destination = destination
         path = self.A_star(destination)

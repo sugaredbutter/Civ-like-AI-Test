@@ -34,8 +34,8 @@ class UserInterface:
         
         self.tile_controls = controls.TileClickControls(screen, self, generated_map, player_handler, unit_handler)
                 
-        self.Menus = []
-        menus_list = []
+        self.Menus = [None]
+        menus_list = ["Next Turn"]
         self.button_menu = {}
 
         for i, name in enumerate(menus_list):
