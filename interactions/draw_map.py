@@ -5,11 +5,12 @@ import interactions.config as config
 import interactions.utils as utils
 import map_generator.tile_types_config as tile_types_config
 class Map:
-    def __init__(self, screen, map, players, units):
+    def __init__(self, screen, map, players, units, game_manager):
         self.screen = screen
         self.map = map
         self.players = players
         self.units = units
+        self.game_manager = game_manager
         
     def axial_to_pixel(self, q, r, radius, map_pixel_height):
         width = math.sqrt(3) * radius

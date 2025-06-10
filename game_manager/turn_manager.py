@@ -4,6 +4,8 @@ class TurnManager:
         self.in_game = False
         self.current_turn = 0
         self.current_player = 0
+        
+        
 
 
 # 3 options

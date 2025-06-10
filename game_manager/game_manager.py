@@ -10,6 +10,7 @@ class GameManager:
         self.turn_manager = turn_manager.TurnManager(players, units, generated_map)
         
         self.game_types = ["Test", "PvAI, AIvAI"]
+        self.current_player = 0
                 
     def start_game(self, game_type):
         print("Attempting to start game of type:", game_type)
@@ -54,6 +55,17 @@ class GameManager:
         
         config.game_type = None
         
+    def next_turn(self):
+        if self.current_player >= len(self.players.players) - 1:
+            self.current_player = 0
+        else:
+            self.current_player += 1
+            
+        current_player = self.players.get_player(self.current_player)
+        for unit in current_player.units:
+            self.units.get_unit(unit).turn_begin()
+        self.test_user_interface.update_UI(self.current_player)
+            
         
 # To DO:
 # Test:

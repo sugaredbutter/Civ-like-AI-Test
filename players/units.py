@@ -172,7 +172,14 @@ class Unit:
                         tile.neighbor = None
             self.hover_destination = None
             self.hover_path = None
-        
+    
+    def end_turn(self):
+        pass
+    
+    def turn_begin(self):
+        self.remaining_movement = self.movement
+        self.skip_turn = False
+    
 class UnitHandler:
     def __init__(self, map):
         self.map = map
