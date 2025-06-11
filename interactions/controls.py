@@ -111,7 +111,7 @@ class TileClickControls:
         self.players = players
         self.units = units
         self.unit_controls = UnitControls(screen, user_interface, generated_map, players, units)
-        self.unit_menu = ui.UnitControlMenu(screen, user_interface, user_interface, generated_map, self.unit_controls, players, units)
+        self.unit_menu = ui.UnitControlMenu(screen, generated_map, self.unit_controls, players, units)
         
     def click(self):
         if config.in_game == False:
@@ -125,7 +125,7 @@ class TileClickControls:
             self.unit_menu.parent_menu = self.user_interface.active_menu if self.user_interface.active_menu != self.unit_menu else self.unit_menu.parent_menu
             self.user_interface.active_menu = self.unit_menu
             self.unit_controls.unit_clicked(tile)
-            self.generated_map.selected_tile = tile
+            self.generated_map.selected_tile = tile 
         else:
             self.user_interface.active_menu = self.unit_menu.parent_menu
             self.unit_menu.active_tile = None

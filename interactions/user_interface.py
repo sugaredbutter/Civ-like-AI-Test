@@ -628,12 +628,10 @@ class UnitMenu:
     
 
 class UnitControlMenu:
-    def __init__(self, screen, main_menu, parent_menu, generated_map, unit_controls, player_handler, unit_handler):
+    def __init__(self, screen, parent_menu, generated_map, player_handler, unit_handler):
         self.screen = screen
-        self.main_menu = main_menu
         self.parent_menu = parent_menu
         self.generated_map = generated_map
-        self.unit_controls = unit_controls
         self.player_handler = player_handler
         self.unit_handler = unit_handler
         
@@ -662,6 +660,7 @@ class UnitControlMenu:
             
 
     def left_click(self, event):
+        print("Unit Control Menu Left Click")
         self.clicked = True
         if self.is_clicked():
             self.clicked_button = True
@@ -669,11 +668,19 @@ class UnitControlMenu:
             self.interaction()
         self.set_init(event)
     
-    def left_click_up(self):
+    def left_click_up(self, current_player):
+        print("Unit Control Menu Left Click Up")
         mouse_x, mouse_y = pygame.mouse.get_pos()
-
+        tile = self.generated_map.get_tile_hex(*utils.click_to_hex(mouse_x, mouse_y))
+        unit = self.unit_handler.get_unit(tile.unit_id) if tile != None else None
         if self.clicked_button:
-            self.button_clicked()   
+            self.button_clicked() 
+        elif self.clicked and self.dragging == False and tile != None and unit != None and unit.owner_id == current_player and self.active_button == None:
+            self.active_tile = tile
+            self.generated_map.selected_tile = self.active_tile
+            self.parent_menu.display_unit_ui = True
+        elif self.clicked and self.dragging == False:
+            self.reset()  
 
         self.dragging = False
         self.clicked = False
@@ -714,6 +721,18 @@ class UnitControlMenu:
             config.map_settings["offsetY"] += event.pos[1] - self.initY
             self.initX = event.pos[0]
             self.initY = event.pos[1]
+            
+    def reset(self):
+        print("Resetting Unit Control Menu")
+        self.active_tile = None
+        self.active_button = None
+        self.clicked = False
+        self.dragging = False
+        self.clicked_button = False
+        self.generated_map.selected_tile = None
+        self.unit_handler.unit_selected = False
+        self.unit_handler.selected_unit = None
+        self.parent_menu.display_unit_ui = False
 
     def set_init(self, event):
         self.initX = event.pos[0]
@@ -749,24 +768,17 @@ class UnitControlMenu:
 
     def button_clicked(self):
         mouse_x, mouse_y = pygame.mouse.get_pos()
+        print("Button Clicked")
         for key in self.button_menu.keys():
             if self.button_menu[key].collidepoint(mouse_x, mouse_y):
                 if key == "De-select":
-                    self.main_menu.active_menu = self.parent_menu
-                    self.active_button = None
-                    self.unit_controls.unit_selected = False
-                    self.unit_controls.selected_unit = None
-                    self.generated_map.selected_tile = None
-                    self.initX = 0
-                    self.initY = 0
-                    self.clicked = False
-                    self.dragging = False
-                    self.clicked_button = False
+                    self.reset()
+
                 elif self.active_button == key:
                     self.active_button = None
                 else:
                     self.active_button = key
-
+        print("Active Button:", self.active_button)
                     
     def tile_hover(self):
         mouse_x, mouse_y = pygame.mouse.get_pos()
@@ -780,6 +792,7 @@ class UnitControlMenu:
 
 
     def interaction(self):
+        print("Unit Control Menu Interaction")
         unit = self.unit_handler.get_unit(self.active_tile.unit_id)
         currPlayer = 0
         mouse_x, mouse_y = pygame.mouse.get_pos()
@@ -790,18 +803,8 @@ class UnitControlMenu:
             if self.active_button == "Move":
                 unit.clear_hover_path()
                 movement_remaining = unit.move_to((x, y, z))
-                self.active_button = None
                 if movement_remaining == 0:
-                    self.main_menu.active_menu = self.parent_menu
-                    self.active_button = None
-                    self.unit_controls.unit_selected = False
-                    self.unit_controls.selected_unit = None
-                    self.generated_map.selected_tile = None
-                    self.initX = 0
-                    self.initY = 0
-                    self.clicked = False
-                    self.dragging = False
-                    self.clicked_button = False
+                    self.reset()
 
                 else:
                     self.active_tile = self.generated_map.get_tile_hex(*unit.coord)
