@@ -642,12 +642,13 @@ class UnitControlMenu:
         self.clicked_button = False
         
         self.active_tile = None
+        self.active_unit = None
         
         self.button_width = 100
         self.button_height = 40
         self.padding = 10
         self.valid_hover = True
-        buttons = ["Move", "Attack", "Fortify", "Heal", "Skip Turn", "De-select"]
+        buttons = ["Move", "Attack", "Fortify", "Heal", "Skip Turn", "Cancel", "De-select"]
         
         self.active_button = None
 
@@ -673,12 +674,16 @@ class UnitControlMenu:
         mouse_x, mouse_y = pygame.mouse.get_pos()
         tile = self.generated_map.get_tile_hex(*utils.click_to_hex(mouse_x, mouse_y))
         unit = self.unit_handler.get_unit(tile.unit_id) if tile != None else None
+        print("Active Unit:", self.active_unit)
         if self.clicked_button:
             self.button_clicked() 
         elif self.clicked and self.dragging == False and tile != None and unit != None and unit.owner_id == current_player and self.active_button == None:
             self.active_tile = tile
+            self.active_unit = unit
             self.generated_map.selected_tile = self.active_tile
             self.parent_menu.display_unit_ui = True
+            if unit.destination != None:
+                unit.move_to_hover(unit.destination)
         elif self.clicked and self.dragging == False:
             self.reset()  
 
@@ -724,6 +729,12 @@ class UnitControlMenu:
             
     def reset(self):
         print("Resetting Unit Control Menu")
+        if self.active_unit != None:
+            print("fuck")
+            self.active_unit.clear_hover_path()
+        else:
+            print("bryuh")
+        self.active_unit = None
         self.active_tile = None
         self.active_button = None
         self.clicked = False
@@ -772,6 +783,7 @@ class UnitControlMenu:
         for key in self.button_menu.keys():
             if self.button_menu[key].collidepoint(mouse_x, mouse_y):
                 if key == "De-select":
+                    print(self.active_unit)
                     self.reset()
 
                 elif self.active_button == key:
@@ -779,6 +791,9 @@ class UnitControlMenu:
                 else:
                     self.active_button = key
         print("Active Button:", self.active_button)
+        if self.active_unit != None and self.active_unit.destination != None:
+            print("lol")
+            self.active_unit.move_to_hover(self.active_unit.destination)
                     
     def tile_hover(self):
         mouse_x, mouse_y = pygame.mouse.get_pos()

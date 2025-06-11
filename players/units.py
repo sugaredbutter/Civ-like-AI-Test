@@ -3,7 +3,7 @@ import players.units_config as units_config
 import heapq
 
 class Unit:
-    def __init__(self, owner_id, id, type, health, map, coord):
+    def __init__(self, owner_id, id, type, health, map, coord, unit_handler):
         self.owner_id = owner_id
         self.id = id
         self.type = type
@@ -12,6 +12,7 @@ class Unit:
         self.init_coord = coord
         self.coord = coord
         
+        self.unit_handler = unit_handler
         self.hover_destination = None
         self.hover_path = None
         
@@ -80,11 +81,15 @@ class Unit:
                         temp_movement_remaining = self.movement
                     if temp_movement_remaining - tile.movement <= 0 and tile.unit_id is not None:
                         continue
+                    if tile.unit_id is not None and self.unit_handler.get_unit(tile.unit_id).owner_id != self.owner_id:
+                        continue
                     heapq.heappush(to_visit, (current_distance + tile.movement + self.hex_heuristic(neighbor_coord, destination) + additional_cost, current_distance + tile.movement + additional_cost, neighbor_coord, current_coord))
         return path
         
     def move_to(self, destination):
         if not self.valid_destination(destination):
+            self.destination = None
+            self.path = None
             return
         self.destination = destination
         path = self.A_star(destination)
@@ -118,6 +123,9 @@ class Unit:
                 else:
                     movement_left -= next_tile.movement
             self.remaining_movement = movement_left
+        if self.coord == self.destination:
+            self.destination = None
+            self.path = None
         return self.remaining_movement
 
                     
@@ -137,31 +145,9 @@ class Unit:
                 current = path[current]
             full_path.append(self.coord)
             full_path.reverse()
-            movement_left = self.movement
-            turned_reached = 0
-            for x in range(len(full_path)):
-                tile = self.map.get_tile_hex(*full_path[x])
-                if (tile.x, tile.y, tile.z) == destination:
-                    tile.path = True
-                    break
-                elif (tile.x, tile.y, tile.z) == self.coord:
-                    tile.neighbor = self.map.get_tile_hex(*full_path[x + 1])
-                    tile.path = True
-                else:
-                    tile.neighbor = self.map.get_tile_hex(*full_path[x + 1])
-                    tile.path = True
-                
-                next_tile = self.map.get_tile_hex(*full_path[x + 1])
-                if movement_left - next_tile.movement < 0:
-                    tile.turn_reached = turned_reached + 1
-                    turned_reached += 1
-                    movement_left = self.movement - next_tile.movement
-                    print(tile.x, tile.y, tile.z, "Turn Reached", tile.turn_reached)
-                else:
-                    movement_left -= next_tile.movement
-            self.hover_path = full_path
+            self.display_hover_path(full_path, destination)
+            
 
-        
     def clear_hover_path(self):
         if self.hover_destination is not None:
             if self.hover_path != None and len(self.hover_path) > 0:
@@ -172,9 +158,37 @@ class Unit:
                         tile.neighbor = None
             self.hover_destination = None
             self.hover_path = None
+        
+    def display_hover_path(self, full_path, destination):
+        movement_left = self.movement
+        turned_reached = 0
+        for x in range(len(full_path)):
+            tile = self.map.get_tile_hex(*full_path[x])
+            if (tile.x, tile.y, tile.z) == destination:
+                tile.path = True
+                break
+            elif (tile.x, tile.y, tile.z) == self.coord:
+                tile.neighbor = self.map.get_tile_hex(*full_path[x + 1])
+                tile.path = True
+            else:
+                tile.neighbor = self.map.get_tile_hex(*full_path[x + 1])
+                tile.path = True
+            
+            next_tile = self.map.get_tile_hex(*full_path[x + 1])
+            if movement_left - next_tile.movement < 0:
+                tile.turn_reached = turned_reached + 1
+                turned_reached += 1
+                movement_left = self.movement - next_tile.movement
+                print(tile.x, tile.y, tile.z, "Turn Reached", tile.turn_reached)
+            else:
+                movement_left -= next_tile.movement
+        self.hover_path = full_path
     
     def end_turn(self):
-        pass
+        if self.remaining_movement > 0 and self.destination is not None:
+            if self.coord != self.destination:
+                self.move_to(self.destination)
+                
     
     def turn_begin(self):
         self.remaining_movement = self.movement
@@ -187,7 +201,7 @@ class UnitHandler:
         self.id_counter = 0
 
     def add_unit(self, owner, type, health, coord):
-        unit = Unit(owner, self.id_counter, type, health, self.map, coord)
+        unit = Unit(owner, self.id_counter, type, health, self.map, coord, self)
         self.units[unit.id] = unit
         self.id_counter += 1
         return unit.id

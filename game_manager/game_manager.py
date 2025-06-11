@@ -56,6 +56,10 @@ class GameManager:
         config.game_type = None
         
     def next_turn(self):
+        current_player = self.players.get_player(self.current_player)
+
+        for unit in current_player.units:
+            self.units.get_unit(unit).end_turn()
         if self.current_player >= len(self.players.players) - 1:
             self.current_player = 0
         else:

@@ -34,7 +34,6 @@ class UserInterface:
         self.active_button = None
         self.active_menu = self
         
-        self.tile_controls = controls.TileClickControls(screen, self, generated_map, player_handler, unit_handler)
         self.display_unit_ui = False
                 
         self.current_player = 0
@@ -65,8 +64,7 @@ class UserInterface:
         self.valid_hover = True
         self.active_button = None
         self.active_menu = self
-        self.tile_controls = controls.TileClickControls(self.screen, self, self.generated_map, self.player_handler, self.unit_handler)
-
+        self.unit_menu.reset()
             
     def left_click(self, event):
         print("Left click detected in UserInterface")
