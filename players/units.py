@@ -7,6 +7,8 @@ class Unit:
         self.owner_id = owner_id
         self.id = id
         self.type = type
+        self.attack = units_config.units[type]["attack"]
+        self.defense = units_config.units[type]["defense"]
         self.health = health
         self.map = map
         self.init_coord = coord
@@ -38,7 +40,8 @@ class Unit:
         self.destination = None
         self.path = None
         self.hover_destination = None
-        self.hover_path = None        
+        self.hover_path = None      
+        self.remaining_movement = self.movement  
 
     def valid_destination(self, destination):
         tile = self.map.get_tile_hex(*destination)

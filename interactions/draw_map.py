@@ -75,6 +75,9 @@ class Map:
                 self.place_coords((x, y + hex_radius/2), tile)
         
         # Draw Units
+        bar_width = config.health_bar["width_ratio"] * hex_radius
+        bar_height = config.health_bar["height_ratio"] * hex_radius
+        
         for column in range(self.map.width):
             for row in range(self.map.height):
                 tile = self.map.get_tile(row, column)
@@ -82,7 +85,17 @@ class Map:
                     x, y = self.axial_to_pixel(column, row, hex_radius, height)
                     x += offsetX
                     y += offsetY
-                    pygame.draw.circle(self.screen, self.players.get_player(self.units.get_unit(tile.unit_id).owner_id).color, (int(x), int(y)), hex_radius/10)
+                    bar_x = x - bar_width / 2
+                    bar_y = y + bar_height / 2 + hex_radius / 10
+                    unit = self.units.get_unit(tile.unit_id)
+                    pygame.draw.circle(self.screen, self.players.get_player(unit.owner_id).color, (int(x), int(y)), hex_radius/10)
+                    
+                    # Unit Health bar
+                    pygame.draw.rect(self.screen, (255, 0, 0), (bar_x, bar_y, bar_width, bar_height))
+                    # Foreground (green) - scaled width
+                    pygame.draw.rect(self.screen, (0, 255, 0), (bar_x, bar_y, bar_width * unit.health/100, bar_height))
+                    # Optional border
+                    pygame.draw.rect(self.screen, (255, 255, 255), (bar_x, bar_y, bar_width, bar_height), 1)
         hovered_tile = self.map.selected_tile
         if hovered_tile is not None:
             q, r = utils.hex_coord_to_coord(hovered_tile.x, hovered_tile.y, hovered_tile.z)

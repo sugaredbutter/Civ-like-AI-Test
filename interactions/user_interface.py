@@ -640,6 +640,7 @@ class UnitControlMenu:
         self.clicked = False
         self.dragging = False
         self.clicked_button = False
+        self.interaction_done = False
         
         self.active_tile = None
         self.active_unit = None
@@ -665,8 +666,6 @@ class UnitControlMenu:
         self.clicked = True
         if self.is_clicked():
             self.clicked_button = True
-        elif self.active_button != None:
-            self.interaction()
         self.set_init(event)
     
     def left_click_up(self, current_player):
@@ -678,18 +677,23 @@ class UnitControlMenu:
         if self.clicked_button:
             self.button_clicked() 
         elif self.clicked and self.dragging == False and tile != None and unit != None and unit.owner_id == current_player and self.active_button == None:
+            self.reset()
             self.active_tile = tile
             self.active_unit = unit
             self.generated_map.selected_tile = self.active_tile
             self.parent_menu.display_unit_ui = True
             if unit.destination != None:
                 unit.move_to_hover(unit.destination)
+        elif self.clicked and self.dragging == False and self.active_button != None:
+            self.interaction()
         elif self.clicked and self.dragging == False:
-            self.reset()  
+            self.reset()
+        
 
         self.dragging = False
         self.clicked = False
         self.clicked_button = False
+        self.interaction_done = False
         self.valid_hover = True
     
     def right_click(self, event):
@@ -718,7 +722,7 @@ class UnitControlMenu:
             config.map_settings["offsetY"] -= ZOOM_SCALE * ROWS
 
     def move_map(self, event):
-        if self.active_button != None:
+        if self.active_button != None and self.active_button != "Move":
             self.interaction()
         else:
             self.dragging = True
@@ -752,6 +756,7 @@ class UnitControlMenu:
     def create_menu(self):
         for key in self.button_menu.keys():
             self.draw_button(key, self.button_menu[key], self.active_button == key)
+        self.draw_unit_info()
             
     def draw_button(self, text, rect, is_hovered):
         font = pygame.font.SysFont(None, 24)
@@ -760,6 +765,29 @@ class UnitControlMenu:
         text_surf = font.render(text, True, BLACK)
         text_rect = text_surf.get_rect(center=rect.center)
         self.screen.blit(text_surf, text_rect)
+        
+    def draw_unit_info(self):
+        if self.active_unit is not None:
+            box_width = 200
+            box_height = 120
+            box_x = 10
+            box_y = self.screen.get_height() - box_height - 10
+
+            pygame.draw.rect(self.screen, (220, 220, 220), (box_x, box_y, box_width, box_height))
+            pygame.draw.rect(self.screen, (0, 0, 0), (box_x, box_y, box_width, box_height), 2)
+
+            font = pygame.font.SysFont(None, 24)
+
+            lines = [
+                f"Health: {self.active_unit.health}",
+                f"Offensive Strength: {self.active_unit.attack}",
+                f"Defensive Strength: {self.active_unit.defense}",
+                f"Movement: {self.active_unit.remaining_movement}/{self.active_unit.movement}"
+            ]
+
+            for i, line in enumerate(lines):
+                text_surf = font.render(line, True, (0, 0, 0))
+                self.screen.blit(text_surf, (box_x + 10, box_y + 10 + i * 25))  # adjust spacing as needed
     
     def is_hovered(self, rect):
         if not self.valid_hover:
@@ -808,6 +836,7 @@ class UnitControlMenu:
 
     def interaction(self):
         print("Unit Control Menu Interaction")
+        self.interaction_done = True
         unit = self.unit_handler.get_unit(self.active_tile.unit_id)
         currPlayer = 0
         mouse_x, mouse_y = pygame.mouse.get_pos()
@@ -815,9 +844,10 @@ class UnitControlMenu:
         row, column = utils.hex_coord_to_coord(x, y, z)
         tile = self.generated_map.get_tile(row, column)
         if self.active_tile != None:
-            if self.active_button == "Move":
+            if self.active_button == "Move" and not self.dragging:
                 unit.clear_hover_path()
                 movement_remaining = unit.move_to((x, y, z))
+                self.active_button = None
                 if movement_remaining == 0:
                     self.reset()
 

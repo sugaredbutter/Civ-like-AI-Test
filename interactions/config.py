@@ -13,6 +13,10 @@ map_settings = {
     "pixel_width": 800,
     "pixel_height": 600
 }
+health_bar = {
+    "width_ratio": .7,
+    "height_ratio": .1,
+}
 in_game = None
 num_players = 2
 min_players = 2
