@@ -787,7 +787,7 @@ class UnitControlMenu:
 
             for i, line in enumerate(lines):
                 text_surf = font.render(line, True, (0, 0, 0))
-                self.screen.blit(text_surf, (box_x + 10, box_y + 10 + i * 25))  # adjust spacing as needed
+                self.screen.blit(text_surf, (box_x + 10, box_y + 10 + i * 25))
     
     def is_hovered(self, rect):
         if not self.valid_hover:

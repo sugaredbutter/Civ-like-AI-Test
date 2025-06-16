@@ -159,6 +159,7 @@ class Unit:
                     if tile is not None:
                         tile.path = False
                         tile.neighbor = None
+                        tile.turn_reached = -1
             self.hover_destination = None
             self.hover_path = None
         
@@ -169,6 +170,7 @@ class Unit:
             tile = self.map.get_tile_hex(*full_path[x])
             if (tile.x, tile.y, tile.z) == destination:
                 tile.path = True
+                tile.turn_reached = turned_reached + 1
                 break
             elif (tile.x, tile.y, tile.z) == self.coord:
                 tile.neighbor = self.map.get_tile_hex(*full_path[x + 1])

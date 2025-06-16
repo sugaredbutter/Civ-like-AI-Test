@@ -52,7 +52,7 @@ class GameManager:
         self.generated_map.end_game_reset()
         self.units.end_game_reset()
         self.test_user_interface.end_game_reset()
-        
+        self.current_player = 0
         config.game_type = None
         
     def next_turn(self):

@@ -18,7 +18,7 @@ class Tile:
         self.hills_list = []
         
         self.path = False
-        self.neighbor = False
+        self.neighbor = None
         self.turn_reached = -1
         
         self.init_hill()
@@ -46,7 +46,7 @@ class Tile:
     def end_game_reset_tile(self):
         self.unit_id = None
         self.path = False
-        self.neighbor = False
+        self.neighbor = None
 
 class HexMap:
     def __init__(self, width, height):

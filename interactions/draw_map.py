@@ -13,6 +13,8 @@ class Map:
         self.game_manager = game_manager
         
     def axial_to_pixel(self, q, r, radius, map_pixel_height):
+        offsetX = config.map_settings["offsetX"]
+        offsetY = config.map_settings["offsetY"]
         width = math.sqrt(3) * radius
         height = 2 * radius
         
@@ -23,7 +25,8 @@ class Map:
         y = height * (3/4) * r + y_offset
         
         y = map_pixel_height - y - 1
-        
+        x += offsetX
+        y += offsetY
         return (x, y)
 
 
@@ -39,8 +42,6 @@ class Map:
 
     def draw_tiles(self, width, height):
         hex_radius = config.hex["radius"]
-        offsetX = config.map_settings["offsetX"]
-        offsetY = config.map_settings["offsetY"]
         mouse_x, mouse_y = pygame.mouse.get_pos()
         q, r, s = utils.click_to_hex(mouse_x, mouse_y)
 
@@ -49,9 +50,7 @@ class Map:
         # Draw hexagons
         for column in range(self.map.width):
             for row in range(self.map.height):
-                x, y= self.axial_to_pixel(column, row, hex_radius, height)
-                x += offsetX
-                y += offsetY
+                x, y = self.axial_to_pixel(column, row, hex_radius, height)
                 corners = self.calc_hex_corners(x, y, hex_radius)
                 saved_info[(row, column)] = (corners, (x,y))
                 tile = self.map.get_tile(row, column)
@@ -74,17 +73,23 @@ class Map:
                         self.draw_hill(corners, tile)
                 self.place_coords((x, y + hex_radius/2), tile)
         
+        for column in range(self.map.width):
+            for row in range(self.map.height):
+                info = saved_info[(row, column)]
+                corners = info[0]
+                x, y = info[1]
+                tile = self.map.get_tile(row, column)
+                if tile.path:
+                    self.draw_movement(tile)
+        
         # Draw Units
         bar_width = config.health_bar["width_ratio"] * hex_radius
         bar_height = config.health_bar["height_ratio"] * hex_radius
-        
         for column in range(self.map.width):
             for row in range(self.map.height):
                 tile = self.map.get_tile(row, column)
                 if tile.unit_id != None:
                     x, y = self.axial_to_pixel(column, row, hex_radius, height)
-                    x += offsetX
-                    y += offsetY
                     bar_x = x - bar_width / 2
                     bar_y = y + bar_height / 2 + hex_radius / 10
                     unit = self.units.get_unit(tile.unit_id)
@@ -100,14 +105,12 @@ class Map:
         if hovered_tile is not None:
             q, r = utils.hex_coord_to_coord(hovered_tile.x, hovered_tile.y, hovered_tile.z)
             x, y = self.axial_to_pixel(r, q, hex_radius, height)
-            x += offsetX
-            y += offsetY
             pygame.draw.circle(self.screen, (255, 0, 0), (int(x), int(y)), hex_radius/1.2, width=2)
             
     def draw_hex(self, corners, tile, hover = False):
-        if tile.path:
-            pygame.draw.polygon(self.screen, (100, 100, 100), corners, 0)
-        elif hover:
+        #if tile.path:
+        #    pygame.draw.polygon(self.screen, (100, 100, 100), corners, 0)
+        if hover:
             pygame.draw.polygon(self.screen, tile_types_config.biomes[tile.biome]["hover_color"], corners, 0)
         else:
             pygame.draw.polygon(self.screen, tile_types_config.biomes[tile.biome]["biome_color"], corners, 0)
@@ -136,6 +139,24 @@ class Map:
         #    pygame.draw.arc(self.screen, tile_types_config.terrain[tile.terrain]["hover_color"], rect, 0, math.pi, 2)
         #else:
         #    pygame.draw.arc(self.screen, tile_types_config.terrain[tile.terrain]["terrain_color"], rect, 0, math.pi, 2)
+
+    def draw_movement(self, tile):
+        tile_y, tile_x = utils.hex_coord_to_coord(tile.x, tile.y, tile.z)
+        tile_pixel = self.axial_to_pixel(tile_x, tile_y, config.hex["radius"], self.screen.get_height())
+        if tile.neighbor is not None:
+            neighbor_tile = tile.neighbor
+            neighbor_tile_y, neighbor_tile_x = utils.hex_coord_to_coord(neighbor_tile.x, neighbor_tile.y, neighbor_tile.z)
+            neighbor_pixel = self.axial_to_pixel(neighbor_tile_x, neighbor_tile_y, config.hex["radius"], self.screen.get_height())
+            
+            pygame.draw.line(self.screen, (248, 0, 252), (tile_pixel), neighbor_pixel, 2)
+        if tile.turn_reached != -1:
+            font = pygame.font.SysFont(None, 48)  
+            label = font.render(f"{tile.turn_reached}", True, (0, 0, 0))  
+
+            label_rect = label.get_rect(center=tile_pixel)
+
+            self.screen.blit(label, label_rect)
+        return
 
     def place_coords(self, center, tile):
         font = pygame.font.SysFont(None, 24)  
