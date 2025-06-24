@@ -1,5 +1,5 @@
 import pygame
-import interactions.config as config
+import config as config
 import interactions.utils as utils
 import interactions.controls as controls
 import interactions.user_interface as ui

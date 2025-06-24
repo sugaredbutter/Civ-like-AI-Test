@@ -1,7 +1,7 @@
 import pygame
 import map_generator.map_generator as generate_map
 import interactions.draw_map as draw_map
-import interactions.config as config
+import config as config
 import interactions.utils as utils
 import interactions.controls as controls
 import interactions.user_interface as ui

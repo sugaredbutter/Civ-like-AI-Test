@@ -3,32 +3,67 @@ import pygame
 import interactions.utils as utils
 import random
 import map_generator.tile_types_config as tile_types_config
+import config as config
+
 class Tile:
-    def __init__(self, x, y, z, biome = "Plain", terrain = "Flat", vegetation = "none"):
+    def __init__(self, x, y, z, biome = "Plain", terrain = "Flat", feature = None):
         self.x = x
         self.y = y
         self.z = z
         self.biome = biome
         self.terrain = terrain
-        self.vegetation = vegetation
+        self.feature = feature
+        
         self.movement = 1
         self.defense = 0
         self.offense = 0
         self.unit_id = None
-        self.hills_list = []
         
         self.path = False
         self.neighbor = None
         self.turn_reached = -1
         
+        self.hills_list = []
         self.init_hill()
+        self.mountains_list = []
+        self.init_mountains()
+        
+        self.rivers = {
+            "W": False,
+            "NW": False,
+            "NE": False,
+            "E": False,
+            "SE": False,
+            "SW": False
+        }
+        
         
     def get_coords(self):
         return (self.x, self.y, self.z)
     
+    def get_movement(self, direction = None):
+        movement = self.movement
+        if direction == None:
+            return movement
+        if self.rivers[direction] == True:
+            print(movement + tile_types_config.features["River"]["movement"])
+            return movement + tile_types_config.features["River"]["movement"]
+        return movement
+        
+    
     def set_terrain(self, terrain):
         self.terrain = terrain
-        self.movement = tile_types_config.biomes[self.biome][terrain]["movement"]
+        self.set_movement()
+                
+    def set_feature(self, feature, add):
+        self.feature = feature
+        self.set_movement
+        pass
+    
+    def set_movement(self):
+        self.movement = tile_types_config.biomes[self.biome]["Terrain"][self.terrain]["movement"]
+        if self.feature != None:
+            tile_types_config.biomes[self.biome]["Feature"][self.feature]["movement"]
         
 
     def init_hill(self, num_hills = -1):
@@ -42,6 +77,20 @@ class Tile:
             right_corner = (rng.uniform(left_corner[0] + .2, min(left_corner[0] + .6, 1)), left_corner[1])
             top = ((right_corner[0] + left_corner[0]) / 2, rng.uniform(left_corner[1] + (right_corner[0] - left_corner[0]) / 5, left_corner[1] + (right_corner[0] - left_corner[0]) / 2.5))
             self.hills_list.append((left_corner, right_corner, top))
+    
+    def init_mountains(self, num_hills = -1):
+        rng = random.Random(f"{self.x},{self.y},{self.z}")
+        if num_hills == -1:
+            num_hills = rng.randint(2, 4)
+        self.mountains_list = []
+
+        for i in range(num_hills - 1, -1, -1):
+            left_corner = (rng.uniform(0, 0.4), rng.uniform(i/num_hills, (i+1)/num_hills))
+            right_corner = (rng.uniform(left_corner[0] + .4, min(left_corner[0] + .8, 1)), left_corner[1])
+            top = ((right_corner[0] + left_corner[0]) / 2, rng.uniform(left_corner[1] + (right_corner[0] - left_corner[0]) / 1.1, left_corner[1] + (right_corner[0] - left_corner[0]) / .65))
+            self.mountains_list.append((left_corner, right_corner, top))
+    
+        
             
     def end_game_reset_tile(self):
         self.unit_id = None
@@ -54,12 +103,24 @@ class HexMap:
         self.width = width
         self.height = height
         self.selected_tile = None
+        self.hovered_tile = None
+        self.selected_edge = None
         for row in range(height): 
             for column in range(width):     
                 print("Orig", row, column) 
                 x, y, z = utils.coord_to_hex_coord(row, column)
                 self.tiles[(x, y, z)] = Tile(x, y, z)
                 print(x, y, z)
+
+    def place_river(self, x, y, z, edge, adding):
+        tile = self.get_tile_hex(x, y, z)
+        neighbor_coord = utils.get_tile_via_edge(x, y, z, edge)
+        neighbor_tile = self.get_tile_hex(*neighbor_coord)
+        tile.rivers[edge] = adding        
+        if neighbor_tile == None:
+            return
+        neighbor_edge = utils.OPPOSITE_EDGES[edge]
+        neighbor_tile.rivers[neighbor_edge] = adding
 
     def get_tile(self, row, column):
         x = column - int(row / 2)

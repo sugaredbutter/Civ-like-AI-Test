@@ -4,16 +4,21 @@ x Movement looks cooler (lines and numbers indiciating turn reached)
 - Possibility (animate troop unit (basically show path it took instead of tp to dst))
 
 Phase 2 (Improve Foundation):
-- Rivers and other terrain/obstacles
-- Complete unit options (fortify, skip turn) excluding attacks
-
-Phase 3 (Combat Implementation):
-- Unit Combat
-- Add more unit types
+x Rivers and other terrain/obstacles
+- More terrains/features (mountains, forests)
 
 Phase 5 (Visibility and knowledge)
 - Fog of War
 - Terrain affects vision and attacks (ranged specifically)
 
-Phase 5:
+Phase 3 (Combat Implementation):
+- Unit Combat
+- Complete unit options (fortify, skip turn) excluding attacks
+- Add more unit types
+
+Phase 5 (AI):
 - Implement AI
+
+Phase 6 (Flesh out):
+- Implement UX and randomize terrain/map
+- Difficulty modifiers?

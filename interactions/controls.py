@@ -1,5 +1,5 @@
 import pygame
-import interactions.config as config
+import config as config
 import interactions.utils as utils
 import interactions.user_interface as ui
 
@@ -118,7 +118,7 @@ class TileClickControls:
             return
         mouse_x, mouse_y = pygame.mouse.get_pos()
         x, y, z = utils.click_to_hex(mouse_x, mouse_y)
-        row, column = utils.hex_coord_to_coord(x, y, z)
+        column, row = utils.hex_coord_to_coord(x, y, z)
         tile = self.generated_map.get_tile(row, column)
         if tile != None and tile.unit_id is not None:
             self.unit_menu.active_tile = tile

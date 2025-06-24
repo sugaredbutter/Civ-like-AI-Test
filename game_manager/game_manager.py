@@ -1,4 +1,4 @@
-import interactions.config as config
+import config as config
 import game_manager.turn_manager as turn_manager
 class GameManager:
     def __init__(self, players, units, generated_map, test_user_interface):
