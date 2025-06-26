@@ -23,6 +23,8 @@ class GameManager:
         self.turn_manager.current_player = 0
         print("Game started successfully with type:", game_type)
         config.game_type = game_type
+        current_player = self.players.get_player(self.current_player)
+        current_player.update_visibility()
         return True
 
     def start_game_check(self, game_type):
@@ -60,6 +62,7 @@ class GameManager:
 
         for unit in current_player.units:
             self.units.get_unit(unit).end_turn()
+        current_player.update_visibility()
         if self.current_player >= len(self.players.players) - 1:
             self.current_player = 0
         else:

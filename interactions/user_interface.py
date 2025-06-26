@@ -590,7 +590,7 @@ class FeatureMenu:
                     self.active_tile = tile
                     self.active_edge = edge
             else:
-                tile.set_feature(self.active_button)
+                tile.set_feature(self.active_button, self.adding)
             
         return
     
@@ -823,6 +823,8 @@ class UnitControlMenu:
         self.active_tile = None
         self.active_unit = None
         
+        self.current_player = 0
+        
         self.button_width = 100
         self.button_height = 40
         self.padding = 10
@@ -847,6 +849,7 @@ class UnitControlMenu:
         self.set_init(event)
     
     def left_click_up(self, current_player):
+        self.current_player = current_player
         print("Unit Control Menu Left Click Up")
         mouse_x, mouse_y = pygame.mouse.get_pos()
         tile = self.generated_map.get_tile_hex(*utils.click_to_hex(mouse_x, mouse_y))
@@ -1032,6 +1035,7 @@ class UnitControlMenu:
                 else:
                     self.active_tile = self.generated_map.get_tile_hex(*unit.coord)
                     self.generated_map.selected_tile = self.active_tile
+                self.player_handler.get_player(self.current_player).update_visibility()
 
                 
                 

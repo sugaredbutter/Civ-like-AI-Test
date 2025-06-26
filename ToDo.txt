@@ -1,3 +1,7 @@
+x = complete/satisfactory for now
+/ = in progress
+- = not started
+
 To Do
 Phase 1 (Fleshing out movement):
 x Movement looks cooler (lines and numbers indiciating turn reached)
@@ -5,11 +9,12 @@ x Movement looks cooler (lines and numbers indiciating turn reached)
 
 Phase 2 (Improve Foundation):
 x Rivers and other terrain/obstacles
-- More terrains/features (mountains, forests)
+/ More terrains/features (mountains, forests)
+- Improve Graphics
 
 Phase 5 (Visibility and knowledge)
-- Fog of War
-- Terrain affects vision and attacks (ranged specifically)
+/ Fog of War
+/ Terrain affects vision and attacks (ranged specifically)
 
 Phase 3 (Combat Implementation):
 - Unit Combat

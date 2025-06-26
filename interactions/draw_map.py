@@ -41,6 +41,7 @@ class Map:
 
 
     def draw_tiles(self, width, height):
+        current_player = self.players.get_player(self.game_manager.current_player)
         self.border_surface = pygame.Surface(self.screen.get_size(), pygame.SRCALPHA)
         self.border_surface.fill((0, 0, 0, 0))  # fully transparent
         hex_radius = config.hex["radius"]
@@ -62,8 +63,8 @@ class Map:
                     self.draw_hex(corners, tile)
               
         # Draw terrain 
-        for column in range(self.map.width):
-            for row in range(self.map.height):
+        for column in range(self.map.width - 1, -1, -1):
+            for row in range(self.map.height - 1, -1, -1):
                 info = saved_info[(row, column)]
                 corners = info[0]
                 x, y = info[1]
@@ -88,9 +89,8 @@ class Map:
                 tile = self.map.get_tile(row, column)
                 
                 self.draw_rivers(corners, tile)
-                self.place_coords((x, y + hex_radius/2), tile)
 
-        
+        #Movement
         for column in range(self.map.width):
             for row in range(self.map.height):
                 info = saved_info[(row, column)]
@@ -99,6 +99,15 @@ class Map:
                 tile = self.map.get_tile(row, column)
                 if tile.path:
                     self.draw_movement(tile)
+        
+        for column in range(self.map.width):
+            for row in range(self.map.height):
+                info = saved_info[(row, column)]
+                corners = info[0]
+                x, y = info[1]
+                tile = self.map.get_tile(row, column)
+                if config.game_type != None and tile.get_coords() in current_player.visible_tiles:
+                    self.place_coords((x, y + hex_radius/2), tile)
         
         if self.map.selected_edge is not None and self.map.hovered_tile is not None:
             column, row = utils.hex_coord_to_coord(self.map.hovered_tile.x, self.map.hovered_tile.y, self.map.hovered_tile.z)
@@ -209,6 +218,7 @@ class Map:
             pygame.draw.line(self.screen, edge_color, corners[4], corners[5], width=10)
         if tile.rivers["NE"] == True:
             pygame.draw.line(self.screen, edge_color, corners[5], corners[0], width=10)
+            
     def draw_movement(self, tile):
         tile_x, tile_y = utils.hex_coord_to_coord(tile.x, tile.y, tile.z)
         tile_pixel = self.axial_to_pixel(tile_x, tile_y, config.hex["radius"], self.screen.get_height())

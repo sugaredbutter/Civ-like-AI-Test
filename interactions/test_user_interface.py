@@ -65,6 +65,10 @@ class UserInterface:
         self.active_button = None
         self.active_menu = self
         self.unit_menu.reset()
+        self.current_player = 0
+        self.ui_menu["Player"] = (self.ui_menu["Player"][0], f"Player {1}")
+
+        print("End")
             
     def left_click(self, event):
         print("Left click detected in UserInterface")

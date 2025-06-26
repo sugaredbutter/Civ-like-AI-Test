@@ -17,7 +17,7 @@ health_bar = {
     "width_ratio": .7,
     "height_ratio": .1,
 }
-in_game = None
+game_type = None
 num_players = 2
 min_players = 2
 max_players = 4

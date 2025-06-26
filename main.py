@@ -40,8 +40,15 @@ dragging = False
 
 initX, initY = 0, 0
 offsetX, offsetY = 0, 0
+clock = pygame.time.Clock()
+delta_time = 0.1
+x = 0
+
+
 while running:
     screen.fill(BACKGROUND_COLOR)
+
+    x += 50 * delta_time
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -66,6 +73,9 @@ while running:
         test_user_interface.active_menu.create_menu()
 
     pygame.display.flip()
+    
+    delta_time = clock.tick(60) / 1000
+    delta_time = max(0.001, min(0.1, delta_time))
     
 
 pygame.quit()

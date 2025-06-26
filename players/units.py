@@ -1,19 +1,24 @@
 import interactions.utils as utils
 import players.units_config as units_config
 import heapq
+from collections import deque
 import map_generator.tile_types_config as tile_config
 
 class Unit:
-    def __init__(self, owner_id, id, type, health, map, coord, unit_handler):
+    def __init__(self, owner_id, id, type, health, vision, map, coord, unit_handler):
         self.owner_id = owner_id
         self.id = id
         self.type = type
         self.attack = units_config.units[type]["attack"]
         self.defense = units_config.units[type]["defense"]
         self.health = health
+        self.vision = vision
+        
+        self.visible_tiles = set()
+
         self.map = map
         self.init_coord = coord
-        self.coord = coord
+        self.coord = coord #(x, y, z)
         
         self.unit_handler = unit_handler
         self.hover_destination = None
@@ -52,6 +57,8 @@ class Unit:
         if tile.unit_id is not None:
             return False
         if destination == self.coord:
+            return False
+        if tile.get_movement() == -1:
             return False
         return True
 
@@ -217,14 +224,46 @@ class Unit:
         self.remaining_movement = self.movement
         self.skip_turn = False
     
+    def get_visibility(self):
+        tile = self.map.get_tile_hex(*self.coord)
+        visibility = self.vision + tile_config.biomes[tile.biome]["Terrain"][tile.terrain]["visibility_bonus"]
+        
+        visibile = set()
+        queue = deque()
+        queue.append((self.coord, visibility, self.vision))
+        while queue:
+            current_coord, visibility, distance = queue.popleft()
+            visibile.add(current_coord) 
+            print(current_coord, visibility, distance)
+            if distance - 1 < 0:
+                continue
+            for neighbor_direction in utils.CUBE_DIRECTIONS_DICT.keys():
+                neighbor = utils.CUBE_DIRECTIONS_DICT[neighbor_direction]
+                neighbor_coord = tuple(x + y for x, y in zip(current_coord, neighbor))
+                tile = self.map.get_tile_hex(*neighbor_coord)     
+                if tile is not None and tile.get_coords() not in visibile:  
+                    neighbor_visibility_bonus = tile_config.biomes[tile.biome]["Terrain"][tile.terrain]["visibility_bonus"]
+                    neighbor_visibility_penalty = tile_config.biomes[tile.biome]["Terrain"][tile.terrain]["visibility_penalty"]
+
+                    if tile.feature != None:
+                        neighbor_visibility_bonus += tile_config.biomes[tile.biome]["Feature"][tile.feature]["visibility_bonus"]
+                        neighbor_visibility_penalty += tile_config.biomes[tile.biome]["Feature"][tile.feature]["visibility_penalty"]
+
+                    if visibility + neighbor_visibility_bonus > 0:
+                        queue.append((tile.get_coords(), visibility - neighbor_visibility_penalty, distance - 1))
+        print(visibile)
+        return visibile
+
+        
+    
 class UnitHandler:
     def __init__(self, map):
         self.map = map
         self.units = {}
         self.id_counter = 0
 
-    def add_unit(self, owner, type, health, coord):
-        unit = Unit(owner, self.id_counter, type, health, self.map, coord, self)
+    def add_unit(self, owner, type, coord):
+        unit = Unit(owner, self.id_counter, type, units_config.units[type]["health"], units_config.units[type]["visibility"], self.map, coord, self)
         self.units[unit.id] = unit
         self.id_counter += 1
         return unit.id

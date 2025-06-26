@@ -6,20 +6,29 @@ biomes = {
             "Hill": {
                 "terrain_color": (38, 145, 38),
                 "hover_color": (61, 196, 61),
-                "movement": 2
+                "movement": 2,
+                "visibility_penalty": 2,
+                "visibility_bonus": 2
             },
             "Mountain": {
                 "terrain_color": (71, 70, 70),
                 "hover_color": (92, 92, 92),
-                "movement": -1
+                "movement": -1,
+                "visibility_penalty": float("inf"),
+                "visibility_bonus": float("inf")
+
             },
             "Flat": {
-                "movement": 1
+                "movement": 1,
+                "visibility_penalty": 1, 
+                "visibility_bonus": 0
             }
         },
         "Feature": {
             "Forest": {
-                
+                "movement": 2,
+                "visibility_penalty": 2,
+                "visibility_bonus": 0
             }
         }
     },
@@ -31,19 +40,30 @@ biomes = {
             "Hill": {
                 "terrain_color": (173, 157, 7),
                 "hover_color": (204, 186, 12),
-                "movement": 2
+                "movement": 2,
+                "visibility_penalty": 2,
+                "visibility_bonus": 2
+
             },
             "Mountain": {
-                "terrain_color": (38, 145, 38),
-                "hover_color": (61, 196, 61),
-                "movement": -1
+                "terrain_color": (82, 57, 8),
+                "hover_color": (191, 131, 13),
+                "movement": -1,
+                "visibility_penalty": float("inf"),
+                "visibility_bonus": float("inf")
             },
             "Flat": {
-                "movement": 1
+                "movement": 1,
+                "visibility_penalty": 1,
+                "visibility_bonus": 0
             }
         },
         "Feature": {
-            
+            "Forest": {
+                "movement": 2,
+                "visibility_penalty": 2,
+                "visibility_bonus": 0
+            }
         }
     }
 }

@@ -8,9 +8,12 @@ class Player:
         self.generated_map = generated_map
         self.unit_handler = unit_handler
         self.units = []
+        
+        self.visible_tiles = set()
+        self.revealed_tiles = []
     
     def place_unit(self, unit_type, x, y, z):
-        new_unit = self.unit_handler.add_unit(self.id, unit_type, UnitConfig.units[unit_type]["health"], (x, y, z))
+        new_unit = self.unit_handler.add_unit(self.id, unit_type, (x, y, z))
         self.units.append(new_unit)
         self.generated_map.get_tile_hex(x, y, z).unit_id = new_unit
         return new_unit
@@ -26,6 +29,15 @@ class Player:
         for unit in self.units:
             self.unit_handler.remove_unit(unit)
         self.units.clear()
+        
+    def update_visibility(self):
+        self.visible_tiles = set()
+        for unit_id in self.units:
+            unit = self.unit_handler.get_unit(unit_id)
+            unit_visible = unit.get_visibility()
+            self.visible_tiles.update(unit_visible)
+        
+    
     
 class PlayerHandler:
     def __init__(self, generated_map, unit_handler):
