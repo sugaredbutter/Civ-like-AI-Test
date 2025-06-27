@@ -229,19 +229,25 @@ class Unit:
         visibility = self.vision + tile_config.biomes[tile.biome]["Terrain"][tile.terrain]["visibility_bonus"]
         
         visibile = set()
+        visited_visibility = {}
         queue = deque()
         queue.append((self.coord, visibility, self.vision))
         while queue:
             current_coord, visibility, distance = queue.popleft()
-            visibile.add(current_coord) 
-            print(current_coord, visibility, distance)
-            if distance - 1 < 0:
+            if current_coord in visited_visibility and visited_visibility[current_coord] >= visibility:
                 continue
+            visited_visibility[current_coord] = visibility
+            
+            # Did it this way so mountains are visible
+            if distance - 1 < -1:
+                continue
+            
+            
             for neighbor_direction in utils.CUBE_DIRECTIONS_DICT.keys():
                 neighbor = utils.CUBE_DIRECTIONS_DICT[neighbor_direction]
                 neighbor_coord = tuple(x + y for x, y in zip(current_coord, neighbor))
                 tile = self.map.get_tile_hex(*neighbor_coord)     
-                if tile is not None and tile.get_coords() not in visibile:  
+                if tile is not None and tile.get_coords():  
                     neighbor_visibility_bonus = tile_config.biomes[tile.biome]["Terrain"][tile.terrain]["visibility_bonus"]
                     neighbor_visibility_penalty = tile_config.biomes[tile.biome]["Terrain"][tile.terrain]["visibility_penalty"]
 
@@ -249,8 +255,13 @@ class Unit:
                         neighbor_visibility_bonus += tile_config.biomes[tile.biome]["Feature"][tile.feature]["visibility_bonus"]
                         neighbor_visibility_penalty += tile_config.biomes[tile.biome]["Feature"][tile.feature]["visibility_penalty"]
 
-                    if visibility + neighbor_visibility_bonus > 0:
-                        queue.append((tile.get_coords(), visibility - neighbor_visibility_penalty, distance - 1))
+                    if visibility > 0 and visibility + neighbor_visibility_bonus > 0 and distance > 0:
+                        visibile.add(neighbor_coord) 
+                    
+                    elif visibility + neighbor_visibility_bonus > 0 and tile.terrain == "Mountain":
+                        visibile.add(neighbor_coord) 
+                    
+                    queue.append((tile.get_coords(), visibility - neighbor_visibility_penalty, distance - 1))
         print(visibile)
         return visibile
 

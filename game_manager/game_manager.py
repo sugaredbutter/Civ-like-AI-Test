@@ -71,6 +71,8 @@ class GameManager:
         current_player = self.players.get_player(self.current_player)
         for unit in current_player.units:
             self.units.get_unit(unit).turn_begin()
+        current_player.update_visibility()
+
         self.test_user_interface.update_UI(self.current_player)
             
         

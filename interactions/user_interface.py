@@ -34,7 +34,7 @@ class UserInterface:
         
         self.tile_controls = controls.TileClickControls(screen, self, generated_map, player_handler, unit_handler)
                 
-        self.Menus = [PainterMenu(screen, self, self, generated_map, self.tile_controls), TerrainMenu(screen, self, self, generated_map, self.tile_controls), FeatureMenu(screen, self, self, generated_map, self.tile_controls), UnitMenu(screen, self, self, self.generated_map, self.player_handler, self.unit_handler, self.tile_controls)]
+        self.Menus = [PainterMenu(screen, self, self, generated_map, self.tile_controls), TerrainMenu(screen, self, self, generated_map, self.tile_controls, self.unit_handler, self.player_handler), FeatureMenu(screen, self, self, generated_map, self.tile_controls), UnitMenu(screen, self, self, self.generated_map, self.player_handler, self.unit_handler, self.tile_controls)]
         menus_list = ["Biomes", "Terrain", "Features", "Units"]
         self.button_menu = {}
 
@@ -277,12 +277,14 @@ class PainterMenu:
         return
     
 class TerrainMenu:
-    def __init__(self, screen, main_menu, parent_menu, generated_map, tile_controls):
+    def __init__(self, screen, main_menu, parent_menu, generated_map, tile_controls, unit_handler, player_handler):
         self.screen = screen
         self.main_menu = main_menu
         self.parent_menu = parent_menu
         self.generated_map = generated_map
         self.tile_controls = tile_controls
+        self.unit_handler = unit_handler
+        self.player_handler = player_handler
         
         self.initX = 0
         self.initY = 0
@@ -410,6 +412,11 @@ class TerrainMenu:
         tile = self.generated_map.get_tile(row, column)
         if tile != None:
             tile.set_terrain(self.active_button)
+            unit_id = tile.unit_id
+            if unit_id != None and tile.terrain == "Mountain":
+                unit = self.unit_handler.get_unit(unit_id)
+                unit_owner = self.player_handler.get_player(unit.owner_id)
+                unit_owner.remove_unit(unit_id)
         return
     
 class FeatureMenu:
@@ -795,7 +802,7 @@ class UnitMenu:
                 if tile.unit_id is not None:
                     self.player_handler.get_player(self.unit_handler.get_unit(tile.unit_id).owner_id).remove_unit(tile.unit_id)
                     self.unit_handler.remove_unit(tile.unit_id)
-            else:
+            elif tile.terrain != "Mountain":
                 if tile.unit_id is not None and (currPlayer != self.unit_handler.get_unit(tile.unit_id).owner_id or self.unit_handler.get_unit(tile.unit_id).type != self.active_button):
                     self.player_handler.get_player(self.unit_handler.get_unit(tile.unit_id).owner_id).remove_unit(tile.unit_id)
                     self.unit_handler.remove_unit(tile.unit_id)
