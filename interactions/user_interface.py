@@ -587,16 +587,16 @@ class FeatureMenu:
                 edge = utils.pos_to_edge(x, y, z)
                 if edge != None:
                     if self.dragging == False:
-                        print("Adjust")
                         self.adding = not tile.rivers[edge]
                     self.generated_map.selected_edge = edge
                     self.generated_map.hovered_tile = tile
 
-                    print(self.adding)
                     self.generated_map.place_river(x, y, z, edge, self.adding)
                     self.active_tile = tile
                     self.active_edge = edge
             else:
+                if self.dragging == False:
+                    self.adding = False if tile.feature == "Forest" else True
                 tile.set_feature(self.active_button, self.adding)
             
         return

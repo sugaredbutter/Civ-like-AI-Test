@@ -19,7 +19,7 @@ biomes = {
 
             },
             "Flat": {
-                "movement": 1,
+                "movement": 0,
                 "visibility_penalty": 1, 
                 "visibility_bonus": 0
             }
@@ -53,7 +53,7 @@ biomes = {
                 "visibility_bonus": float("inf")
             },
             "Flat": {
-                "movement": 1,
+                "movement": 0,
                 "visibility_penalty": 1,
                 "visibility_bonus": 0
             }

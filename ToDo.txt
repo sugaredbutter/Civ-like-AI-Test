@@ -10,14 +10,15 @@ x Movement looks cooler (lines and numbers indiciating turn reached)
 Phase 2 (Improve Foundation):
 x Rivers and other terrain/obstacles
 / More terrains/features (mountains, forests)
-- Improve Graphics
+/ Improve Graphics
 
 Phase 5 (Visibility and knowledge)
 / Fog of War
-/ Terrain affects vision and attacks (ranged specifically)
+/ Terrain affects vision
 
 Phase 3 (Combat Implementation):
 - Unit Combat
+- Unit can only attack enemies it can see
 - Complete unit options (fortify, skip turn) excluding attacks
 - Add more unit types
 

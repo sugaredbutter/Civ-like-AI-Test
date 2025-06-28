@@ -11,6 +11,8 @@ class Map:
         self.players = players
         self.units = units
         self.game_manager = game_manager
+        self.tree_1 = pygame.image.load("Assets/Trees/Tree_1.png")
+        self.plains_hex = pygame.image.load("Assets/Trees/hex_template.png")
         
     def axial_to_pixel(self, q, r, radius, map_pixel_height):
         offsetX = config.map_settings["offsetX"]
@@ -79,6 +81,16 @@ class Map:
                         self.draw_mountain(corners, tile, True)
                     else:
                         self.draw_mountain(corners, tile)
+
+        # Draw terrain 
+        for column in range(self.map.width - 1, -1, -1):
+            for row in range(self.map.height - 1, -1, -1):
+                info = saved_info[(row, column)]
+                corners = info[0]
+                x, y = info[1]
+                tile = self.map.get_tile(row, column)
+                if tile.feature == "Forest":
+                    self.draw_forest(corners, tile)
         
         # Draw Rivers
         for column in range(self.map.width):
@@ -153,7 +165,7 @@ class Map:
             x, y = self.axial_to_pixel(r, q, hex_radius, height)
             pygame.draw.circle(self.screen, (255, 0, 0), (int(x), int(y)), hex_radius/1.2, width=2)
         self.screen.blit(self.border_surface, (0, 0))
-            
+        #self.screen.blit(self.plains_hex, (0, 0))
     def draw_hex(self, corners, tile, hover = False):
         #if tile.path:
         #    pygame.draw.polygon(self.screen, (100, 100, 100), corners, 0)
@@ -204,6 +216,27 @@ class Map:
         #    pygame.draw.arc(self.screen, tile_types_config.terrain[tile.terrain]["hover_color"], rect, 0, math.pi, 2)
         #else:
         #    pygame.draw.arc(self.screen, tile_types_config.terrain[tile.terrain]["terrain_color"], rect, 0, math.pi, 2)
+
+    def draw_forest(self, corners, tile, hover = False):
+        radius = config.hex["radius"]
+        min_x = corners[3][0]
+        min_y = (corners[2][1] + corners[3][1]) / 2
+        max_x = corners[0][0]
+        max_y = corners[0][1]
+        count = 0
+        for i in tile.tree_list:
+            if tile.terrain != "Hill" or count % 3 == 0:
+                tree_point = (min_x + (max_x - min_x) * i[0], min_y + (max_y - min_y) * i[1])
+                tree_width = int(config.hex["radius"] * .75)
+                tree_height = int(config.hex["radius"] * .75)
+                scaled_tree = pygame.transform.scale(self.tree_1, (tree_width, tree_height))
+
+                x = tree_point[0] - tree_width // 2
+                y = tree_point[1] - tree_height
+
+                self.screen.blit(scaled_tree, (x, y))
+            count += 1
+    
     def draw_rivers(self, corners, tile):
         edge_color = (30, 43, 230)
         if tile.rivers["E"] == True:

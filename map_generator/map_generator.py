@@ -27,6 +27,8 @@ class Tile:
         self.init_hill()
         self.mountains_list = []
         self.init_mountains()
+        self.tree_list = []
+        self.init_trees()
         
         self.rivers = {
             "W": False,
@@ -41,30 +43,33 @@ class Tile:
     def get_coords(self):
         return (self.x, self.y, self.z)
     
-    def get_movement(self, direction = None):
-        movement = self.movement
-        if direction == None:
-            return movement
-        if self.rivers[direction] == True:
-            print(movement + tile_types_config.features["River"]["movement"])
-            return movement + tile_types_config.features["River"]["movement"]
-        return movement
-        
-    
     def set_terrain(self, terrain):
         self.terrain = terrain
         self.set_movement()
                 
     def set_feature(self, feature, add):
-        self.feature = feature
-        self.set_movement
+        if add:
+            self.feature = feature
+        else:
+            self.feature = None
+
+        self.set_movement()
         pass
     
     def set_movement(self):
         self.movement = tile_types_config.biomes[self.biome]["Terrain"][self.terrain]["movement"]
         if self.feature != None:
-            tile_types_config.biomes[self.biome]["Feature"][self.feature]["movement"]
-        
+            self.movement += tile_types_config.biomes[self.biome]["Feature"][self.feature]["movement"]
+        if self.movement == 0:
+            self.movement = 1
+    
+    def get_movement(self, direction = None):
+        movement = self.movement
+        if direction == None or movement == -1:
+            return movement
+        if self.rivers[direction] == True:
+            return movement + tile_types_config.features["River"]["movement"]
+        return movement
 
     def init_hill(self, num_hills = -1):
         rng = random.Random(f"{self.x},{self.y},{self.z}")
@@ -78,19 +83,27 @@ class Tile:
             top = ((right_corner[0] + left_corner[0]) / 2, rng.uniform(left_corner[1] + (right_corner[0] - left_corner[0]) / 5, left_corner[1] + (right_corner[0] - left_corner[0]) / 2.5))
             self.hills_list.append((left_corner, right_corner, top))
     
-    def init_mountains(self, num_hills = -1):
+    def init_mountains(self, num = -1):
         rng = random.Random(f"{self.x},{self.y},{self.z}")
-        if num_hills == -1:
-            num_hills = rng.randint(2, 4)
+        if num == -1:
+            num = rng.randint(2, 4)
         self.mountains_list = []
 
-        for i in range(num_hills - 1, -1, -1):
-            left_corner = (rng.uniform(0, 0.4), rng.uniform(i/num_hills, (i+1)/num_hills))
+        for i in range(num - 1, -1, -1):
+            left_corner = (rng.uniform(0, 0.4), rng.uniform(i/num, (i+1)/num))
             right_corner = (rng.uniform(left_corner[0] + .4, min(left_corner[0] + .8, 1)), left_corner[1])
             top = ((right_corner[0] + left_corner[0]) / 2, rng.uniform(left_corner[1] + (right_corner[0] - left_corner[0]) / 1.1, left_corner[1] + (right_corner[0] - left_corner[0]) / .65))
             self.mountains_list.append((left_corner, right_corner, top))
     
-        
+    def init_trees(self, num = -1):
+        rng = random.Random(f"{self.x},{self.y},{self.z}")
+        if num == -1:
+            num = rng.randint(12, 16)
+        self.tree_list = []
+
+        for i in range(num - 1, -1, -1):
+            tree_point = (rng.uniform(0, 1), rng.uniform(i/num, (i+1)/num))
+            self.tree_list.append(tree_point)
             
     def end_game_reset_tile(self):
         self.unit_id = None
