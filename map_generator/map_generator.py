@@ -43,14 +43,27 @@ class Tile:
     def get_coords(self):
         return (self.x, self.y, self.z)
     
+    def set_biome(self, biome):
+        if biome == "Desert":
+            if self.feature == "Forest":
+                self.feature = None
+        self.biome = biome
+    
     def set_terrain(self, terrain):
+        if terrain == "Mountain":
+            if self.feature == "Forest":
+                self.feature = None
+    
         self.terrain = terrain
         self.set_movement()
                 
     def set_feature(self, feature, add):
         if add:
-            self.feature = feature
-        else:
+            if feature == "Forest":
+                if self.biome == "Plain":
+                    if self.terrain in ("Flat", "Hill"):
+                        self.feature = feature
+        elif add == False and self.feature == feature:
             self.feature = None
 
         self.set_movement()
@@ -120,10 +133,8 @@ class HexMap:
         self.selected_edge = None
         for row in range(height): 
             for column in range(width):     
-                print("Orig", row, column) 
                 x, y, z = utils.coord_to_hex_coord(row, column)
                 self.tiles[(x, y, z)] = Tile(x, y, z)
-                print(x, y, z)
 
     def place_river(self, x, y, z, edge, adding):
         tile = self.get_tile_hex(x, y, z)
@@ -148,4 +159,11 @@ class HexMap:
         for tile in self.tiles.values():
             tile.end_game_reset_tile()
         self.selected_tile = None
+
+    def start_game(self):
+        self.selected_tile = None
+        self.hovered_tile = None
+        self.selected_edge = None
+
+
     

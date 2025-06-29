@@ -273,7 +273,7 @@ class PainterMenu:
         column, row = utils.hex_coord_to_coord(x, y, z)
         tile = self.generated_map.get_tile(row, column)
         if tile != None:
-            tile.biome = self.active_button
+            tile.set_biome(self.active_button)
         return
     
 class TerrainMenu:
@@ -1026,11 +1026,11 @@ class UnitControlMenu:
         print("Unit Control Menu Interaction")
         self.interaction_done = True
         unit = self.unit_handler.get_unit(self.active_tile.unit_id)
-        currPlayer = 0
+        if unit == None:
+            print("Unit is none")
+            return
         mouse_x, mouse_y = pygame.mouse.get_pos()
         x, y, z = utils.click_to_hex(mouse_x, mouse_y)
-        column, row = utils.hex_coord_to_coord(x, y, z)
-        tile = self.generated_map.get_tile(row, column)
         if self.active_tile != None:
             if self.active_button == "Move" and not self.dragging:
                 unit.clear_hover_path()

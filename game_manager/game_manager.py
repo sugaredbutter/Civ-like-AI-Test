@@ -25,6 +25,7 @@ class GameManager:
         config.game_type = game_type
         current_player = self.players.get_player(self.current_player)
         current_player.update_visibility()
+        self.generated_map.start_game()
         return True
 
     def start_game_check(self, game_type):
@@ -55,6 +56,7 @@ class GameManager:
         self.units.end_game_reset()
         self.test_user_interface.end_game_reset()
         self.current_player = 0
+        self.players.end_game_reset()
         config.game_type = None
         
     def next_turn(self):

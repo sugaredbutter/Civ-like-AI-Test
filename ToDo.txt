@@ -1,6 +1,6 @@
 x = complete/satisfactory for now
 / = in progress
-- = not started
+- = not started/skipped
 
 To Do
 Phase 1 (Fleshing out movement):
@@ -13,8 +13,10 @@ x Rivers and other terrain/obstacles
 / Improve Graphics
 
 Phase 5 (Visibility and knowledge)
-/ Fog of War
-/ Terrain affects vision
+x Fog of War
+x Terrain affects vision
+x Revealed tiles for each player (basically undiscovered tiles)
+x Account for unrevealed tiles when attempting to traverse
 
 Phase 3 (Combat Implementation):
 - Unit Combat

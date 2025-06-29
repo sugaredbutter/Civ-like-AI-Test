@@ -10,7 +10,7 @@ class Player:
         self.units = []
         
         self.visible_tiles = set()
-        self.revealed_tiles = []
+        self.revealed_tiles = set()
     
     def place_unit(self, unit_type, x, y, z):
         new_unit = self.unit_handler.add_unit(self.id, unit_type, (x, y, z))
@@ -36,7 +36,8 @@ class Player:
             unit = self.unit_handler.get_unit(unit_id)
             unit_visible = unit.get_visibility()
             self.visible_tiles.update(unit_visible)
-        
+            self.visible_tiles.add(unit.coord)
+        self.revealed_tiles.update(self.visible_tiles)
     
     
 class PlayerHandler:
@@ -60,4 +61,8 @@ class PlayerHandler:
     def remove_player(self):
         self.players[-1].remove_all_units()
         del self.players[-1]
+
+    def end_game_reset(self):
+        for players in self.players:
+            players.revealed_tiles = set()
     

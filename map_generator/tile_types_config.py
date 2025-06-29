@@ -15,7 +15,7 @@ biomes = {
                 "hover_color": (92, 92, 92),
                 "movement": -1,
                 "visibility_penalty": float("inf"),
-                "visibility_bonus": float("inf")
+                "visibility_bonus": 2
 
             },
             "Flat": {
@@ -50,7 +50,7 @@ biomes = {
                 "hover_color": (191, 131, 13),
                 "movement": -1,
                 "visibility_penalty": float("inf"),
-                "visibility_bonus": float("inf")
+                "visibility_bonus": 2
             },
             "Flat": {
                 "movement": 0,

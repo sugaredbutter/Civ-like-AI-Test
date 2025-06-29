@@ -21,6 +21,7 @@ generated_map = generate_map.HexMap(ROWS, COLUMNS)
 
 units = unit_handler.UnitHandler(generated_map)
 players = player_handler.PlayerHandler(generated_map, units)
+units.player_handler = players
 players.add_player()  # Red player
 players.add_player()  # Red player
 user_interface = ui.UserInterface(screen, generated_map, players, units)
