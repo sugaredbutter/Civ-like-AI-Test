@@ -70,7 +70,15 @@ class Unit:
             return False
         return True
 
-    
+    def valid_tile_move(self, next_tile):
+        if next_tile.get_movement() == -1:
+            return False
+        if next_tile.unit_id != None:
+            next_tile_unit = self.unit_handler.get_unit(next_tile.unit_id)
+            if next_tile_unit.owner_id != self.owner_id:
+                return False
+        return True
+
     def hex_heuristic(self, a, b):
         return max(abs(a[0] - b[0]), abs(a[1] - b[1]), abs(a[2] - b[2]))
 
@@ -124,16 +132,33 @@ class Unit:
                     heapq.heappush(to_visit, (current_distance + movement_cost + self.hex_heuristic(neighbor_coord, destination) + additional_cost, current_distance + movement_cost + additional_cost, neighbor_coord, current_coord))
         return path
         
+    def move_to_helper(self, destination):
+        
+        done_move = False
+        while done_move == False:
+            done_move = self.move_to(destination)
+        return self.remaining_movement
+
+
+
+    # Will likely need to adjust this for units w/ more movement and less visibility. Need to make it so units gain visibility for each tile along path.
+    # Current idea for move_to is A* -> move one tile -> gain visibility of tile -> A*, and repeat until either reached or out of movement
     def move_to(self, destination):
+
+        #Given the player's current knowledge, is the destination reachable?
         if not self.valid_destination(destination):
             self.destination = None
             self.path = None
-            return
+            return True
         self.destination = destination
         path = self.A_star(destination)
+
+        #Account for tile visibility
         current_player = self.player_handler.get_player(self.owner_id)
         revealed_tiles = current_player.revealed_tiles
         visibile_tiles = current_player.visible_tiles
+
+        #Find next tile for unit to move to
         if destination in path:
             current = destination
             full_path = []
@@ -148,23 +173,38 @@ class Unit:
             orig_tile = self.map.get_tile_hex(*self.coord)
             for x in range(len(full_path)):
                 tile = self.map.get_tile_hex(*full_path[x])
+                self.coord = tile.get_coords()
+                current_player.update_visibility()
                 if (tile.x, tile.y, tile.z) == destination:
                     orig_tile.unit_id = None
                     tile.unit_id = self.id
-                    self.coord = (tile.x, tile.y, tile.z)
+                    self.coord = tile.get_coords()
                     break
                 
+                # Update visibility of unit at tile
                 next_tile = self.map.get_tile_hex(*full_path[x + 1])
+                # See if next tile is reachable. If not, then move unit to tile and redo A*.
+                if self.valid_tile_move(next_tile) == False:
+                    orig_tile.unit_id = None
+                    tile.unit_id = self.id
+                    self.remaining_movement = movement_left
+
+
+                    return False
+
+
                 direction = utils.get_relative_position(tile.get_coords(), next_tile.get_coords())
                 direction = utils.OPPOSITE_EDGES[direction]
-                if next_tile in visibile_tiles:
-                    next_tile_movement = min(self.movement, next_tile.get_movement(direction))
-                else:
-                    next_tile_movement = 1
+
+                
+                next_tile_movement = min(self.movement, next_tile.get_movement(direction))
+                
+
+                
                 if movement_left - next_tile_movement < 0:
                     orig_tile.unit_id = None
                     tile.unit_id = self.id
-                    self.coord = (tile.x, tile.y, tile.z)
+                    self.coord = tile.get_coords()
                     break
                 else:
                     movement_left -= next_tile_movement
@@ -172,7 +212,7 @@ class Unit:
         if self.coord == self.destination:
             self.destination = None
             self.path = None
-        return self.remaining_movement
+        return True
 
                     
     def move_to_hover(self, destination):
@@ -211,7 +251,7 @@ class Unit:
         current_player = self.player_handler.get_player(self.owner_id)
         revealed_tiles = current_player.revealed_tiles
         visibile_tiles = current_player.visible_tiles
-        movement_left = self.movement
+        movement_left = self.remaining_movement
         turned_reached = 0
         for x in range(len(full_path)):
             tile = self.map.get_tile_hex(*full_path[x])

@@ -14,4 +14,12 @@ units = {
         "visibility": 2
 
     },
+    "Cavalry": {
+        "health": 100,
+        "attack": 30,
+        "defense": 3,
+        "movement": 4,
+        "visibility": 2
+
+    }
 }

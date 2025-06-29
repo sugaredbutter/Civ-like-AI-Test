@@ -622,7 +622,7 @@ class UnitMenu:
         self.padding = 10
         self.valid_hover = True
 
-        buttons = ["Back", "Melee", "Ranged", "Remove"]
+        buttons = ["Back", "Melee", "Ranged", "Cavalry", "Remove"]
         self.player_buttons = ["Player 1", "Player 2", "Player 3", "Player 4", "Player 5"] #player 5 used as place holder for removing player
         self.adjust_num_players = ["+", "-"]
         self.active_button = None
@@ -1034,7 +1034,7 @@ class UnitControlMenu:
         if self.active_tile != None:
             if self.active_button == "Move" and not self.dragging:
                 unit.clear_hover_path()
-                movement_remaining = unit.move_to((x, y, z))
+                movement_remaining = unit.move_to_helper((x, y, z))
                 self.active_button = None
                 if movement_remaining == 0:
                     self.reset()
