@@ -68,10 +68,8 @@ class UserInterface:
         self.current_player = 0
         self.ui_menu["Player"] = (self.ui_menu["Player"][0], f"Player {1}")
 
-        print("End")
             
     def left_click(self, event):
-        print("Left click detected in UserInterface")
         self.clicked = True
         if self.is_clicked():
             self.clicked_button = True
@@ -80,7 +78,6 @@ class UserInterface:
         self.set_init(event)
     
     def left_click_up(self):
-        print("Left click up detected in UserInterface")
         mouse_x, mouse_y = pygame.mouse.get_pos()
         tile = self.generated_map.get_tile_hex(*utils.click_to_hex(mouse_x, mouse_y))
         unit = self.unit_handler.get_unit(tile.unit_id) if tile != None else None

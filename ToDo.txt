@@ -3,13 +3,14 @@ x = complete/satisfactory for now
 - = not started/skipped
 
 To Do
-Phase 1 (Fleshing out movement):
+Phase 1 (Movement):
+x Movement using A* and taking into account edge cases
 x Movement looks cooler (lines and numbers indiciating turn reached)
 - Possibility (animate troop unit (basically show path it took instead of tp to dst))
 
 Phase 2 (Improve Foundation):
 x Rivers and other terrain/obstacles
-/ More terrains/features (mountains, forests)
+x More terrains/features (mountains, forests)
 / Improve Graphics
 
 Phase 5 (Visibility and knowledge)
@@ -19,13 +20,16 @@ x Revealed tiles for each player (basically undiscovered tiles)
 x Account for unrevealed tiles when attempting to traverse
 
 Phase 3 (Combat Implementation):
-- Unit Combat
+x Zone of Control
+/ Unit Combat
 - Unit can only attack enemies it can see
 - Complete unit options (fortify, skip turn) excluding attacks
 - Add more unit types
 
 Phase 5 (AI):
 - Implement AI
+- AI v AI
+- Player v AI
 
 Phase 6 (Flesh out):
 - Implement UX and randomize terrain/map
