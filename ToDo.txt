@@ -7,7 +7,7 @@ Phase 1 (Movement):
 x Movement using A* and taking into account edge cases
 x Movement looks cooler (lines and numbers indiciating turn reached)
 - Possibility (animate troop unit (basically show path it took instead of tp to dst))
-- Unit swapping if both units have movement
+x Unit swapping if both units have movement
 
 Phase 2 (Improve Foundation):
 x Rivers and other terrain/obstacles
@@ -33,6 +33,8 @@ Phase 5 (AI):
 - Player v AI
 
 Phase 6 (Flesh out):
-- Implement UX and randomize terrain/map
+- Randomize terrain/map
 - Difficulty modifiers?
 - Clean up code (particularly draw_map)
+- Right click support
+- UX for movement and attack. Possibly combine both.

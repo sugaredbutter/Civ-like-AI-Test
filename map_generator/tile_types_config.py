@@ -59,11 +59,7 @@ biomes = {
             }
         },
         "Feature": {
-            "Forest": {
-                "movement": 2,
-                "visibility_penalty": 2,
-                "visibility_bonus": 0
-            }
+            
         }
     }
 }

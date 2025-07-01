@@ -16,7 +16,6 @@ units = {
         "visibility": 2,
         "defense_zoc": False,
         "attack_zoc": True
-
     },
     "Cavalry": {
         "health": 100,
@@ -26,6 +25,5 @@ units = {
         "visibility": 2,
         "defense_zoc": True,
         "attack_zoc": True
-
     }
 }

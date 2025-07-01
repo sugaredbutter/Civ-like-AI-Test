@@ -153,7 +153,7 @@ class Map:
         for column in range(self.map.width):
             for row in range(self.map.height):
                 tile = self.map.get_tile(row, column)
-                if config.game_type != None and tile.get_coords() not in current_player.revealed_tiles:
+                if config.game_type != None and tile.get_coords() not in current_player.visible_tiles:
                     continue
                 if tile.unit_id != None:
                     x, y = self.axial_to_pixel(column, row, hex_radius, height)

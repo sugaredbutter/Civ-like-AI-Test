@@ -134,7 +134,7 @@ class Unit:
     
 
     # A* for finding shortest path to destination given player's knowledge
-    def A_star(self, destination, swap = False):
+    def A_star(self, destination, swap = False, attack = False):
         current_player = self.player_handler.get_player(self.owner_id)
         revealed_tiles = current_player.revealed_tiles
         visibile_tiles = current_player.visible_tiles
@@ -199,7 +199,7 @@ class Unit:
                             temp_movement_remaining = self.movement
                         if swap == False and temp_movement_remaining - movement_cost <= 0 and tile.unit_id is not None:
                             continue
-                        if tile.unit_id is not None and self.unit_handler.get_unit(tile.unit_id).owner_id != self.owner_id:
+                        if attack == False and tile.unit_id is not None and self.unit_handler.get_unit(tile.unit_id).owner_id != self.owner_id:
                             continue
 
                     # Score to target and cost of reaching neighbor tile
@@ -526,6 +526,9 @@ class Unit:
                     continue
             reachable_movement[current_coord] = movement_left
             reachable.add(current_coord)
+            enter_ZOC = self.zone_of_control(current_coord)
+            if enter_ZOC and self.coord != current_coord:
+                continue
             if movement_left == 0:
                 continue
             if current_tile.unit_id != None:
@@ -550,6 +553,66 @@ class Unit:
                 if movement_left - movement_cost >= 0:
                     queue.append((tile.get_coords(), movement_left - movement_cost, True if (current_tile.unit_id != None and current_tile.get_coords() != self.coord) else False))
         return reachable
+    
+    def attack_enemy(self, destination):
+        full_path = self.A_star(destination, False, True)
+        current_player = self.player_handler.get_player(self.owner_id)
+        revealed_tiles = current_player.revealed_tiles
+        visibile_tiles = current_player.visible_tiles
+
+        #Find next tile for unit to move to
+        if destination in full_path:
+            self.path = full_path
+            movement_left = self.remaining_movement
+            turn_reached = 0
+            orig_tile = self.map.get_tile_hex(*self.coord)
+            for x in range(len(full_path)):
+                tile = self.map.get_tile_hex(*full_path[x])
+                enter_ZOC = self.zone_of_control(tile.get_coords())
+                if enter_ZOC and tile.get_coords() != self.coord:
+                    movement_left = 0
+                self.coord = tile.get_coords()
+                current_player.update_visibility()
+                
+                
+                # Update visibility of unit at tile
+                next_tile = self.map.get_tile_hex(*full_path[x + 1])
+                
+                if next_tile.get_coords() == destination:
+                    orig_tile.unit_id = None
+                    tile.unit_id = self.id
+                    self.coord = tile.get_coords()
+                    break
+                # See if next tile is reachable. If not, then move unit to tile and redo A*.
+                if self.valid_tile_move(next_tile) == False:
+                    orig_tile.unit_id = None
+                    tile.unit_id = self.id
+                    self.remaining_movement = movement_left
+
+
+                    return False
+
+
+                direction = utils.get_relative_position(tile.get_coords(), next_tile.get_coords())
+                direction = utils.OPPOSITE_EDGES[direction]
+
+                
+                next_tile_movement = min(self.movement, next_tile.get_movement(direction))
+                
+
+                
+                if movement_left - next_tile_movement < 0:
+                    orig_tile.unit_id = None
+                    tile.unit_id = self.id
+                    self.coord = tile.get_coords()
+                    break
+                else:
+                    movement_left -= next_tile_movement
+            self.remaining_movement = movement_left
+        if self.coord == self.destination:
+            self.destination = None
+            self.path = None
+        pass
 
     def get_attackable_units(self):
         current_player = self.player_handler.get_player(self.owner_id)
