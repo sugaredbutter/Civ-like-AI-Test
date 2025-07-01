@@ -3,7 +3,7 @@ import players.units_config as units_config
 import heapq
 from collections import deque
 import map_generator.tile_types_config as tile_config
-
+import random
 class Unit:
     def __init__(self, owner_id, id, type, health, vision, map, coord, unit_handler, player_handler):
         self.owner_id = owner_id
@@ -11,12 +11,13 @@ class Unit:
         self.type = type
         self.attack = units_config.units[type]["attack"]
         self.defense = units_config.units[type]["defense"]
-        self.health = health
+        self.health = random.randint(1, 100)
         self.vision = vision
         self.has_ZOC = units_config.units[type]["defense_zoc"]
         self.follows_ZOC = units_config.units[type]["attack_zoc"]
         
         self.visible_tiles = set()
+        self.attackable_tiles = set()
 
         self.map = map
         self.init_coord = coord
@@ -133,7 +134,7 @@ class Unit:
     
 
     # A* for finding shortest path to destination given player's knowledge
-    def A_star(self, destination):
+    def A_star(self, destination, swap = False):
         current_player = self.player_handler.get_player(self.owner_id)
         revealed_tiles = current_player.revealed_tiles
         visibile_tiles = current_player.visible_tiles
@@ -168,9 +169,11 @@ class Unit:
                 neighbor = utils.CUBE_DIRECTIONS_DICT[neighbor_direction]
                 neighbor_coord = tuple(x + y for x, y in zip(current_coord, neighbor))
                 tile = self.map.get_tile_hex(*neighbor_coord)
-
                 # Tile doesn't exist
                 if tile is None:
+                    continue
+                
+                if swap == True and tile.get_coords() not in visibile_tiles:
                     continue
 
                 # Tile not revealed so assume cost of 1
@@ -194,7 +197,7 @@ class Unit:
                     if tile.get_coords() in visibile_tiles:
                         if additional_cost > 0:
                             temp_movement_remaining = self.movement
-                        if temp_movement_remaining - movement_cost <= 0 and tile.unit_id is not None:
+                        if swap == False and temp_movement_remaining - movement_cost <= 0 and tile.unit_id is not None:
                             continue
                         if tile.unit_id is not None and self.unit_handler.get_unit(tile.unit_id).owner_id != self.owner_id:
                             continue
@@ -207,10 +210,98 @@ class Unit:
                     cost += self.movement if enter_ZOC else 0
                     
                     heapq.heappush(to_visit, (score, cost, neighbor_coord, current_coord))
-        return path
+        full_path = []
+
+        if destination in path:
+            current = destination
+            while current != self.coord:
+                full_path.append(current)
+                current = path[current]
+            full_path.append(self.coord)
+            full_path.reverse()
+        return full_path
+    
+    def turns_to_reach(self, destination, full_path):
+        current_player = self.player_handler.get_player(self.owner_id)
+        revealed_tiles = current_player.revealed_tiles
+        visibile_tiles = current_player.visible_tiles
+        movement_left = self.remaining_movement
+        turn_reached = 0
+        for x in range(len(full_path)):
+            tile = self.map.get_tile_hex(*full_path[x])
+            enter_ZOC = self.zone_of_control(tile.get_coords())
+            if enter_ZOC and tile.get_coords() != self.coord:
+                movement_left = 0
+            if tile.get_coords() == destination:
+                return turn_reached + 1
+            
+            next_tile = self.map.get_tile_hex(*full_path[x + 1])
+            direction = utils.get_relative_position(tile.get_coords(), next_tile.get_coords())
+            direction = utils.OPPOSITE_EDGES[direction]
+            if next_tile.get_coords() in revealed_tiles:
+                next_tile_movement = min(self.movement, next_tile.get_movement(direction))
+            else:
+                next_tile_movement = 1
+            if movement_left - next_tile_movement < 0:
+                turn_reached += 1
+                movement_left = self.movement - next_tile_movement
+            else:
+                movement_left -= next_tile_movement
+        return -1
+        
+    def swap_units(self, destination, destination_unit):
+        unit_1_path = self.A_star(destination, True)
+        unit_2_path = destination_unit.A_star(self.coord, True)
+        if destination in unit_1_path:
+            unit_1_turn_reached = self.turns_to_reach(destination, unit_1_path)
+            unit_2_turn_reached = destination_unit.turns_to_reach(self.coord, unit_2_path)
+            if unit_1_turn_reached == 1 and unit_2_turn_reached == 1:
+                destination_unit.swap_move(self.coord, unit_2_path)
+                self.swap_move(destination, unit_1_path)
+
+            
+    def swap_move(self, destination, full_path):
+        current_player = self.player_handler.get_player(self.owner_id)
+        revealed_tiles = current_player.revealed_tiles
+        visibile_tiles = current_player.visible_tiles
+        movement_left = self.remaining_movement
+        turn_reached = 0
+        orig_tile = self.map.get_tile_hex(*self.coord)
+        for x in range(len(full_path)):
+            tile = self.map.get_tile_hex(*full_path[x])
+            enter_ZOC = self.zone_of_control(tile.get_coords())
+            if enter_ZOC and tile.get_coords() != self.coord:
+                movement_left = 0
+            self.coord = tile.get_coords()
+            current_player.update_visibility()
+            
+            if tile.get_coords() == destination:
+                tile.unit_id = self.id
+                self.coord = tile.get_coords()
+                break
+            
+            # Update visibility of unit at tile
+            next_tile = self.map.get_tile_hex(*full_path[x + 1])
+            # See if next tile is reachable. If not, then move unit to tile and redo A*.
+
+            direction = utils.get_relative_position(tile.get_coords(), next_tile.get_coords())
+            direction = utils.OPPOSITE_EDGES[direction]
+
+            
+            next_tile_movement = min(self.movement, next_tile.get_movement(direction))
+            
+            
+            movement_left -= next_tile_movement
+        self.remaining_movement = movement_left
         
     def move_to_helper(self, destination):
-        
+        destination_tile = self.map.get_tile_hex(*destination)
+        if destination_tile != None and destination_tile.unit_id != None:
+            destination_unit = self.unit_handler.get_unit(destination_tile.unit_id)
+            if destination_unit.owner_id == self.owner_id:
+                self.swap_units(destination, destination_unit)
+                return self.remaining_movement
+                
         done_move = False
         while done_move == False:
             done_move = self.move_to(destination)
@@ -228,7 +319,7 @@ class Unit:
             self.path = None
             return True
         self.destination = destination
-        path = self.A_star(destination)
+        full_path = self.A_star(destination)
 
         #Account for tile visibility
         current_player = self.player_handler.get_player(self.owner_id)
@@ -236,17 +327,10 @@ class Unit:
         visibile_tiles = current_player.visible_tiles
 
         #Find next tile for unit to move to
-        if destination in path:
-            current = destination
-            full_path = []
-            while current != self.coord:
-                full_path.append(current)
-                current = path[current]
-            full_path.append(self.coord)
-            full_path.reverse()
+        if destination in full_path:
             self.path = full_path
             movement_left = self.remaining_movement
-            turned_reached = 0
+            turn_reached = 0
             orig_tile = self.map.get_tile_hex(*self.coord)
             for x in range(len(full_path)):
                 tile = self.map.get_tile_hex(*full_path[x])
@@ -299,22 +383,29 @@ class Unit:
     def move_to_hover(self, destination):
         if self.hover_destination != destination and self.hover_destination is not None:
             self.clear_hover_path()
+        destination_tile = self.map.get_tile_hex(*destination)
+        if destination_tile != None and destination_tile.unit_id != None:
+            destination_unit = self.unit_handler.get_unit(destination_tile.unit_id)
+            if destination_unit.owner_id == self.owner_id:
+                self.hover_destination = destination
+                self.swap_hover(destination, destination_unit)
+                return
         if not self.valid_destination(destination):
             return
-            
-            
         self.hover_destination = destination
-        path = self.A_star(destination)
-        if destination in path:
-            current = destination
-            full_path = []
-            while current != self.coord:
-                full_path.append(current)
-                current = path[current]
-            full_path.append(self.coord)
-            full_path.reverse()
+        full_path = self.A_star(destination)
+        if destination in full_path:
             self.display_hover_path(full_path, destination)
-            
+    
+    def swap_hover(self, destination, destination_unit):
+        unit_1_path = self.A_star(destination, True)
+        unit_2_path = destination_unit.A_star(self.coord, True)
+        if destination in unit_1_path:
+            unit_1_turn_reached = self.turns_to_reach(destination, unit_1_path)
+            unit_2_turn_reached = destination_unit.turns_to_reach(self.coord, unit_2_path)
+            if unit_1_turn_reached == 1 and unit_2_turn_reached == 1:
+                self.display_hover_path(unit_1_path, destination)
+
 
     def clear_hover_path(self):
         if self.hover_destination is not None:
@@ -333,7 +424,7 @@ class Unit:
         revealed_tiles = current_player.revealed_tiles
         visibile_tiles = current_player.visible_tiles
         movement_left = self.remaining_movement
-        turned_reached = 0
+        turn_reached = 0
         for x in range(len(full_path)):
             tile = self.map.get_tile_hex(*full_path[x])
             enter_ZOC = self.zone_of_control(tile.get_coords())
@@ -341,7 +432,7 @@ class Unit:
                 movement_left = 0
             if (tile.x, tile.y, tile.z) == destination:
                 tile.path = True
-                tile.turn_reached = turned_reached + 1
+                tile.turn_reached = turn_reached + 1
                 break
             elif (tile.x, tile.y, tile.z) == self.coord:
                 tile.neighbor = self.map.get_tile_hex(*full_path[x + 1])
@@ -358,8 +449,8 @@ class Unit:
             else:
                 next_tile_movement = 1
             if movement_left - next_tile_movement < 0:
-                tile.turn_reached = turned_reached + 1
-                turned_reached += 1
+                tile.turn_reached = turn_reached + 1
+                turn_reached += 1
                 movement_left = self.movement - next_tile_movement
             else:
                 movement_left -= next_tile_movement
@@ -456,8 +547,8 @@ class Unit:
                     if movement_cost == -1:
                         continue
                     movement_cost = min(self.movement, movement_cost)
-                
-                queue.append((tile.get_coords(), movement_left - movement_cost, True if current_tile.unit_id != None else False))
+                if movement_left - movement_cost >= 0:
+                    queue.append((tile.get_coords(), movement_left - movement_cost, True if (current_tile.unit_id != None and current_tile.get_coords() != self.coord) else False))
         return reachable
 
     def get_attackable_units(self):
@@ -466,14 +557,26 @@ class Unit:
         visibile_tiles = current_player.visible_tiles
         tiles_in_range = self.BFS()
         tiles_in_range &= visibile_tiles
-        reachable_tiles = set()
-        print(tiles_in_range)
+        attackable_tiles = set()
         for tile_coord in tiles_in_range:
             tile = self.map.get_tile_hex(*tile_coord)     
             if tile.unit_id != None:
                 unit = self.unit_handler.get_unit(tile.unit_id)
                 if unit.owner_id != self.owner_id:
-                    print(tile.get_coords())
+                    attackable_tiles.add(tile_coord)
+        return attackable_tiles
+    
+    def highlight_attackable(self):
+        attackable_tiles = self.get_attackable_units()
+        self.attackable_tiles = attackable_tiles
+        for tile_coord in attackable_tiles:
+            tile = self.map.get_tile_hex(*tile_coord)     
+            tile.attackable = True
+            
+    def clear_attackable(self):
+        for tile_coord in self.attackable_tiles:
+            tile = self.map.get_tile_hex(*tile_coord)     
+            tile.attackable = False
         
     
 class UnitHandler:

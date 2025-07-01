@@ -7,6 +7,7 @@ Phase 1 (Movement):
 x Movement using A* and taking into account edge cases
 x Movement looks cooler (lines and numbers indiciating turn reached)
 - Possibility (animate troop unit (basically show path it took instead of tp to dst))
+- Unit swapping if both units have movement
 
 Phase 2 (Improve Foundation):
 x Rivers and other terrain/obstacles
@@ -22,7 +23,7 @@ x Account for unrevealed tiles when attempting to traverse
 Phase 3 (Combat Implementation):
 x Zone of Control
 / Unit Combat
-- Unit can only attack enemies it can see
+/ Unit can only attack enemies it can see
 - Complete unit options (fortify, skip turn) excluding attacks
 - Add more unit types
 
@@ -34,3 +35,4 @@ Phase 5 (AI):
 Phase 6 (Flesh out):
 - Implement UX and randomize terrain/map
 - Difficulty modifiers?
+- Clean up code (particularly draw_map)

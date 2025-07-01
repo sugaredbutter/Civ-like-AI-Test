@@ -23,6 +23,8 @@ class Tile:
         self.neighbor = None
         self.turn_reached = -1
         
+        self.attackable = False
+        
         self.hills_list = []
         self.init_hill()
         self.mountains_list = []

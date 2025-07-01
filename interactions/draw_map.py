@@ -49,6 +49,7 @@ class Map:
         self.border_surface.fill((0, 0, 0, 0))  # fully transparent
 
         self.fog_surface = pygame.Surface((width, height), pygame.SRCALPHA)
+        self.attackable_surface = pygame.Surface((width, height), pygame.SRCALPHA)
 
         hex_radius = config.hex["radius"]
         mouse_x, mouse_y = pygame.mouse.get_pos()
@@ -183,8 +184,12 @@ class Map:
                     continue
                 if config.game_type != None and tile.get_coords() not in current_player.visible_tiles:
                     pygame.draw.polygon(self.fog_surface, (0, 0, 0, 100), corners)
+                elif config.game_type != None and tile.attackable == True:
+                    pygame.draw.polygon(self.attackable_surface, (255, 34, 18, 100), corners)
+
         self.screen.blit(self.border_surface, (0, 0))
         self.screen.blit(self.fog_surface, (0, 0))
+        self.screen.blit(self.attackable_surface, (0, 0))
         #self.screen.blit(self.plains_hex, (0, 0))
     def draw_hex(self, corners, tile, hover = False):
         #if tile.path:

@@ -998,6 +998,8 @@ class UnitControlMenu:
                 elif self.active_button == key:
                     if self.active_button == "Move":
                         unit.clear_hover_path()
+                    if self.active_button == "Attack":
+                        unit.clear_attackable()
 
                     self.active_button = None
 
@@ -1005,7 +1007,7 @@ class UnitControlMenu:
                     self.active_button = key
                     if self.active_button == "Attack":
                         unit = self.unit_handler.get_unit(self.active_tile.unit_id)
-                        unit.get_attackable_units()
+                        unit.highlight_attackable()
 
         if self.active_unit != None and self.active_unit.destination != None:
             self.active_unit.move_to_hover(self.active_unit.destination)
