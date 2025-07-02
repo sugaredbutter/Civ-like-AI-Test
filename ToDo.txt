@@ -21,7 +21,7 @@ x Revealed tiles for each player (basically undiscovered tiles)
 x Account for unrevealed tiles when attempting to traverse
 
 Phase 3 (Combat Implementation):
-x Zone of Control
+/ Zone of Control
 / Unit Combat
 / Unit can only attack enemies it can see
 - Complete unit options (fortify, skip turn) excluding attacks

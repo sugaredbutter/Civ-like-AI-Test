@@ -1044,8 +1044,7 @@ class UnitControlMenu:
                 self.player_handler.get_player(self.current_player).update_visibility()
 
             if self.active_button == "Attack" and not self.dragging:
-                unit.clear_hover_path()
-                movement_remaining = unit.move_to_helper((x, y, z))
+                movement_remaining = unit.attack_enemy((x, y, z))
                 self.active_button = None
                 if movement_remaining == 0:
                     self.reset()

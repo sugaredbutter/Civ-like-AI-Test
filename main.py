@@ -9,6 +9,7 @@ import interactions.test_user_interface as test_ui
 import players.units as unit_handler
 import players.player_handler as player_handler
 import game_manager.game_manager as game
+import combat_manager.combat_manager as combat_manager
 pygame.init()
 
 WIDTH, HEIGHT = config.map_settings["pixel_width"], config.map_settings["pixel_height"]
@@ -19,7 +20,8 @@ pygame.display.set_caption("Hex Map")
 BACKGROUND_COLOR = (255, 255, 255)  # White
 generated_map = generate_map.HexMap(ROWS, COLUMNS)
 
-units = unit_handler.UnitHandler(generated_map)
+combat = combat_manager.CombatManager()
+units = unit_handler.UnitHandler(generated_map, combat)
 players = player_handler.PlayerHandler(generated_map, units)
 units.player_handler = players
 players.add_player()  # Red player

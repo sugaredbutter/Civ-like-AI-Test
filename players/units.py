@@ -5,7 +5,8 @@ from collections import deque
 import map_generator.tile_types_config as tile_config
 import random
 class Unit:
-    def __init__(self, owner_id, id, type, health, vision, map, coord, unit_handler, player_handler):
+    def __init__(self, owner_id, id, type, health, vision, map, coord, unit_handler, player_handler, combat_manager):
+        self.combat_manager = combat_manager
         self.owner_id = owner_id
         self.id = id
         self.type = type
@@ -32,6 +33,7 @@ class Unit:
 
         self.alive = True
         self.fortified = False
+        self.ZOC_locked = False
         
         self.movement = units_config.units[type]["movement"]
         self.remaining_movement = self.movement
@@ -296,7 +298,7 @@ class Unit:
         
     def move_to_helper(self, destination):
         destination_tile = self.map.get_tile_hex(*destination)
-        if destination_tile != None and destination_tile.unit_id != None:
+        if destination_tile != None and destination_tile.unit_id != None and not self.ZOC_locked:
             destination_unit = self.unit_handler.get_unit(destination_tile.unit_id)
             if destination_unit.owner_id == self.owner_id:
                 self.swap_units(destination, destination_unit)
@@ -330,13 +332,19 @@ class Unit:
         if destination in full_path:
             self.path = full_path
             movement_left = self.remaining_movement
+            if self.ZOC_locked:
+                movement_left = 0
             turn_reached = 0
             orig_tile = self.map.get_tile_hex(*self.coord)
             for x in range(len(full_path)):
                 tile = self.map.get_tile_hex(*full_path[x])
                 enter_ZOC = self.zone_of_control(tile.get_coords())
                 if enter_ZOC and tile.get_coords() != self.coord:
-                    movement_left = 0
+                    self.ZOC_locked = True
+                    orig_tile.unit_id = None
+                    tile.unit_id = self.id
+                    self.coord = tile.get_coords()
+                    break
                 self.coord = tile.get_coords()
                 current_player.update_visibility()
                 
@@ -424,6 +432,8 @@ class Unit:
         revealed_tiles = current_player.revealed_tiles
         visibile_tiles = current_player.visible_tiles
         movement_left = self.remaining_movement
+        if self.ZOC_locked:
+            movement_left = 0
         turn_reached = 0
         for x in range(len(full_path)):
             tile = self.map.get_tile_hex(*full_path[x])
@@ -457,12 +467,13 @@ class Unit:
         self.hover_path = full_path
     
     def end_turn(self):
-        if self.remaining_movement > 0 and self.destination is not None:
+        if self.remaining_movement > 0 and self.destination is not None and not self.ZOC_locked:
             if self.coord != self.destination:
                 self.move_to(self.destination)
                 
     
     def turn_begin(self):
+        self.ZOC_locked = False
         self.remaining_movement = self.movement
         self.skip_turn = False
     
@@ -513,9 +524,9 @@ class Unit:
         reachable = set()
         reachable_movement = {}
         queue = deque()
-        queue.append((self.coord, self.movement, False))
+        queue.append((self.coord, self.movement, False, False))
         while queue:
-            current_coord, movement_left, unit_prior = queue.popleft()
+            current_coord, movement_left, unit_prior, zoc_locked = queue.popleft()
             if current_coord in reachable_movement and reachable_movement[current_coord] >= movement_left:
                 continue
             
@@ -527,9 +538,10 @@ class Unit:
             reachable_movement[current_coord] = movement_left
             reachable.add(current_coord)
             enter_ZOC = self.zone_of_control(current_coord)
+            is_zoc_locked = False
             if enter_ZOC and self.coord != current_coord:
-                continue
-            if movement_left == 0:
+                is_zoc_locked = True
+            if movement_left == 0 or zoc_locked:
                 continue
             if current_tile.unit_id != None:
                 unit = self.unit_handler.get_unit(current_tile.unit_id)
@@ -551,10 +563,14 @@ class Unit:
                         continue
                     movement_cost = min(self.movement, movement_cost)
                 if movement_left - movement_cost >= 0:
-                    queue.append((tile.get_coords(), movement_left - movement_cost, True if (current_tile.unit_id != None and current_tile.get_coords() != self.coord) else False))
+                    queue.append((tile.get_coords(), movement_left - movement_cost, True if (current_tile.unit_id != None and current_tile.get_coords() != self.coord) else False, is_zoc_locked))
         return reachable
     
     def attack_enemy(self, destination):
+        attackable_tiles = self.get_attackable_units()
+        if destination not in attackable_tiles:
+            return self.movement
+        
         full_path = self.A_star(destination, False, True)
         current_player = self.player_handler.get_player(self.owner_id)
         revealed_tiles = current_player.revealed_tiles
@@ -583,14 +599,6 @@ class Unit:
                     tile.unit_id = self.id
                     self.coord = tile.get_coords()
                     break
-                # See if next tile is reachable. If not, then move unit to tile and redo A*.
-                if self.valid_tile_move(next_tile) == False:
-                    orig_tile.unit_id = None
-                    tile.unit_id = self.id
-                    self.remaining_movement = movement_left
-
-
-                    return False
 
 
                 direction = utils.get_relative_position(tile.get_coords(), next_tile.get_coords())
@@ -612,7 +620,10 @@ class Unit:
         if self.coord == self.destination:
             self.destination = None
             self.path = None
-        pass
+        enemy_unit = self.unit_handler.get_unit(self.map.get_tile_hex(*destination).unit_id)
+        combat_results = self.combat_manager.combat(self, enemy_unit)
+        print(combat_results)
+        return self.remaining_movement
 
     def get_attackable_units(self):
         current_player = self.player_handler.get_player(self.owner_id)
@@ -643,14 +654,15 @@ class Unit:
         
     
 class UnitHandler:
-    def __init__(self, map):
+    def __init__(self, map, combat_manager):
         self.map = map
         self.player_handler = None
+        self.combat_manager = combat_manager
         self.units = {}
         self.id_counter = 0
 
     def add_unit(self, owner, type, coord):
-        unit = Unit(owner, self.id_counter, type, units_config.units[type]["health"], units_config.units[type]["visibility"], self.map, coord, self, self.player_handler)
+        unit = Unit(owner, self.id_counter, type, units_config.units[type]["health"], units_config.units[type]["visibility"], self.map, coord, self, self.player_handler, self.combat_manager)
         self.units[unit.id] = unit
         self.id_counter += 1
         return unit.id
