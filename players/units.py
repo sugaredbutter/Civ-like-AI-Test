@@ -12,6 +12,7 @@ class Unit:
         self.type = type
         self.attack = units_config.units[type]["attack"]
         self.defense = units_config.units[type]["defense"]
+        self.range = units_config.units[type].get("range", None)
         self.health = random.randint(1, 100)
         self.orig_health = self.health
 
@@ -19,7 +20,6 @@ class Unit:
         self.has_ZOC = units_config.units[type]["defense_zoc"]
         self.follows_ZOC = units_config.units[type]["attack_zoc"]
         
-        self.visible_tiles = set()
         self.attackable_tiles = set()
 
         self.map = map
@@ -483,6 +483,10 @@ class Unit:
     def get_visibility(self):
         tile = self.map.get_tile_hex(*self.coord)
         visibility = self.vision + tile_config.biomes[tile.biome]["Terrain"][tile.terrain]["visibility_bonus"]
+        return self.BFS_visibility(visibility)
+        
+    def BFS_visibility(self, visibility): 
+        tile = self.map.get_tile_hex(*self.coord)
         
         visibile = set()
         visited_visibility = {}
@@ -518,16 +522,16 @@ class Unit:
                         visibile.add(neighbor_coord) 
                     
                     queue.append((tile.get_coords(), visibility - neighbor_visibility_penalty, distance - 1))
-        return visibile
-        
-    def BFS(self):
+        return visibile   
+    
+    def BFS_movement(self):
         current_player = self.player_handler.get_player(self.owner_id)
         revealed_tiles = current_player.revealed_tiles
         visibile_tiles = current_player.visible_tiles
         reachable = set()
         reachable_movement = {}
         queue = deque()
-        queue.append((self.coord, self.movement, False, False))
+        queue.append((self.coord, self.remaining_movement, False, False))
         while queue:
             current_coord, movement_left, unit_prior, zoc_locked = queue.popleft()
             if current_coord in reachable_movement and reachable_movement[current_coord] >= movement_left:
@@ -569,7 +573,70 @@ class Unit:
                     queue.append((tile.get_coords(), movement_left - movement_cost, True if (current_tile.unit_id != None and current_tile.get_coords() != self.coord) else False, is_zoc_locked))
         return reachable
     
+    def BFS_ranged_attack(self):
+        tile = self.map.get_tile_hex(*self.coord)
+
+        
+        visibile = set()
+        visited_visibility = {}
+        queue = deque()
+        queue.append((self.coord, self.range, self.vision))
+        while queue:
+            current_coord, visibility, distance = queue.popleft()
+            if current_coord in visited_visibility and visited_visibility[current_coord] >= visibility:
+                continue
+            visited_visibility[current_coord] = visibility
+            
+            # Did it this way so mountains are visible
+            if distance - 1 < 0:
+                continue
+            
+            
+            for neighbor_direction in utils.CUBE_DIRECTIONS_DICT.keys():
+                neighbor = utils.CUBE_DIRECTIONS_DICT[neighbor_direction]
+                neighbor_coord = tuple(x + y for x, y in zip(current_coord, neighbor))
+                tile = self.map.get_tile_hex(*neighbor_coord)     
+                if tile is not None and tile.get_coords():  
+                    neighbor_visibility_bonus = tile_config.biomes[tile.biome]["Terrain"][tile.terrain]["visibility_bonus"]
+                    neighbor_visibility_penalty = tile_config.biomes[tile.biome]["Terrain"][tile.terrain]["visibility_penalty"]
+
+                    if tile.feature != None:
+                        neighbor_visibility_bonus += tile_config.biomes[tile.biome]["Feature"][tile.feature]["visibility_bonus"]
+                        neighbor_visibility_penalty += tile_config.biomes[tile.biome]["Feature"][tile.feature]["visibility_penalty"]
+
+                    if visibility > 0 and visibility + neighbor_visibility_bonus > 0 and distance > 0:
+                        visibile.add(neighbor_coord) 
+                    
+                    elif visibility + neighbor_visibility_bonus > 0 and tile.terrain == "Mountain":
+                        visibile.add(neighbor_coord) 
+                    
+                    queue.append((tile.get_coords(), visibility - neighbor_visibility_penalty, distance - 1))
+        return visibile 
+    
     def attack_enemy(self, destination):
+        if self.type == "Ranged":
+            return self.ranged_attack(destination)
+        else:
+            return self.melee_attack(destination)
+        
+    def ranged_attack(self, destination):
+        attackable_tiles = self.get_attackable_units()
+        if destination not in attackable_tiles or self.remaining_movement == 0:
+            return self.movement
+        enemy_tile = self.map.get_tile_hex(*destination)
+        current_tile = self.map.get_tile_hex(*self.coord)
+        enemy_unit = self.unit_handler.get_unit(enemy_tile.unit_id)
+        damage_inflicted, damage_taken = self.combat_manager.combat(self, enemy_unit)
+        print(damage_inflicted, damage_taken)
+        enemy_unit.health -= damage_inflicted
+        if enemy_unit.health <= 0:
+            enemy_unit.alive = False
+            enemy_tile.unit_id = None
+
+        
+        self.remaining_movement = 0
+        self.clear_attackable()
+    def melee_attack(self, destination):
         attackable_tiles = self.get_attackable_units()
         if destination not in attackable_tiles or self.remaining_movement == 0:
             return self.movement
@@ -647,15 +714,17 @@ class Unit:
         
         self.remaining_movement = 0
             
-        
+        self.clear_attackable()
+
         return self.remaining_movement
 
     def get_attackable_units(self):
         current_player = self.player_handler.get_player(self.owner_id)
         revealed_tiles = current_player.revealed_tiles
         visibile_tiles = current_player.visible_tiles
-        tiles_in_range = self.BFS()
+        tiles_in_range = self.BFS_movement() if self.type != "Ranged" else self.BFS_ranged_attack()
         tiles_in_range &= visibile_tiles
+
         attackable_tiles = set()
         for tile_coord in tiles_in_range:
             tile = self.map.get_tile_hex(*tile_coord)     
@@ -676,7 +745,8 @@ class Unit:
         for tile_coord in self.attackable_tiles:
             tile = self.map.get_tile_hex(*tile_coord)     
             tile.attackable = False
-        
+
+  
     
 class UnitHandler:
     def __init__(self, map, combat_manager):

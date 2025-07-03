@@ -14,6 +14,7 @@ units = {
         "defense": 15,
         "movement": 2,
         "visibility": 2,
+        "range": 2,
         "defense_zoc": False,
         "attack_zoc": True
     },

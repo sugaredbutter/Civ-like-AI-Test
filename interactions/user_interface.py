@@ -919,6 +919,7 @@ class UnitControlMenu:
     def reset(self):
         if self.active_unit != None:
             self.active_unit.clear_hover_path()
+            self.active_unit.clear_attackable()
         self.active_unit = None
         self.active_tile = None
         self.active_button = None
