@@ -13,6 +13,8 @@ class Unit:
         self.attack = units_config.units[type]["attack"]
         self.defense = units_config.units[type]["defense"]
         self.health = random.randint(1, 100)
+        self.orig_health = self.health
+
         self.vision = vision
         self.has_ZOC = units_config.units[type]["defense_zoc"]
         self.follows_ZOC = units_config.units[type]["attack_zoc"]
@@ -55,7 +57,8 @@ class Unit:
         self.path = None
         self.hover_destination = None
         self.hover_path = None      
-        self.remaining_movement = self.movement  
+        self.remaining_movement = self.movement 
+        self.health = self.orig_health
 
     # Checks to see that given the player's info, a destination is able to be reached
     def valid_destination(self, destination):
@@ -199,7 +202,7 @@ class Unit:
                     if tile.get_coords() in visibile_tiles:
                         if additional_cost > 0:
                             temp_movement_remaining = self.movement
-                        if swap == False and temp_movement_remaining - movement_cost <= 0 and tile.unit_id is not None:
+                        if attack == False and swap == False and temp_movement_remaining - movement_cost <= 0 and tile.unit_id is not None:
                             continue
                         if attack == False and tile.unit_id is not None and self.unit_handler.get_unit(tile.unit_id).owner_id != self.owner_id:
                             continue
@@ -568,7 +571,7 @@ class Unit:
     
     def attack_enemy(self, destination):
         attackable_tiles = self.get_attackable_units()
-        if destination not in attackable_tiles:
+        if destination not in attackable_tiles or self.remaining_movement == 0:
             return self.movement
         
         full_path = self.A_star(destination, False, True)
@@ -586,7 +589,11 @@ class Unit:
                 tile = self.map.get_tile_hex(*full_path[x])
                 enter_ZOC = self.zone_of_control(tile.get_coords())
                 if enter_ZOC and tile.get_coords() != self.coord:
-                    movement_left = 0
+                    self.ZOC_locked = True
+                    orig_tile.unit_id = None
+                    tile.unit_id = self.id
+                    self.coord = tile.get_coords()
+                    break
                 self.coord = tile.get_coords()
                 current_player.update_visibility()
                 
@@ -620,9 +627,27 @@ class Unit:
         if self.coord == self.destination:
             self.destination = None
             self.path = None
-        enemy_unit = self.unit_handler.get_unit(self.map.get_tile_hex(*destination).unit_id)
-        combat_results = self.combat_manager.combat(self, enemy_unit)
-        print(combat_results)
+        enemy_tile = self.map.get_tile_hex(*destination)
+        current_tile = self.map.get_tile_hex(*self.coord)
+        enemy_unit = self.unit_handler.get_unit(enemy_tile.unit_id)
+        damage_inflicted, damage_taken = self.combat_manager.combat(self, enemy_unit)
+        print(damage_inflicted, damage_taken)
+        self.health -= damage_taken
+        enemy_unit.health -= damage_inflicted
+        if enemy_unit.health <= 0:
+            enemy_unit.alive = False
+            enemy_tile.unit_id = self.id
+            current_tile.unit_id = None
+            self.coord = enemy_tile.get_coords()
+            current_tile = self.map.get_tile_hex(*self.coord)
+
+        if self.health <= 0:
+            self.alive = False
+            current_tile.unit_id = None
+        
+        self.remaining_movement = 0
+            
+        
         return self.remaining_movement
 
     def get_attackable_units(self):

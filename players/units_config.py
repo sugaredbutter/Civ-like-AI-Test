@@ -2,7 +2,7 @@ units = {
     "Melee": {
         "health": 100,
         "attack": 20,
-        "defense": 5,
+        "defense": 20,
         "movement": 2,
         "visibility": 2,
         "defense_zoc": True,
@@ -10,8 +10,8 @@ units = {
     },
     "Ranged": {
         "health": 100,
-        "attack": 30,
-        "defense": 3,
+        "attack": 25,
+        "defense": 15,
         "movement": 2,
         "visibility": 2,
         "defense_zoc": False,
@@ -20,7 +20,7 @@ units = {
     "Cavalry": {
         "health": 100,
         "attack": 30,
-        "defense": 3,
+        "defense": 30,
         "movement": 4,
         "visibility": 2,
         "defense_zoc": True,
