@@ -980,6 +980,8 @@ class UnitControlMenu:
         return False
     
     def is_clicked(self):
+        if self.active_unit == None:
+            return False
         mouse_x, mouse_y = pygame.mouse.get_pos()
         for key in self.button_menu.keys():
             if self.button_menu[key].collidepoint(mouse_x, mouse_y):
@@ -1006,6 +1008,9 @@ class UnitControlMenu:
 
                 else:
                     self.active_button = key
+                    unit.clear_hover_path()
+                    unit.clear_attackable()
+
                     if self.active_button == "Attack":
                         unit = self.unit_handler.get_unit(self.active_tile.unit_id)
                         unit.highlight_attackable()
@@ -1021,6 +1026,9 @@ class UnitControlMenu:
         if self.active_tile != None:
             if self.active_button == "Move":
                 self.unit_handler.get_unit(self.active_tile.unit_id).move_to_hover((x, y, z))
+            elif self.active_button == "Attack":
+                self.active_unit.attack_hover((x, y, z))
+
         pass
 
 
@@ -1055,10 +1063,6 @@ class UnitControlMenu:
                     self.generated_map.selected_tile = self.active_tile
                 self.player_handler.get_player(self.current_player).update_visibility()
 
-            
-
-                
-                
         return
     
 class GameControlsInterface:

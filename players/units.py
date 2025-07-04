@@ -314,8 +314,6 @@ class Unit:
 
 
 
-    # Will likely need to adjust this for units w/ more movement and less visibility. Need to make it so units gain visibility for each tile along path.
-    # Current idea for move_to is A* -> move one tile -> gain visibility of tile -> A*, and repeat until either reached or out of movement
     def move_to(self, destination):
 
         #Given the player's current knowledge, is the destination reachable?
@@ -613,6 +611,34 @@ class Unit:
                     queue.append((tile.get_coords(), visibility - neighbor_visibility_penalty, distance - 1))
         return visibile 
     
+    def attack_hover(self, destination):
+        if self.hover_destination != destination and self.hover_destination is not None:
+            self.clear_hover_path()
+        attackable_tiles = self.get_attackable_units()
+        if destination not in attackable_tiles or self.remaining_movement == 0:
+            return
+        full_path = self.A_star(destination, False, True)
+        current_player = self.player_handler.get_player(self.owner_id)
+        revealed_tiles = current_player.revealed_tiles
+        visibile_tiles = current_player.visible_tiles
+
+        for x in range(len(full_path)):
+            tile = self.map.get_tile_hex(*full_path[x])
+            if (tile.x, tile.y, tile.z) == destination:
+                tile.path = True
+                break
+            elif (tile.x, tile.y, tile.z) == self.coord:
+                tile.neighbor = self.map.get_tile_hex(*full_path[x + 1])
+                tile.path = True
+            else:
+                tile.neighbor = self.map.get_tile_hex(*full_path[x + 1])
+                tile.path = True
+            
+        self.hover_destination = destination
+
+        
+        self.hover_path = full_path
+
     def attack_enemy(self, destination):
         if self.type == "Ranged":
             return self.ranged_attack(destination)
@@ -636,6 +662,7 @@ class Unit:
         
         self.remaining_movement = 0
         self.clear_attackable()
+
     def melee_attack(self, destination):
         attackable_tiles = self.get_attackable_units()
         if destination not in attackable_tiles or self.remaining_movement == 0:
