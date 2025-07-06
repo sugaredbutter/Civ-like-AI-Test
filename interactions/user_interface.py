@@ -2,6 +2,7 @@ import pygame
 import config as config
 import interactions.utils as utils
 import interactions.controls as controls
+import math
 
 WHITE = (255, 255, 255)
 GRAY = (180, 180, 180)
@@ -961,9 +962,9 @@ class UnitControlMenu:
             font = pygame.font.SysFont(None, 24)
 
             lines = [
-                f"Health: {self.active_unit.health}",
-                f"Offensive Strength: {self.active_unit.attack}",
-                f"Defensive Strength: {self.active_unit.defense}",
+                f"Health: {math.ceil(self.active_unit.health)}",
+                f"Offensive Strength: {math.ceil(self.active_unit.attack)}",
+                f"Defensive Strength: {math.ceil(self.active_unit.defense)}",
                 f"Movement: {self.active_unit.remaining_movement}/{self.active_unit.movement}"
             ]
 

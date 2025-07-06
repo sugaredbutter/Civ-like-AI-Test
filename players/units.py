@@ -652,7 +652,7 @@ class Unit:
         enemy_tile = self.map.get_tile_hex(*destination)
         current_tile = self.map.get_tile_hex(*self.coord)
         enemy_unit = self.unit_handler.get_unit(enemy_tile.unit_id)
-        damage_inflicted, damage_taken = self.combat_manager.combat(self, enemy_unit)
+        damage_inflicted, damage_taken = self.combat_manager.combat(self, enemy_unit, current_tile, enemy_tile, "ranged")
         print(damage_inflicted, damage_taken)
         enemy_unit.health -= damage_inflicted
         if enemy_unit.health <= 0:
@@ -724,7 +724,7 @@ class Unit:
         enemy_tile = self.map.get_tile_hex(*destination)
         current_tile = self.map.get_tile_hex(*self.coord)
         enemy_unit = self.unit_handler.get_unit(enemy_tile.unit_id)
-        damage_inflicted, damage_taken = self.combat_manager.combat(self, enemy_unit)
+        damage_inflicted, damage_taken = self.combat_manager.combat(self, enemy_unit, current_tile, enemy_tile, "melee")
         print(damage_inflicted, damage_taken)
         self.health -= damage_taken
         enemy_unit.health -= damage_inflicted
