@@ -88,7 +88,7 @@ class MouseControls:
             config.hex["inner_radius"] = config.hex["radius"] * 0.866025404
             config.map_settings["offsetX"] += ZOOM_SCALE * COLUMNS
             config.map_settings["offsetY"] -= ZOOM_SCALE * ROWS
-
+        config.map_change = True
     def move_map(self, event):
         if self.user_interface.active_menu.active_button != None:
             self.user_interface.active_menu.interaction()
@@ -98,6 +98,7 @@ class MouseControls:
             config.map_settings["offsetY"] += event.pos[1] - self.initY
             self.initX = event.pos[0]
             self.initY = event.pos[1]
+            config.map_change = True
 
     def set_init(self, event):
         self.initX = event.pos[0]

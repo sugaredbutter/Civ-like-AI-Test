@@ -85,6 +85,7 @@ class UserInterface:
             config.hex["inner_radius"] = config.hex["radius"] * 0.866025404
             config.map_settings["offsetX"] += ZOOM_SCALE * COLUMNS
             config.map_settings["offsetY"] -= ZOOM_SCALE * ROWS
+        config.map_change = True
 
     def move_map(self, event):
         if self.active_button != None:
@@ -95,6 +96,8 @@ class UserInterface:
             config.map_settings["offsetY"] += event.pos[1] - self.initY
             self.initX = event.pos[0]
             self.initY = event.pos[1]
+            config.map_change = True
+
 
     def set_init(self, event):
         self.initX = event.pos[0]
@@ -211,6 +214,7 @@ class PainterMenu:
             config.hex["inner_radius"] = config.hex["radius"] * 0.866025404
             config.map_settings["offsetX"] += ZOOM_SCALE * COLUMNS
             config.map_settings["offsetY"] -= ZOOM_SCALE * ROWS
+        config.map_change = True
 
     def move_map(self, event):
         if self.active_button != None:
@@ -221,6 +225,7 @@ class PainterMenu:
             config.map_settings["offsetY"] += event.pos[1] - self.initY
             self.initX = event.pos[0]
             self.initY = event.pos[1]
+            config.map_change = True
 
     def set_init(self, event):
         self.initX = event.pos[0]
@@ -349,6 +354,7 @@ class TerrainMenu:
             config.hex["inner_radius"] = config.hex["radius"] * 0.866025404
             config.map_settings["offsetX"] += ZOOM_SCALE * COLUMNS
             config.map_settings["offsetY"] -= ZOOM_SCALE * ROWS
+            config.map_change = True
 
     def move_map(self, event):
         if self.active_button != None:
@@ -359,6 +365,7 @@ class TerrainMenu:
             config.map_settings["offsetY"] += event.pos[1] - self.initY
             self.initX = event.pos[0]
             self.initY = event.pos[1]
+            config.map_change = True
 
     def set_init(self, event):
         self.initX = event.pos[0]
@@ -497,6 +504,7 @@ class FeatureMenu:
             config.hex["inner_radius"] = config.hex["radius"] * 0.866025404
             config.map_settings["offsetX"] += ZOOM_SCALE * COLUMNS
             config.map_settings["offsetY"] -= ZOOM_SCALE * ROWS
+        config.map_change = True
 
     def move_map(self, event):
         if self.active_button != None:
@@ -508,6 +516,7 @@ class FeatureMenu:
             config.map_settings["offsetY"] += event.pos[1] - self.initY
             self.initX = event.pos[0]
             self.initY = event.pos[1]
+            config.map_change = True
 
     def set_init(self, event):
         self.initX = event.pos[0]
@@ -688,6 +697,7 @@ class UnitMenu:
             config.hex["inner_radius"] = config.hex["radius"] * 0.866025404
             config.map_settings["offsetX"] += ZOOM_SCALE * COLUMNS
             config.map_settings["offsetY"] -= ZOOM_SCALE * ROWS
+        config.map_change = True
 
     def move_map(self, event):
         if self.active_button != None:
@@ -698,6 +708,7 @@ class UnitMenu:
             config.map_settings["offsetY"] += event.pos[1] - self.initY
             self.initX = event.pos[0]
             self.initY = event.pos[1]
+            config.map_change = True
 
     def set_init(self, event):
         self.initX = event.pos[0]
@@ -830,7 +841,11 @@ class UnitControlMenu:
         
         self.active_tile = None
         self.active_unit = None
-        
+        self.enemy_unit = None
+
+        self.display_combat_info = False
+        self.combat_info = None
+
         self.current_player = 0
         
         self.button_width = 100
@@ -906,6 +921,7 @@ class UnitControlMenu:
             config.hex["inner_radius"] = config.hex["radius"] * 0.866025404
             config.map_settings["offsetX"] += ZOOM_SCALE * COLUMNS
             config.map_settings["offsetY"] -= ZOOM_SCALE * ROWS
+        config.map_change = True
 
     def move_map(self, event):
         if self.active_button != None and self.active_button != "Move":
@@ -916,7 +932,8 @@ class UnitControlMenu:
             config.map_settings["offsetY"] += event.pos[1] - self.initY
             self.initX = event.pos[0]
             self.initY = event.pos[1]
-            
+            config.map_change = True
+    
     def reset(self):
         if self.active_unit != None:
             self.active_unit.clear_hover_path()
@@ -940,6 +957,8 @@ class UnitControlMenu:
         for key in self.button_menu.keys():
             self.draw_button(key, self.button_menu[key], self.active_button == key)
         self.draw_unit_info()
+        if self.display_combat_info:
+            self.draw_combat_prediction()
             
     def draw_button(self, text, rect, is_hovered):
         font = pygame.font.SysFont(None, 24)
@@ -972,6 +991,92 @@ class UnitControlMenu:
                 text_surf = font.render(line, True, (0, 0, 0))
                 self.screen.blit(text_surf, (box_x + 10, box_y + 10 + i * 25))
     
+    def draw_combat_prediction(self):
+        if self.active_unit is not None:
+            damage_inflicted, damage_taken, unit, enemy_unit = self.combat_info
+            box_width = 200
+            box_height = 120
+            box_x = 10
+            box_y = self.screen.get_height() - box_height * 2 - 9
+
+            mid_point = box_x + box_width / 2
+
+            health_bar_width = 10
+            health_bar_height = 80
+
+            unit_1_new_health = unit.health - damage_taken
+            unit_2_new_health = enemy_unit.health - damage_inflicted
+
+            pygame.draw.rect(self.screen, (220, 220, 220), (box_x, box_y, box_width, box_height))
+            pygame.draw.rect(self.screen, (0, 0, 0), (box_x, box_y, box_width, box_height), 2)
+
+            current_health_height = health_bar_height * unit.health / 100
+            bar_x = mid_point - box_width / 20 - health_bar_width
+            bar_y = box_y + (box_height - health_bar_height) / 2 + (health_bar_height - current_health_height)
+
+
+            # Red
+            pygame.draw.rect(self.screen, (255, 0, 0), (bar_x, box_y + (box_height - health_bar_height) / 2, health_bar_width, health_bar_height))
+
+            # Damage
+            health_diff = pygame.Surface((health_bar_width, health_bar_height), pygame.SRCALPHA)
+            health_diff.set_alpha(210)  # Apply overall transparency
+
+
+            pygame.draw.rect(
+                health_diff,
+                (0, 255, 0),  
+                (0, health_bar_height - current_health_height, health_bar_width, current_health_height)
+            )
+
+            self.screen.blit(health_diff, (bar_x, box_y + (box_height - health_bar_height) / 2))
+
+            # Remaining health
+            if unit_1_new_health >= 0:
+                pygame.draw.rect(self.screen, (0, 255, 0), (bar_x, box_y + (box_height - health_bar_height) / 2 + health_bar_height - health_bar_height * unit_1_new_health/100, health_bar_width, health_bar_height * unit_1_new_health/100))
+
+            # Border
+            pygame.draw.rect(self.screen, (255, 255, 255), (bar_x, box_y + (box_height - health_bar_height) / 2, health_bar_width, health_bar_height), 1)
+
+
+
+            current_health_height = health_bar_height * enemy_unit.health / 100
+            bar_x = mid_point + box_width / 20
+            bar_y = box_y + (box_height - health_bar_height) / 2 + (health_bar_height - current_health_height)
+            pygame.draw.rect(self.screen, (255, 0, 0), (bar_x, box_y + (box_height - health_bar_height) / 2, health_bar_width, health_bar_height))
+
+            # Damage
+            health_diff = pygame.Surface((health_bar_width, health_bar_height), pygame.SRCALPHA)
+            health_diff.set_alpha(210)  
+
+
+            pygame.draw.rect(
+                health_diff,
+                (0, 255, 0),  
+                (0, health_bar_height - current_health_height, health_bar_width, current_health_height)
+            )
+
+            self.screen.blit(health_diff, (bar_x, box_y + (box_height - health_bar_height) / 2))
+            if unit_2_new_health >= 0:
+                pygame.draw.rect(self.screen, (0, 255, 0), (bar_x, box_y + (box_height - health_bar_height) / 2 + health_bar_height - health_bar_height * unit_2_new_health/100, health_bar_width, health_bar_height * unit_2_new_health/100))
+            pygame.draw.rect(self.screen, (255, 255, 255), (bar_x, box_y + (box_height - health_bar_height) / 2, health_bar_width, health_bar_height), 1)
+            
+            font = pygame.font.SysFont(None, 24)
+            text_x = box_x + box_width + box_width / 20
+            text_y = box_y
+            lines = [
+                f"Health: {math.ceil(self.active_unit.health)}",
+                f"Offensive Strength: {math.ceil(self.active_unit.attack)}",
+                f"Defensive Strength: {math.ceil(self.active_unit.defense)}",
+                f"Movement: {self.active_unit.remaining_movement}/{self.active_unit.movement}"
+            ]
+
+            for i, line in enumerate(lines):
+                text_surf = font.render(line, True, (0, 0, 0))
+                self.screen.blit(text_surf, (text_x, text_y + 10 + i * 25))
+
+            
+
     def is_hovered(self, rect):
         if not self.valid_hover:
             return False
@@ -1028,7 +1133,11 @@ class UnitControlMenu:
             if self.active_button == "Move":
                 self.unit_handler.get_unit(self.active_tile.unit_id).move_to_hover((x, y, z))
             elif self.active_button == "Attack":
-                self.active_unit.attack_hover((x, y, z))
+                self.combat_info = self.active_unit.attack_hover((x, y, z))
+                if self.combat_info == None:
+                    self.display_combat_info = False
+                else:
+                    self.display_combat_info = True
 
         pass
 

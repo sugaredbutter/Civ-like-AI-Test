@@ -3,6 +3,7 @@ import config as config
 import interactions.utils as utils
 import interactions.controls as controls
 import interactions.user_interface as ui
+import config as config
 WHITE = (255, 255, 255)
 GRAY = (180, 180, 180)
 DARK_GRAY = (120, 120, 120)
@@ -118,6 +119,7 @@ class UserInterface:
             config.hex["inner_radius"] = config.hex["radius"] * 0.866025404
             config.map_settings["offsetX"] += ZOOM_SCALE * COLUMNS
             config.map_settings["offsetY"] -= ZOOM_SCALE * ROWS
+        config.map_change = True
 
     def move_map(self, event):
         if self.active_button != None:
@@ -128,6 +130,8 @@ class UserInterface:
             config.map_settings["offsetY"] += event.pos[1] - self.initY
             self.initX = event.pos[0]
             self.initY = event.pos[1]
+            config.map_change = True
+
 
     def set_init(self, event):
         self.initX = event.pos[0]

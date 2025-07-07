@@ -17,6 +17,7 @@ health_bar = {
     "width_ratio": .7,
     "height_ratio": .1,
 }
+map_change = False
 game_type = None
 num_players = 2
 min_players = 2

@@ -5,8 +5,9 @@ from collections import deque
 import map_generator.tile_types_config as tile_config
 import random
 class Unit:
-    def __init__(self, owner_id, id, type, health, vision, map, coord, unit_handler, player_handler, combat_manager):
+    def __init__(self, owner_id, id, type, health, vision, map, coord, unit_handler, player_handler, combat_manager, visual_effects):
         self.combat_manager = combat_manager
+        self.visual_effects = visual_effects
         self.owner_id = owner_id
         self.id = id
         self.type = type
@@ -15,6 +16,7 @@ class Unit:
         self.range = units_config.units[type].get("range", None)
         self.health = random.randint(1, 100)
         self.orig_health = self.health
+
 
         self.vision = vision
         self.has_ZOC = units_config.units[type]["defense_zoc"]
@@ -616,7 +618,7 @@ class Unit:
             self.clear_hover_path()
         attackable_tiles = self.get_attackable_units()
         if destination not in attackable_tiles or self.remaining_movement == 0:
-            return
+            return None
         full_path = self.A_star(destination, False, True)
         current_player = self.player_handler.get_player(self.owner_id)
         revealed_tiles = current_player.revealed_tiles
@@ -635,9 +637,17 @@ class Unit:
                 tile.path = True
             
         self.hover_destination = destination
-
-        
         self.hover_path = full_path
+        enemy_tile = self.map.get_tile_hex(*destination)
+        current_tile = self.map.get_tile_hex(*self.coord)
+        enemy_unit = self.unit_handler.get_unit(enemy_tile.unit_id)
+        if self.type == "Ranged":
+            damage_inflicted, damage_taken = self.combat_manager.estimate_combat(self, enemy_unit, current_tile, enemy_tile, "ranged")
+            return(damage_inflicted, 0, self, enemy_unit)
+        else:
+            damage_inflicted, damage_taken = self.combat_manager.estimate_combat(self, enemy_unit, current_tile, enemy_tile, "melee")
+            return(damage_inflicted, damage_taken, self, enemy_unit)
+
 
     def attack_enemy(self, destination):
         if self.type == "Ranged":
@@ -653,7 +663,6 @@ class Unit:
         current_tile = self.map.get_tile_hex(*self.coord)
         enemy_unit = self.unit_handler.get_unit(enemy_tile.unit_id)
         damage_inflicted, damage_taken = self.combat_manager.combat(self, enemy_unit, current_tile, enemy_tile, "ranged")
-        print(damage_inflicted, damage_taken)
         enemy_unit.health -= damage_inflicted
         if enemy_unit.health <= 0:
             enemy_unit.alive = False
@@ -725,6 +734,9 @@ class Unit:
         current_tile = self.map.get_tile_hex(*self.coord)
         enemy_unit = self.unit_handler.get_unit(enemy_tile.unit_id)
         damage_inflicted, damage_taken = self.combat_manager.combat(self, enemy_unit, current_tile, enemy_tile, "melee")
+        self.visual_effects.add_damage(damage_inflicted, enemy_tile.get_coords(), True)
+        self.visual_effects.add_damage(damage_taken, current_tile.get_coords(), False)
+
         print(damage_inflicted, damage_taken)
         self.health -= damage_taken
         enemy_unit.health -= damage_inflicted
@@ -776,15 +788,16 @@ class Unit:
   
     
 class UnitHandler:
-    def __init__(self, map, combat_manager):
+    def __init__(self, map, combat_manager, visual_effects):
         self.map = map
         self.player_handler = None
         self.combat_manager = combat_manager
+        self.visual_effects = visual_effects
         self.units = {}
         self.id_counter = 0
 
     def add_unit(self, owner, type, coord):
-        unit = Unit(owner, self.id_counter, type, units_config.units[type]["health"], units_config.units[type]["visibility"], self.map, coord, self, self.player_handler, self.combat_manager)
+        unit = Unit(owner, self.id_counter, type, units_config.units[type]["health"], units_config.units[type]["visibility"], self.map, coord, self, self.player_handler, self.combat_manager, self.visual_effects)
         self.units[unit.id] = unit
         self.id_counter += 1
         return unit.id

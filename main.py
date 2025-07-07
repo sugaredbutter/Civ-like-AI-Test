@@ -10,6 +10,7 @@ import players.units as unit_handler
 import players.player_handler as player_handler
 import game_manager.game_manager as game
 import combat_manager.combat_manager as combat_manager
+import interactions.visual_effects as visual_effects_manager
 pygame.init()
 
 WIDTH, HEIGHT = config.map_settings["pixel_width"], config.map_settings["pixel_height"]
@@ -21,7 +22,8 @@ BACKGROUND_COLOR = (255, 255, 255)  # White
 generated_map = generate_map.HexMap(ROWS, COLUMNS)
 
 combat = combat_manager.CombatManager()
-units = unit_handler.UnitHandler(generated_map, combat)
+visual_effects = visual_effects_manager.VisualEffectHandler(screen)
+units = unit_handler.UnitHandler(generated_map, combat, visual_effects)
 players = player_handler.PlayerHandler(generated_map, units)
 units.player_handler = players
 players.add_player()  # Red player
@@ -75,6 +77,7 @@ while running:
     if game_manager.type == "Test":
         test_user_interface.active_menu.create_menu()
 
+    visual_effects.display_visuals()
     pygame.display.flip()
     
     delta_time = clock.tick(60) / 1000

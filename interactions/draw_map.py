@@ -14,6 +14,9 @@ class Map:
 
         self.tree_1 = pygame.image.load("Assets/Trees/Tree_1.png")
         self.plains_hex = pygame.image.load("Assets/Trees/hex_template.png")
+
+        self.saved_info = {}
+        self.calculate_corners()
         
     def axial_to_pixel(self, q, r, radius, map_pixel_height):
         offsetX = config.map_settings["offsetX"]
@@ -42,8 +45,21 @@ class Map:
             corners.append((x, y))
         return corners
 
+    def calculate_corners(self):
+        hex_radius = config.hex["radius"]
+        width, height = config.map_settings["pixel_width"], config.map_settings["pixel_height"]
 
+
+        for column in range(self.map.width):
+            for row in range(self.map.height):
+                x, y = self.axial_to_pixel(column, row, hex_radius, height)
+                corners = self.calc_hex_corners(x, y, hex_radius)
+                self.saved_info[(row, column)] = (corners, (x,y))
+              
     def draw_tiles(self, width, height):
+        if config.map_change == True:
+            self.calculate_corners()
+            config.map_change = False
         current_player = self.players.get_player(self.game_manager.current_player)
         self.border_surface = pygame.Surface(self.screen.get_size(), pygame.SRCALPHA)
         self.border_surface.fill((0, 0, 0, 0))  # fully transparent
@@ -55,14 +71,13 @@ class Map:
         mouse_x, mouse_y = pygame.mouse.get_pos()
         q, r, s = utils.click_to_hex(mouse_x, mouse_y)
 
-        saved_info = {}
         
         # Draw hexagons
         for column in range(self.map.width):
             for row in range(self.map.height):
-                x, y = self.axial_to_pixel(column, row, hex_radius, height)
-                corners = self.calc_hex_corners(x, y, hex_radius)
-                saved_info[(row, column)] = (corners, (x,y))
+                info = self.saved_info[(row, column)]
+                corners = info[0]
+                x, y = info[1]
                 tile = self.map.get_tile(row, column)
                 if config.game_type != None and tile.get_coords() not in current_player.revealed_tiles:
                     continue
@@ -76,7 +91,7 @@ class Map:
         for column in range(self.map.width):
             for row in range(self.map.height):
                 
-                info = saved_info[(row, column)]
+                info = self.saved_info[(row, column)]
                 corners = info[0]
                 x, y = info[1]
                 tile = self.map.get_tile(row, column)
@@ -87,7 +102,7 @@ class Map:
     
         for row in range(self.map.height - 1, -1, -1):
             for column in range(self.map.width):
-                info = saved_info[(row, column)]
+                info = self.saved_info[(row, column)]
                 corners = info[0]
                 x, y = info[1]
                 tile = self.map.get_tile(row, column)
@@ -112,7 +127,7 @@ class Map:
         #Movement
         for column in range(self.map.width):
             for row in range(self.map.height):
-                info = saved_info[(row, column)]
+                info = self.saved_info[(row, column)]
                 corners = info[0]
                 x, y = info[1]
                 tile = self.map.get_tile(row, column)
@@ -121,7 +136,7 @@ class Map:
         
         for column in range(self.map.width):
             for row in range(self.map.height):
-                info = saved_info[(row, column)]
+                info = self.saved_info[(row, column)]
                 corners = info[0]
                 x, y = info[1]
                 tile = self.map.get_tile(row, column)
@@ -130,7 +145,7 @@ class Map:
         
         if self.map.selected_edge is not None and self.map.hovered_tile is not None:
             column, row = utils.hex_coord_to_coord(self.map.hovered_tile.x, self.map.hovered_tile.y, self.map.hovered_tile.z)
-            info = saved_info[(row, column)]
+            info = self.saved_info[(row, column)]
             corners = info[0]
             edge_color = (245, 66, 212)
             if self.map.selected_edge == "E":
@@ -176,7 +191,7 @@ class Map:
 
         for column in range(self.map.width - 1, -1, -1):
             for row in range(self.map.height - 1, -1, -1):
-                info = saved_info[(row, column)]
+                info = self.saved_info[(row, column)]
                 corners = info[0]
                 x, y = info[1]
                 tile = self.map.get_tile(row, column)

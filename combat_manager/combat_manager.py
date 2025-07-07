@@ -16,7 +16,6 @@ class CombatManager:
 
 
         unit_2_combat_strength += unit_2_combat_bonus
-        print(unit_1_combat_strength, unit_2_combat_strength, unit_2_combat_bonus)
         
 
 
@@ -37,7 +36,6 @@ class CombatManager:
 
 
         unit_2_combat_strength += unit_2_combat_bonus
-        print(unit_1_combat_strength, unit_2_combat_strength, unit_2_combat_bonus)
         
 
 
