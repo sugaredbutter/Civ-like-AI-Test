@@ -61,6 +61,7 @@ class Unit:
         self.hover_path = None      
         self.remaining_movement = self.movement 
         self.health = self.orig_health
+        self.ZOC_locked = False
 
     # Checks to see that given the player's info, a destination is able to be reached
     def valid_destination(self, destination):
@@ -643,10 +644,13 @@ class Unit:
         enemy_unit = self.unit_handler.get_unit(enemy_tile.unit_id)
         if self.type == "Ranged":
             damage_inflicted, damage_taken = self.combat_manager.estimate_combat(self, enemy_unit, current_tile, enemy_tile, "ranged")
-            return(damage_inflicted, 0, self, enemy_unit)
+            self_CS, enemy_CS = self.combat_manager.get_combat_strength(self, enemy_unit, current_tile, enemy_tile, "ranged")
+            return(damage_inflicted, 0, self, enemy_unit, self_CS, enemy_CS)
         else:
             damage_inflicted, damage_taken = self.combat_manager.estimate_combat(self, enemy_unit, current_tile, enemy_tile, "melee")
-            return(damage_inflicted, damage_taken, self, enemy_unit)
+            self_CS, enemy_CS = self.combat_manager.get_combat_strength(self, enemy_unit, current_tile, enemy_tile, "melee")
+
+            return(damage_inflicted, damage_taken, self, enemy_unit, self_CS, enemy_CS)
 
 
     def attack_enemy(self, destination):

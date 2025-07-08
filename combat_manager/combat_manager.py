@@ -42,3 +42,19 @@ class CombatManager:
         unit_1_damage_dealt = 30*math.exp(.04*(unit_1_combat_strength - unit_2_combat_strength))
         unit_1_damage_taken = 30*math.exp(.04*(unit_2_combat_strength - unit_1_combat_strength))
         return (unit_1_damage_dealt, unit_1_damage_taken)
+    
+    def get_combat_strength(self, unit_1, unit_2, tile_1, tile_2, type):
+        unit_1_combat_strength = unit_1.attack - (10 * (100 - unit_1.health)) / 100
+        unit_2_combat_strength = unit_2.attack - (10 * (100 - unit_2.health)) / 100
+        unit_2_combat_bonus = 0 
+        if type == "melee":
+            direction = utils.get_relative_position(tile_1.get_coords(), tile_2.get_coords())
+            if direction != None and tile_1.rivers[direction] == True:
+                unit_2_combat_bonus += combat_bonus.river["defensive_bonus"]
+        unit_2_combat_bonus += combat_bonus.terrain.get(tile_2.terrain, {}).get("defensive_bonus", 0)
+        unit_2_combat_bonus += combat_bonus.feature.get(tile_2.feature, {}).get("defensive_bonus", 0)
+
+
+        unit_2_combat_strength += unit_2_combat_bonus
+        
+        return (unit_1_combat_strength, unit_2_combat_strength)

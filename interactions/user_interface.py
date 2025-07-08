@@ -993,7 +993,7 @@ class UnitControlMenu:
     
     def draw_combat_prediction(self):
         if self.active_unit is not None:
-            damage_inflicted, damage_taken, unit, enemy_unit = self.combat_info
+            damage_inflicted, damage_taken, unit, enemy_unit, unit_CS, enemy_CS = self.combat_info
             box_width = 200
             box_height = 120
             box_x = 10
@@ -1062,18 +1062,25 @@ class UnitControlMenu:
             pygame.draw.rect(self.screen, (255, 255, 255), (bar_x, box_y + (box_height - health_bar_height) / 2, health_bar_width, health_bar_height), 1)
             
             font = pygame.font.SysFont(None, 24)
-            text_x = box_x + box_width + box_width / 20
+            text_x = box_x + box_width / 20
             text_y = box_y
             lines = [
-                f"Health: {math.ceil(self.active_unit.health)}",
-                f"Offensive Strength: {math.ceil(self.active_unit.attack)}",
-                f"Defensive Strength: {math.ceil(self.active_unit.defense)}",
-                f"Movement: {self.active_unit.remaining_movement}/{self.active_unit.movement}"
+                ("HP:", f" {math.ceil(self.active_unit.health)}", (0, 0, 0)),
+                ("", f"-{math.ceil(damage_taken)}", (230, 34, 34)),
+                ("", f" {max(0, math.ceil(self.active_unit.health) - math.ceil(damage_taken))}", (0, 0, 0)),
+                ("CS:", f" {math.ceil(unit_CS)}", (0, 0, 0))
             ]
 
-            for i, line in enumerate(lines):
-                text_surf = font.render(line, True, (0, 0, 0))
-                self.screen.blit(text_surf, (text_x, text_y + 10 + i * 25))
+            label_x = text_x
+            value_x = text_x + 30  # Adjust as needed for alignment
+
+            for i, (label, value, color) in enumerate(lines):
+                label_surf = font.render(str(label), True, (0, 0, 0))
+                value_surf = font.render(str(value), True, color)
+
+                y = text_y + 10 + i * 25
+                self.screen.blit(label_surf, (label_x, y))
+                self.screen.blit(value_surf, (value_x, y))
 
             
 
