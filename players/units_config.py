@@ -5,6 +5,7 @@ units = {
         "defense": 20,
         "movement": 2,
         "visibility": 2,
+        "fortified": 3,
         "defense_zoc": True,
         "attack_zoc": True
     },
@@ -15,6 +16,7 @@ units = {
         "movement": 2,
         "visibility": 2,
         "range": 2,
+        "fortified": 3,
         "defense_zoc": False,
         "attack_zoc": True
     },
@@ -24,6 +26,7 @@ units = {
         "defense": 30,
         "movement": 4,
         "visibility": 2,
+        "fortified": 3,
         "defense_zoc": True,
         "attack_zoc": True
     }

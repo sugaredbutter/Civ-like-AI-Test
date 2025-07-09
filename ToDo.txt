@@ -25,9 +25,11 @@ x Zone of Control
 x Basic attack implementation for melee and ranged
 x Unit can only attack enemies it can see
 x Combat strength calculations (terrain, health, etc.)
-/ UI for displaying combat info
-- Complete unit options (fortify, skip turn) excluding attacks
+x UI for displaying combat info
+- Unit Flanking (Prob something that will come later)
+/ Complete unit options (fortify, skip turn) excluding attacks
 - Add more unit types
+- Indicate which units have movement and not completed action. 
 
 Phase 5 (AI):
 - Implement AI

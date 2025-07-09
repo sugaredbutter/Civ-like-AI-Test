@@ -132,3 +132,42 @@ OPPOSITE_EDGES = {
     "SW": "NE",
     "SE": "NW"
 }
+
+
+def get_health_color(health):
+    if health > 90:
+        hp_color = (0, 120, 32)
+    elif health > 75:
+        hp_color = (0, 219, 58)
+    elif health > 50:
+        hp_color = (227, 208, 5)
+    elif health > 25:
+        hp_color = (217, 125, 4)
+    elif health > 0:
+        hp_color = (240, 54, 2)
+    else:
+        hp_color = (46, 11, 1)
+        
+    return hp_color
+
+def blit_text_border(screen, text, pos, border_width, font, color = (0, 0, 0)):
+    
+    label_surf = font.render(str(text), True, color)
+
+    screen.blit(label_surf, (pos[0] + border_width, pos[1] + border_width))
+    screen.blit(label_surf, (pos[0] + border_width, pos[1] - border_width))
+    screen.blit(label_surf, (pos[0] - border_width, pos[1] + border_width))
+    screen.blit(label_surf, (pos[0] - border_width, pos[1] - border_width))
+    
+def combat_strength_color(unit_1_CS, unit_2_CS):
+    if unit_1_CS - unit_2_CS >= 4:
+        return ((0, 120, 32), (240, 54, 2))
+    elif unit_1_CS - unit_2_CS >= 2:
+        return ((0, 219, 58), (217, 125, 4)) 
+    elif unit_1_CS - unit_2_CS > -2:
+        return ((227, 208, 5), (227, 208, 5))
+    elif unit_1_CS - unit_2_CS > -4:
+        return ((217, 125, 4), (0, 219, 58)) 
+    else:
+        return ((240, 54, 2), (0, 120, 32))  
+

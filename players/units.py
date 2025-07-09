@@ -36,13 +36,16 @@ class Unit:
         self.path = None
 
         self.alive = True
+        
         self.fortified = False
+        self.turns_fortified = 0
+        
         self.ZOC_locked = False
         
         self.movement = units_config.units[type]["movement"]
         self.remaining_movement = self.movement
         
-        self.skip_turn = False
+        self.action = False
 
         self.player_handler = player_handler
     
@@ -62,6 +65,7 @@ class Unit:
         self.remaining_movement = self.movement 
         self.health = self.orig_health
         self.ZOC_locked = False
+        self.fortified = False
 
     # Checks to see that given the player's info, a destination is able to be reached
     def valid_destination(self, destination):
@@ -324,6 +328,7 @@ class Unit:
             self.destination = None
             self.path = None
             return True
+        self.fortified = False
         self.destination = destination
         full_path = self.A_star(destination)
 
@@ -479,7 +484,13 @@ class Unit:
     def turn_begin(self):
         self.ZOC_locked = False
         self.remaining_movement = self.movement
-        self.skip_turn = False
+        self.action = False
+        if self.fortified:
+            self.turns_fortified += 1
+            print(self.turns_fortified)
+            self.health = min(self.health + 10, 100)
+            
+
     
     def get_visibility(self):
         tile = self.map.get_tile_hex(*self.coord)
@@ -645,12 +656,13 @@ class Unit:
         if self.type == "Ranged":
             damage_inflicted, damage_taken = self.combat_manager.estimate_combat(self, enemy_unit, current_tile, enemy_tile, "ranged")
             self_CS, enemy_CS = self.combat_manager.get_combat_strength(self, enemy_unit, current_tile, enemy_tile, "ranged")
-            return(damage_inflicted, 0, self, enemy_unit, self_CS, enemy_CS)
+            self_CS_bonus, enemy_CS_bonus = self.combat_manager.get_combat_bonus(self, enemy_unit, current_tile, enemy_tile, "ranged")
+            return(damage_inflicted, 0, self, enemy_unit, self_CS, enemy_CS, self_CS_bonus, enemy_CS_bonus)
         else:
             damage_inflicted, damage_taken = self.combat_manager.estimate_combat(self, enemy_unit, current_tile, enemy_tile, "melee")
             self_CS, enemy_CS = self.combat_manager.get_combat_strength(self, enemy_unit, current_tile, enemy_tile, "melee")
-
-            return(damage_inflicted, damage_taken, self, enemy_unit, self_CS, enemy_CS)
+            self_CS_bonus, enemy_CS_bonus = self.combat_manager.get_combat_bonus(self, enemy_unit, current_tile, enemy_tile, "melee")
+            return(damage_inflicted, damage_taken, self, enemy_unit, self_CS, enemy_CS, self_CS_bonus, enemy_CS_bonus)
 
 
     def attack_enemy(self, destination):
@@ -663,6 +675,8 @@ class Unit:
         attackable_tiles = self.get_attackable_units()
         if destination not in attackable_tiles or self.remaining_movement == 0:
             return self.movement
+        self.fortified = False
+        self.turns_fortified = 0
         enemy_tile = self.map.get_tile_hex(*destination)
         current_tile = self.map.get_tile_hex(*self.coord)
         enemy_unit = self.unit_handler.get_unit(enemy_tile.unit_id)
@@ -675,12 +689,15 @@ class Unit:
         
         self.remaining_movement = 0
         self.clear_attackable()
+        self.clear_hover_path()
 
     def melee_attack(self, destination):
         attackable_tiles = self.get_attackable_units()
         if destination not in attackable_tiles or self.remaining_movement == 0:
             return self.movement
-        
+        self.fortified = False
+        self.turns_fortified = 0
+
         full_path = self.A_star(destination, False, True)
         current_player = self.player_handler.get_player(self.owner_id)
         revealed_tiles = current_player.revealed_tiles
@@ -731,9 +748,6 @@ class Unit:
                 else:
                     movement_left -= next_tile_movement
             self.remaining_movement = movement_left
-        if self.coord == self.destination:
-            self.destination = None
-            self.path = None
         enemy_tile = self.map.get_tile_hex(*destination)
         current_tile = self.map.get_tile_hex(*self.coord)
         enemy_unit = self.unit_handler.get_unit(enemy_tile.unit_id)
@@ -741,7 +755,6 @@ class Unit:
         self.visual_effects.add_damage(damage_inflicted, enemy_tile.get_coords(), True)
         self.visual_effects.add_damage(damage_taken, current_tile.get_coords(), False)
 
-        print(damage_inflicted, damage_taken)
         self.health -= damage_taken
         enemy_unit.health -= damage_inflicted
         if enemy_unit.health <= 0:
@@ -758,6 +771,7 @@ class Unit:
         self.remaining_movement = 0
             
         self.clear_attackable()
+        self.clear_hover_path()
 
         return self.remaining_movement
 
@@ -788,6 +802,25 @@ class Unit:
         for tile_coord in self.attackable_tiles:
             tile = self.map.get_tile_hex(*tile_coord)     
             tile.attackable = False
+            
+    def fortify(self):
+        if self.remaining_movement > 0:
+            self.path = None
+            self.destination = None
+            self.fortified = True
+
+            
+    def cancel_action(self):
+        self.path = None
+        self.destination = None
+        self.fortified = False
+        self.turns_fortified = 0
+        if self.remaining_movement > 0:
+            self.action = True
+        
+
+            
+
 
   
     

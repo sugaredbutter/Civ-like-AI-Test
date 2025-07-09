@@ -713,7 +713,7 @@ class UnitMenu:
     def set_init(self, event):
         self.initX = event.pos[0]
         self.initY = event.pos[1]
-    
+            
     def create_menu(self):
         for key in self.button_menu.keys():
             self.draw_button(key, self.button_menu[key], self.active_button == key)
@@ -863,6 +863,9 @@ class UnitControlMenu:
             y = HEIGHT - self.padding - (i + 1) * self.button_height - i * self.padding
             self.button_menu[name] = pygame.Rect(x, y, self.button_width, self.button_height)
             
+        self.disabled_buttons = []
+        self.buttons_no_movement = ["Attack", "Fortify", "Heal", "Skip Turn"]
+        
 
     def left_click(self, event):
         self.clicked = True
@@ -879,12 +882,7 @@ class UnitControlMenu:
             self.button_clicked() 
         elif self.clicked and self.dragging == False and tile != None and unit != None and unit.owner_id == current_player and self.active_button == None:
             self.reset()
-            self.active_tile = tile
-            self.active_unit = unit
-            self.generated_map.selected_tile = self.active_tile
-            self.parent_menu.display_unit_ui = True
-            if unit.destination != None:
-                unit.move_to_hover(unit.destination)
+            self.init_unit(tile, unit)
         elif self.clicked and self.dragging == False and self.active_button != None:
             self.interaction()
         elif self.clicked and self.dragging == False:
@@ -934,6 +932,19 @@ class UnitControlMenu:
             self.initY = event.pos[1]
             config.map_change = True
     
+    def init_unit(self, tile, unit):
+        self.active_tile = tile
+        self.active_unit = unit
+        self.generated_map.selected_tile = self.active_tile
+        self.parent_menu.display_unit_ui = True
+        if unit.destination != None:
+            unit.move_to_hover(unit.destination)
+        if unit.remaining_movement == 0:
+            self.disabled_buttons = self.buttons_no_movement
+        if unit.fortified:
+            self.active_button = "Fortify"
+        
+    
     def reset(self):
         if self.active_unit != None:
             self.active_unit.clear_hover_path()
@@ -948,6 +959,7 @@ class UnitControlMenu:
         self.unit_handler.unit_selected = False
         self.unit_handler.selected_unit = None
         self.parent_menu.display_unit_ui = False
+        self.disabled_buttons = [ ]
 
     def set_init(self, event):
         self.initX = event.pos[0]
@@ -962,7 +974,7 @@ class UnitControlMenu:
             
     def draw_button(self, text, rect, is_hovered):
         font = pygame.font.SysFont(None, 24)
-        pygame.draw.rect(self.screen, DARK_GRAY if self.is_hovered(rect) or is_hovered else GRAY, rect)
+        pygame.draw.rect(self.screen, DARK_GRAY if self.is_hovered(rect) or is_hovered or text in self.disabled_buttons else GRAY, rect)
         pygame.draw.rect(self.screen, BLACK, rect, 2)  # Border
         text_surf = font.render(text, True, BLACK)
         text_rect = text_surf.get_rect(center=rect.center)
@@ -984,16 +996,17 @@ class UnitControlMenu:
                 f"Health: {math.ceil(self.active_unit.health)}",
                 f"Offensive Strength: {math.ceil(self.active_unit.attack)}",
                 f"Defensive Strength: {math.ceil(self.active_unit.defense)}",
-                f"Movement: {self.active_unit.remaining_movement}/{self.active_unit.movement}"
+                f"Movement: {self.active_unit.remaining_movement}/{self.active_unit.movement}",
             ]
+            lines.append("Fortified") if self.active_unit.fortified else None
 
             for i, line in enumerate(lines):
                 text_surf = font.render(line, True, (0, 0, 0))
-                self.screen.blit(text_surf, (box_x + 10, box_y + 10 + i * 25))
+                self.screen.blit(text_surf, (box_x + 10, box_y + 10 + i * 20))
     
     def draw_combat_prediction(self):
         if self.active_unit is not None:
-            damage_inflicted, damage_taken, unit, enemy_unit, unit_CS, enemy_CS = self.combat_info
+            damage_inflicted, damage_taken, unit, enemy_unit, unit_CS, enemy_CS, unit_bonus, enemy_bonus = self.combat_info
             box_width = 200
             box_height = 120
             box_x = 10
@@ -1064,11 +1077,15 @@ class UnitControlMenu:
             font = pygame.font.SysFont(None, 24)
             text_x = box_x + box_width / 20
             text_y = box_y
+            
+            orig_hp_color = utils.get_health_color(unit.health)
+            new_hp_color = utils.get_health_color(unit_1_new_health)
+            unit_1_cs_color, unit_2_cs_color = utils.combat_strength_color(unit_CS, enemy_CS)
             lines = [
-                ("HP:", f" {math.ceil(self.active_unit.health)}", (0, 0, 0)),
+                ("HP:", f" {math.ceil(self.active_unit.health)}", orig_hp_color),
                 ("", f"-{math.ceil(damage_taken)}", (230, 34, 34)),
-                ("", f" {max(0, math.ceil(self.active_unit.health) - math.ceil(damage_taken))}", (0, 0, 0)),
-                ("CS:", f" {math.ceil(unit_CS)}", (0, 0, 0))
+                ("", f" {max(0, math.ceil(self.active_unit.health) - math.ceil(damage_taken))}", new_hp_color),
+                ("CS:", f" {math.ceil(unit_CS)}", unit_1_cs_color)
             ]
 
             label_x = text_x
@@ -1078,12 +1095,90 @@ class UnitControlMenu:
                 label_surf = font.render(str(label), True, (0, 0, 0))
                 value_surf = font.render(str(value), True, color)
 
-                y = text_y + 10 + i * 25
+                y = text_y + 10 + i * 20
                 self.screen.blit(label_surf, (label_x, y))
+                
+                utils.blit_text_border(self.screen, str(value), (value_x, y), 1, font, (0, 0, 0))
+
                 self.screen.blit(value_surf, (value_x, y))
+                
+            orig_hp_color = utils.get_health_color(enemy_unit.health)
+            new_hp_color = utils.get_health_color(unit_2_new_health)
+            text_x = box_x + box_width - box_width / 20
+            text_y = box_y
+            lines = [
+                (":HP", f"{math.ceil(enemy_unit.health)} ", orig_hp_color),
+                ("", f"-{math.ceil(damage_inflicted)} ", (230, 34, 34)),
+                ("", f"{max(0, math.ceil(enemy_unit.health) - math.ceil(damage_inflicted))} ", new_hp_color),
+                (":CS", f"{math.ceil(enemy_CS)} ", unit_2_cs_color)
+            ]
+            value_column_width = 40  # Width reserved for the value (adjust as needed)
+            label_x = text_x
+            value_x = text_x - 30  # All numbers should end here
 
-            
+            for i, (label, value, color) in enumerate(lines):
+                label_surf = font.render(str(label), True, (0, 0, 0))
+                value_surf = font.render(str(value), True, color)
 
+                y = text_y + 10 + i * 20
+                
+
+                self.screen.blit(label_surf, (label_x - label_surf.get_width(), y))
+
+                # Right-align value by subtracting its width from the right edge
+                utils.blit_text_border(self.screen, str(value), (value_x - value_surf.get_width(), y), 1, font, (0, 0, 0))
+
+                self.screen.blit(value_surf, (value_x - value_surf.get_width(), y))
+            self.draw_combat_bonuses()
+    
+    def draw_combat_bonuses(self):
+        damage_inflicted, damage_taken, unit, enemy_unit, unit_CS, enemy_CS, unit_bonus, enemy_bonus = self.combat_info
+        box_width = 200
+        box_height = 120
+        box_x = 10
+        box_y = self.screen.get_height() - box_height * 2 - 8 - box_height
+        mid_point = box_x + box_width / 2
+
+        
+        pygame.draw.rect(self.screen, (220, 220, 220), (box_x, box_y, box_width, box_height))
+        pygame.draw.rect(self.screen, (0, 0, 0), (box_x, box_y, box_width, box_height), 2)
+        
+        font = pygame.font.SysFont(None, 20)
+        text_x = box_x + box_width / 20
+        text_y = box_y
+        
+
+        label_x = text_x
+        value_x = text_x + 50  # Adjust as needed for alignment
+        i = 0
+        for key in unit_bonus.keys():
+            if unit_bonus[key] != 0:
+                label_surf = font.render(key, True, (0, 0, 0))
+                value_surf = font.render(str(unit_bonus[key]), True, (0, 219, 58) if unit_bonus[key] > 0 else (240, 54, 2))
+
+                y = text_y + 10 + i * 20
+                self.screen.blit(label_surf, (label_x, y))
+                
+                self.screen.blit(value_surf, (mid_point - 5 - value_surf.get_width(), y))
+                i += 1
+                
+                
+
+        text_x = box_x + mid_point + box_width / 20
+        text_y = box_y
+        label_x = text_x
+        value_x = text_x + 50  # Adjust as needed for alignment
+        i = 0
+        for key in enemy_bonus.keys():
+            if enemy_bonus[key] != 0:
+                label_surf = font.render(key, True, (0, 0, 0))
+                value_surf = font.render(str(enemy_bonus[key]), True, (0, 219, 58) if enemy_bonus[key] > 0 else (240, 54, 2))
+
+                y = text_y + 10 + i * 20
+                self.screen.blit(label_surf, (label_x, y))
+                
+                self.screen.blit(value_surf, (box_x + box_width - 5 - value_surf.get_width(), y))
+                i += 1
     def is_hovered(self, rect):
         if not self.valid_hover:
             return False
@@ -1107,7 +1202,7 @@ class UnitControlMenu:
         unit = self.unit_handler.get_unit(self.active_tile.unit_id)
         
         for key in self.button_menu.keys():
-            if self.button_menu[key].collidepoint(mouse_x, mouse_y):
+            if self.button_menu[key].collidepoint(mouse_x, mouse_y) and key not in self.disabled_buttons:
                 if key == "De-select":
                     self.reset()
 
@@ -1116,7 +1211,6 @@ class UnitControlMenu:
                         unit.clear_hover_path()
                     if self.active_button == "Attack":
                         unit.clear_attackable()
-
                     self.active_button = None
 
                 else:
@@ -1127,6 +1221,14 @@ class UnitControlMenu:
                     if self.active_button == "Attack":
                         unit = self.unit_handler.get_unit(self.active_tile.unit_id)
                         unit.highlight_attackable()
+                    if self.active_button == "Fortify":
+                        unit.fortify()
+                        self.active_button = None
+
+                    if self.active_button == "Cancel":
+                        unit.cancel_action()
+                        self.active_button = None
+
 
         if self.active_unit != None and self.active_unit.destination != None:
             self.active_unit.move_to_hover(self.active_unit.destination)
@@ -1156,30 +1258,33 @@ class UnitControlMenu:
             return
         mouse_x, mouse_y = pygame.mouse.get_pos()
         x, y, z = utils.click_to_hex(mouse_x, mouse_y)
-        if self.active_tile != None:
-            if self.active_button == "Move" and not self.dragging:
-                unit.clear_hover_path()
-                movement_remaining = unit.move_to_helper((x, y, z))
-                self.active_button = None
-                if movement_remaining == 0:
-                    self.reset()
+        if self.active_button == "Move" and not self.dragging:
+            unit.clear_hover_path()
+            movement_remaining = unit.move_to_helper((x, y, z))
+            if movement_remaining == 0:
+                self.reset()
 
-                else:
-                    self.active_tile = self.generated_map.get_tile_hex(*unit.coord)
-                    self.generated_map.selected_tile = self.active_tile
-                self.player_handler.get_player(self.current_player).update_visibility()
+            else:
+                self.active_tile = self.generated_map.get_tile_hex(*unit.coord)
+                self.generated_map.selected_tile = self.active_tile
+            self.player_handler.get_player(self.current_player).update_visibility()
 
-            if self.active_button == "Attack" and not self.dragging:
-                movement_remaining = unit.attack_enemy((x, y, z))
-                self.active_button = None
-                if movement_remaining == 0:
-                    self.reset()
+        if self.active_button == "Attack" and not self.dragging:
+            movement_remaining = unit.attack_enemy((x, y, z))
+            if movement_remaining == 0:
+                self.reset()
 
-                else:
-                    self.active_tile = self.generated_map.get_tile_hex(*unit.coord)
-                    self.generated_map.selected_tile = self.active_tile
-                self.player_handler.get_player(self.current_player).update_visibility()
+            else:
+                self.active_tile = self.generated_map.get_tile_hex(*unit.coord)
+                self.generated_map.selected_tile = self.active_tile
+            self.player_handler.get_player(self.current_player).update_visibility()
+            self.display_combat_info = False
+    
+    
+        self.active_button = None
 
+        if unit.remaining_movement == 0:
+            self.disabled_buttons = self.buttons_no_movement
         return
     
 class GameControlsInterface:
