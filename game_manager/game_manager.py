@@ -1,8 +1,10 @@
 import config as config
 import game_manager.turn_manager as turn_manager
+import interactions.utils as utils
 class GameManager:
-    def __init__(self, players, units, generated_map, test_user_interface):
+    def __init__(self, screen, players, units, generated_map, test_user_interface):
         self.type = None
+        self.screen = screen
         self.players = players
         self.units = units
         self.generated_map = generated_map
@@ -62,8 +64,8 @@ class GameManager:
     def next_turn(self):
         current_player = self.players.get_player(self.current_player)
 
-        for unit in current_player.units:
-            self.units.get_unit(unit).end_turn()
+        for unit_id in current_player.units:
+            self.units.get_unit(unit_id).end_turn()
         current_player.update_visibility()
         if self.current_player >= len(self.players.players) - 1:
             self.current_player = 0
@@ -76,6 +78,18 @@ class GameManager:
         current_player.update_visibility()
 
         self.test_user_interface.update_UI(self.current_player)
+        
+    def cycle_unit(self):
+        current_player = self.players.get_player(self.current_player)
+
+        for unit_id in current_player.units:
+            unit = self.units.get_unit(unit_id)
+            if unit.action:
+                tile = self.generated_map.get_tile_hex(*unit.coord)
+                utils.move_screen_to_tile(tile, self.screen)
+                return (tile, unit)
+        return None
+
             
         
 # To DO:

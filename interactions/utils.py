@@ -171,3 +171,11 @@ def combat_strength_color(unit_1_CS, unit_2_CS):
     else:
         return ((240, 54, 2), (0, 120, 32))  
 
+def move_screen_to_tile(tile, screen):
+    pixel_height = config.map_settings["pixel_height"]
+    
+    center_x, center_y = coord_to_pixel(*hex_coord_to_coord(tile.x, tile.y, tile.z))
+    
+    config.map_settings["offsetX"] -= center_x - (screen.get_width() / 2)
+    config.map_settings["offsetY"] -= center_y - (pixel_height / 2)
+    config.map_change = True

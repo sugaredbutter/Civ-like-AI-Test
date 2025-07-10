@@ -40,12 +40,16 @@ class Unit:
         self.fortified = False
         self.turns_fortified = 0
         
+        self.fortify_and_heal = False
+        
+        self.skip = False
+        
         self.ZOC_locked = False
         
         self.movement = units_config.units[type]["movement"]
         self.remaining_movement = self.movement
         
-        self.action = False
+        self.action = True
 
         self.player_handler = player_handler
     
@@ -66,6 +70,7 @@ class Unit:
         self.health = self.orig_health
         self.ZOC_locked = False
         self.fortified = False
+        self.action = True
 
     # Checks to see that given the player's info, a destination is able to be reached
     def valid_destination(self, destination):
@@ -305,6 +310,8 @@ class Unit:
             
             movement_left -= next_tile_movement
         self.remaining_movement = movement_left
+        self.fortified = False
+        self.turns_fortified = 0
         
     def move_to_helper(self, destination):
         destination_tile = self.map.get_tile_hex(*destination)
@@ -317,6 +324,10 @@ class Unit:
         done_move = False
         while done_move == False:
             done_move = self.move_to(destination)
+        if self.remaining_movement > 0:
+            self.action = True
+        else:
+            self.action = False
         return self.remaining_movement
 
 
@@ -329,6 +340,7 @@ class Unit:
             self.path = None
             return True
         self.fortified = False
+        self.turns_fortified = 0
         self.destination = destination
         full_path = self.A_star(destination)
 
@@ -483,12 +495,22 @@ class Unit:
     
     def turn_begin(self):
         self.ZOC_locked = False
-        self.remaining_movement = self.movement
-        self.action = False
         if self.fortified:
+            health_healed = 5 * (self.remaining_movement / self.movement) + min(10, self.turns_fortified * 5)
+            self.health = min(self.health + health_healed, 100)
+            if self.health == 100 and self.fortify_and_heal:
+                self.fortify_and_heal = False
+                self.fortified = False
+                self.action = True
+        if self.skip:
+            self.fortified = False
+            self.skip = False
+        if not self.fortified:
+            self.action = True
+        else:
             self.turns_fortified += 1
-            print(self.turns_fortified)
-            self.health = min(self.health + 10, 100)
+        self.remaining_movement = self.movement
+
             
 
     
@@ -667,16 +689,21 @@ class Unit:
 
     def attack_enemy(self, destination):
         if self.type == "Ranged":
-            return self.ranged_attack(destination)
+            self.ranged_attack(destination)
         else:
-            return self.melee_attack(destination)
-        
+            self.melee_attack(destination)
+        if self.remaining_movement > 0:
+            self.action = True
+        else:
+            self.action = False
+        self.fortified = False
+        self.turns_fortified = 0
+        return self.remaining_movement
+
     def ranged_attack(self, destination):
         attackable_tiles = self.get_attackable_units()
         if destination not in attackable_tiles or self.remaining_movement == 0:
             return self.movement
-        self.fortified = False
-        self.turns_fortified = 0
         enemy_tile = self.map.get_tile_hex(*destination)
         current_tile = self.map.get_tile_hex(*self.coord)
         enemy_unit = self.unit_handler.get_unit(enemy_tile.unit_id)
@@ -695,8 +722,6 @@ class Unit:
         attackable_tiles = self.get_attackable_units()
         if destination not in attackable_tiles or self.remaining_movement == 0:
             return self.movement
-        self.fortified = False
-        self.turns_fortified = 0
 
         full_path = self.A_star(destination, False, True)
         current_player = self.player_handler.get_player(self.owner_id)
@@ -773,7 +798,6 @@ class Unit:
         self.clear_attackable()
         self.clear_hover_path()
 
-        return self.remaining_movement
 
     def get_attackable_units(self):
         current_player = self.player_handler.get_player(self.owner_id)
@@ -808,16 +832,34 @@ class Unit:
             self.path = None
             self.destination = None
             self.fortified = True
-
+            self.action = False
+    
+    def heal(self):
+        if self.remaining_movement > 0:
+            self.path = None
+            self.destination = None
+            self.fortified = True
+            self.fortify_and_heal = True
+            self.action = False
             
     def cancel_action(self):
         self.path = None
         self.destination = None
         self.fortified = False
+        self.fortify_and_heal = False
         self.turns_fortified = 0
         if self.remaining_movement > 0:
             self.action = True
-        
+    
+    def skip_turn(self):
+        if self.remaining_movement > 0:
+            self.path = None
+            self.destination = None
+            self.fortified = True
+            self.skip = True
+            self.action = False
+            
+    
 
             
 

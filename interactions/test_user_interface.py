@@ -39,8 +39,8 @@ class UserInterface:
                 
         self.current_player = 0
                 
-        self.Menus = [None]
-        menus_list = ["Next Turn"]
+        self.Menus = [None, None]
+        menus_list = ["Next Turn", "Next Unit"]
         self.button_menu = {}
         
         ui_list = ["Player"]
@@ -183,9 +183,13 @@ class UserInterface:
             if self.button_menu[key][0].collidepoint(mouse_x, mouse_y):
                 if self.button_menu[key][1] != None:
                     self.active_menu = self.button_menu[key][1]
-                else:
+                elif key == "Next Turn":
                     self.game_manager.next_turn()
                     self.unit_menu.reset()
+                elif key == "Next Unit":
+                    result = self.game_manager.cycle_unit()
+                    if result != None:
+                        self.unit_menu.init_unit(result[0], result[1])
                     
     def update_UI(self, player):
         self.current_player = player

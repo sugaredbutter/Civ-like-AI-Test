@@ -6,7 +6,7 @@ To Do
 Phase 1 (Movement):
 x Movement using A* and taking into account edge cases
 x Movement looks cooler (lines and numbers indiciating turn reached)
-- Possibility (animate troop unit (basically show path it took instead of tp to dst))
+- Possibility (animate troop movement (basically show path it took instead of tp to dst))
 x Unit swapping if both units have movement
 
 Phase 2 (Improve Foundation):
@@ -14,22 +14,28 @@ x Rivers and other terrain/obstacles
 x More terrains/features (mountains, forests)
 / Improve Graphics
 
-Phase 5 (Visibility and knowledge)
+Phase 3 (Visibility and knowledge)
 x Fog of War
 x Terrain affects vision
 x Revealed tiles for each player (basically undiscovered tiles)
 x Account for unrevealed tiles when attempting to traverse
 
-Phase 3 (Combat Implementation):
+Phase 4 (Combat Implementation):
 x Zone of Control
 x Basic attack implementation for melee and ranged
 x Unit can only attack enemies it can see
 x Combat strength calculations (terrain, health, etc.)
 x UI for displaying combat info
 - Unit Flanking (Prob something that will come later)
-/ Complete unit options (fortify, skip turn) excluding attacks
+x Complete unit options (fortify, skip turn) excluding attacks
 - Add more unit types
-- Indicate which units have movement and not completed action. 
+/ Indicate which units have movement and not completed action. (Unit cycling)
+
+Phase 4.5 (Improving Combat):
+- Implement unit graphics/art
+- Implement visuals for combat to better display which unit is attacking what
+- Visuals for indiciating if a unit has movement/actions or not
+- Visuals for units that are fortified
 
 Phase 5 (AI):
 - Implement AI

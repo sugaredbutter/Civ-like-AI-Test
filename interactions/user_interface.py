@@ -880,7 +880,7 @@ class UnitControlMenu:
         unit = self.unit_handler.get_unit(tile.unit_id) if tile != None else None
         if self.clicked_button:
             self.button_clicked() 
-        elif self.clicked and self.dragging == False and tile != None and unit != None and unit.owner_id == current_player and self.active_button == None:
+        elif self.clicked and self.dragging == False and tile != None and unit != None and unit.owner_id == current_player and (self.active_button == None or self.active_button == "Fortify" or self.active_button == "Heal"):
             self.reset()
             self.init_unit(tile, unit)
         elif self.clicked and self.dragging == False and self.active_button != None:
@@ -1223,8 +1223,14 @@ class UnitControlMenu:
                         unit.highlight_attackable()
                     if self.active_button == "Fortify":
                         unit.fortify()
+                        self.reset()
+                    if self.active_button == "Heal":
+                        unit.heal()
+                        self.reset()
+                    if self.active_button == "Skip Turn":
+                        unit.skip_turn()
                         self.active_button = None
-
+                        self.reset()
                     if self.active_button == "Cancel":
                         unit.cancel_action()
                         self.active_button = None
@@ -1279,12 +1285,13 @@ class UnitControlMenu:
                 self.generated_map.selected_tile = self.active_tile
             self.player_handler.get_player(self.current_player).update_visibility()
             self.display_combat_info = False
-    
-    
-        self.active_button = None
-
+        if (self.active_button == "Fortify" or self.active_button == "Heal") and not self.dragging:
+            self.reset()
+            
         if unit.remaining_movement == 0:
             self.disabled_buttons = self.buttons_no_movement
+        self.active_button = None
+
         return
     
 class GameControlsInterface:
