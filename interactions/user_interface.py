@@ -863,8 +863,8 @@ class UnitControlMenu:
             y = HEIGHT - self.padding - (i + 1) * self.button_height - i * self.padding
             self.button_menu[name] = pygame.Rect(x, y, self.button_width, self.button_height)
             
-        self.disabled_buttons = []
-        self.buttons_no_movement = ["Attack", "Fortify", "Heal", "Skip Turn"]
+        self.disabled_buttons = set()
+        self.buttons_no_movement = {"Attack", "Fortify", "Heal", "Skip Turn"}
         
 
     def left_click(self, event):
@@ -941,8 +941,12 @@ class UnitControlMenu:
             unit.move_to_hover(unit.destination)
         if unit.remaining_movement == 0:
             self.disabled_buttons = self.buttons_no_movement
-        if unit.fortified:
+        if unit.fortify_and_heal:
+            self.active_button = "Heal"
+        elif unit.fortified:
             self.active_button = "Fortify"
+        if unit.health == 100:
+            self.disabled_buttons.add("Heal")
         
     
     def reset(self):
@@ -959,7 +963,7 @@ class UnitControlMenu:
         self.unit_handler.unit_selected = False
         self.unit_handler.selected_unit = None
         self.parent_menu.display_unit_ui = False
-        self.disabled_buttons = [ ]
+        self.disabled_buttons = set()
 
     def set_init(self, event):
         self.initX = event.pos[0]
@@ -998,7 +1002,12 @@ class UnitControlMenu:
                 f"Defensive Strength: {math.ceil(self.active_unit.defense)}",
                 f"Movement: {self.active_unit.remaining_movement}/{self.active_unit.movement}",
             ]
-            lines.append("Fortified") if self.active_unit.fortified else None
+            if self.active_unit.fortify_and_heal:
+                lines.append("Fortified and Healing")
+            elif self.active_unit.skip:
+                lines.append("Turn Skipped")
+            elif self.active_unit.fortified:
+                lines.append("Fortified")
 
             for i, line in enumerate(lines):
                 text_surf = font.render(line, True, (0, 0, 0))
@@ -1222,12 +1231,15 @@ class UnitControlMenu:
                         unit = self.unit_handler.get_unit(self.active_tile.unit_id)
                         unit.highlight_attackable()
                     if self.active_button == "Fortify":
+                        unit.cancel_action()
                         unit.fortify()
                         self.reset()
                     if self.active_button == "Heal":
+                        unit.cancel_action()
                         unit.heal()
                         self.reset()
                     if self.active_button == "Skip Turn":
+                        unit.cancel_action()
                         unit.skip_turn()
                         self.active_button = None
                         self.reset()
@@ -1290,6 +1302,8 @@ class UnitControlMenu:
             
         if unit.remaining_movement == 0:
             self.disabled_buttons = self.buttons_no_movement
+        if unit.health == 100:
+            self.disabled_buttons.add("Heal")
         self.active_button = None
 
         return

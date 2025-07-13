@@ -71,6 +71,9 @@ class Unit:
         self.ZOC_locked = False
         self.fortified = False
         self.action = True
+        self.fortify_and_heal = False
+        self.turns_fortified = 0
+        self.skip = False
 
     # Checks to see that given the player's info, a destination is able to be reached
     def valid_destination(self, destination):
@@ -491,12 +494,16 @@ class Unit:
         if self.remaining_movement > 0 and self.destination is not None and not self.ZOC_locked:
             if self.coord != self.destination:
                 self.move_to(self.destination)
+        if self.remaining_movement > 0 and not self.fortified:
+            self.skip = True
+            self.fortified = True
                 
     
     def turn_begin(self):
         self.ZOC_locked = False
         if self.fortified:
             health_healed = 5 * (self.remaining_movement / self.movement) + min(10, self.turns_fortified * 5)
+            self.visual_effects.add_heal(health_healed, self.coord)
             self.health = min(self.health + health_healed, 100)
             if self.health == 100 and self.fortify_and_heal:
                 self.fortify_and_heal = False

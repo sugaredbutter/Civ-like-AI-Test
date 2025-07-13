@@ -180,7 +180,7 @@ class Map:
                     unit = self.units.get_unit(tile.unit_id)
                     #pygame.draw.circle(self.screen, self.players.get_player(unit.owner_id).color, (int(x), int(y)), hex_radius/10)
                     
-                    icon_size = int(hex_radius) * 1.1
+                    icon_size = int(hex_radius) * 1
 
                     if unit.type == "Melee":
                         unit_icon = pygame.transform.scale(self.red_melee, (icon_size, icon_size))
