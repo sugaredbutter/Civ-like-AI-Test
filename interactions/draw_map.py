@@ -14,6 +14,9 @@ class Map:
 
         self.tree_1 = pygame.image.load("Assets/Trees/Tree_1.png")
         self.plains_hex = pygame.image.load("Assets/Trees/hex_template.png")
+        self.red_melee = pygame.image.load("Assets/Units/Red/red_melee.png")
+        self.red_archer = pygame.image.load("Assets/Units/Red/red_archer.png")
+        self.red_cavalry = pygame.image.load("Assets/Units/Red/red_cavalry.png")
 
         self.saved_info = {}
         self.calculate_corners()
@@ -173,10 +176,20 @@ class Map:
                 if tile.unit_id != None:
                     x, y = self.axial_to_pixel(column, row, hex_radius, height)
                     bar_x = x - bar_width / 2
-                    bar_y = y + bar_height / 2 + hex_radius / 10
+                    bar_y = y + bar_height / 2 + hex_radius * .25
                     unit = self.units.get_unit(tile.unit_id)
-                    pygame.draw.circle(self.screen, self.players.get_player(unit.owner_id).color, (int(x), int(y)), hex_radius/10)
+                    #pygame.draw.circle(self.screen, self.players.get_player(unit.owner_id).color, (int(x), int(y)), hex_radius/10)
                     
+                    icon_size = int(hex_radius) * 1.1
+
+                    if unit.type == "Melee":
+                        unit_icon = pygame.transform.scale(self.red_melee, (icon_size, icon_size))
+                    elif unit.type == "Ranged":
+                        unit_icon = pygame.transform.scale(self.red_archer, (icon_size, icon_size))
+                    elif unit.type == "Cavalry":
+                        unit_icon = pygame.transform.scale(self.red_cavalry, (icon_size, icon_size))
+                    self.screen.blit(unit_icon, (x - icon_size // 2, y - icon_size // 2 - hex_radius * .3))
+
                     # Unit Health bar
                     pygame.draw.rect(self.screen, (255, 0, 0), (bar_x, bar_y, bar_width, bar_height))
                     # Foreground (green) - scaled width
