@@ -1,6 +1,6 @@
 import config as config
 import game_manager.turn_manager as turn_manager
-import interactions.utils as utils
+import utils as utils
 class GameManager:
     def __init__(self, screen, players, units, generated_map, test_user_interface):
         self.type = None
@@ -14,6 +14,10 @@ class GameManager:
         self.game_types = ["Test", "PvAI, AIvAI"]
         self.current_player = 0
                 
+    def setup(self):
+        self.type = "Start"
+        config.game_type = "Start"
+
     def start_game(self, game_type):
         print("Attempting to start game of type:", game_type)
         if self.start_game_check(game_type) == False:

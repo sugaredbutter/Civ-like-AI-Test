@@ -1,4 +1,4 @@
-import interactions.utils as utils
+import utils as utils
 import players.units_config as units_config
 import heapq
 from collections import deque

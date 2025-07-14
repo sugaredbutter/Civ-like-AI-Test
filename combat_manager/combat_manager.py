@@ -1,6 +1,6 @@
 import math
 import random
-import interactions.utils as utils
+import utils as utils
 import combat_manager.combat_bonus_config as combat_bonus
 import players.units_config as unit_config
 class CombatManager:

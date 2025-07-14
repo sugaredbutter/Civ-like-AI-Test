@@ -38,7 +38,8 @@ Phase 4.5 (Improving Combat):
 - Visuals for units that are fortified
 
 Phase 5 (AI):
-- Implement AI
+/ Implement Basic Rule/Score based AI
+- Investigate and Implement ML techniques
 - AI v AI
 - Player v AI
 

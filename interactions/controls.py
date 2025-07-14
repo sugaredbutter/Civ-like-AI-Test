@@ -1,6 +1,6 @@
 import pygame
 import config as config
-import interactions.utils as utils
+import utils as utils
 import interactions.user_interface as ui
 
 ROWS, COLUMNS = config.map_settings["tile_height"], config.map_settings["tile_width"]
@@ -23,12 +23,14 @@ class MouseControls:
     
     
     def left_click(self, event):
-        self.game_control_interface.left_click(event)
-        if not self.game_control_interface.clicked_button:
+        print(self.game_control_interface.active_menu.button_menu)
+        self.game_control_interface.active_menu.left_click(event)
+        if not self.game_control_interface.active_menu.clicked_button:
             if self.game_manager.type == None:
                 self.user_interface.active_menu.left_click(event)
             elif self.game_manager.type == "Test":
                 self.test_user_interface.active_menu.left_click(event)
+
         return
         self.clicked = True
         if self.user_interface.active_menu.is_clicked():
@@ -38,12 +40,13 @@ class MouseControls:
         self.set_init(event)
 
     def left_click_up(self, event):
-        self.game_control_interface.left_click_up()
+        self.game_control_interface.active_menu.left_click_up()
         if not self.game_control_interface.clicked_button:
             if self.game_manager.type == None:
                 self.user_interface.active_menu.left_click_up()
             elif self.game_manager.type == "Test":
                 self.test_user_interface.active_menu.left_click_up()
+
         return
         mouse_x, mouse_y = pygame.mouse.get_pos()
 
@@ -70,6 +73,8 @@ class MouseControls:
             self.user_interface.active_menu.mouse_move(event)
         elif self.game_manager.type == "Test":
             self.test_user_interface.active_menu.mouse_move(event)
+
+
         return
         if self.clicked and not self.clicked_button:
             self.user_interface.active_menu.valid_hover = False

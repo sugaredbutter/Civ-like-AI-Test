@@ -1,4 +1,4 @@
-import interactions.utils as utils
+import utils as utils
 import pygame
 import math
 import config

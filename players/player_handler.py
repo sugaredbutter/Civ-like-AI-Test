@@ -8,6 +8,7 @@ class Player:
         self.generated_map = generated_map
         self.unit_handler = unit_handler
         self.units = []
+        self.AI = False
         
         self.visible_tiles = set()
         self.revealed_tiles = set()
@@ -45,15 +46,15 @@ class PlayerHandler:
         self.generated_map = generated_map
         self.unit_handler = unit_handler
         self.colors = [
-            (255, 0, 0),    # Red
-            (20, 0, 242),    # Blue
-            (242, 0, 238),  # Pink
-            (224, 144, 4)  # Orange
+            "red",   
+            "blue",  
+            "green",  
+            "purple"  
         ]
         self.players = []
 
     def add_player(self):
-        self.players.append(Player(len(self.players), self.colors[len(self.players) - 1], self.generated_map, self.unit_handler))
+        self.players.append(Player(len(self.players), self.colors[len(self.players)], self.generated_map, self.unit_handler))
 
     def get_player(self, id):
         return self.players[id]

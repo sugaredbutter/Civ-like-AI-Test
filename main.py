@@ -2,10 +2,11 @@ import pygame
 import map_generator.map_generator as generate_map
 import interactions.draw_map as draw_map
 import config as config
-import interactions.utils as utils
+import utils as utils
 import interactions.controls as controls
 import interactions.user_interface as ui
 import interactions.test_user_interface as test_ui
+import interactions.game_interface as game_ui
 import players.units as unit_handler
 import players.player_handler as player_handler
 import game_manager.game_manager as game
@@ -33,7 +34,7 @@ test_user_interface = test_ui.UserInterface(screen, generated_map, players, unit
 tile_click_controls = controls.TileClickControls(screen, user_interface, generated_map, players, units)
 game_manager = game.GameManager(screen, players, units, generated_map, test_user_interface)
 test_user_interface.game_manager = game_manager
-game_control_interface = ui.GameControlsInterface(screen, game_manager)
+game_control_interface = game_ui.GameControlsInterface(screen, game_manager)
 
 mouse_controls = controls.MouseControls(screen, user_interface, test_user_interface, generated_map, tile_click_controls, game_control_interface, game_manager)
 
@@ -61,7 +62,7 @@ while running:
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:  # 1 = left click
                 mouse_controls.left_click(event)
-        elif event.type == pygame.MOUSEBUTTONUP:    
+        elif event.type == pygame.MOUSEBUTTONUP:  
             mouse_controls.left_click_up(event)
         elif event.type == pygame.MOUSEMOTION:
             mouse_controls.mouse_move(event)
@@ -69,9 +70,11 @@ while running:
             mouse_controls.zoom(event)
 
 
-    map.draw_tiles(WIDTH, HEIGHT)
-    game_control_interface.create_menu()
-
+    map.draw_tiles()
+    if game_manager.type != "Start":
+        game_control_interface.create_menu()
+    else:
+        game_control_interface.active_menu.create_menu()
     if game_manager.type == None:
         user_interface.active_menu.create_menu()
     if game_manager.type == "Test":

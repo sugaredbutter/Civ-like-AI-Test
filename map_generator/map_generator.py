@@ -1,6 +1,6 @@
 import math
 import pygame
-import interactions.utils as utils
+import utils as utils
 import random
 import map_generator.tile_types_config as tile_types_config
 import config as config
