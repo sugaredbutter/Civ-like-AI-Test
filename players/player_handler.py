@@ -66,4 +66,17 @@ class PlayerHandler:
     def end_game_reset(self):
         for players in self.players:
             players.revealed_tiles = set()
+
+    def start_game(self, type):
+        print("hi")
+        if type == "Test":
+            self.players[0].update_visibility()
+            
+        elif type == "PvAITest" or type == "PvAI":
+            self.players[0].update_visibility()
+            for x in range(1, len(self.players)):
+                self.players[x].AI = True
+        for x in self.players:
+            print(x.AI)
+
     

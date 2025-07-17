@@ -30,20 +30,27 @@ x UI for displaying combat info
 x Complete unit options (fortify, skip turn) excluding attacks
 - Add more unit types
 / Indicate which units have movement and not completed action. (Unit cycling)
-
-Phase 4.5 (Improving Combat):
 / Implement unit graphics/art
-- Implement visuals for combat to better display which unit is attacking what
-- Visuals for indiciating if a unit has movement/actions or not
-- Visuals for units that are fortified
 
-Phase 5 (AI):
+
+
+Phase 5 (General Cleanup and Foundations)
+/ GameState
+/ Clean Unit code as it is not scalable and getting quite messy
+
+
+Phase 6 (AI):
 / Implement Basic Rule/Score based AI
 - Investigate and Implement ML techniques
 - AI v AI
 - Player v AI
 
-Phase 6 (Flesh out):
+Phase 7 (Improving Combat (Not priority)):
+- Implement visuals for combat to better display which unit is attacking what
+- Visuals for indiciating if a unit has movement/actions or not
+- Visuals for units that are fortified
+
+Phase 7.5 (Flesh out):
 - Randomize terrain/map
 - Difficulty modifiers?
 - Clean up code (particularly draw_map)

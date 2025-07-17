@@ -4,7 +4,7 @@ import utils as utils
 import combat_manager.combat_bonus_config as combat_bonus
 import players.units_config as unit_config
 class CombatManager:
-    def combat(self, unit_1, unit_2, tile_1, tile_2, type):
+    def combat(unit_1, unit_2, tile_1, tile_2, type):
         unit_1_combat_strength = unit_1.attack - round((10 * (100 - unit_1.health)) / 100)
         unit_2_combat_strength = unit_2.defense - round((10 * (100 - unit_2.health)) / 100)
         unit_2_combat_bonus = 0 
@@ -27,7 +27,7 @@ class CombatManager:
         unit_1_damage_taken = 30*math.exp(.04*(unit_2_combat_strength - unit_1_combat_strength)) * random.uniform(0.8, 1.2)
         return (unit_1_damage_dealt, unit_1_damage_taken)
     
-    def estimate_combat(self, unit_1, unit_2, tile_1, tile_2, type):
+    def estimate_combat(unit_1, unit_2, tile_1, tile_2, type):
         unit_1_combat_strength = unit_1.attack - round((10 * (100 - unit_1.health)) / 100)
         unit_2_combat_strength = unit_2.defense - round((10 * (100 - unit_2.health)) / 100)
         unit_2_combat_bonus = 0 
@@ -50,7 +50,7 @@ class CombatManager:
         unit_1_damage_taken = 30*math.exp(.04*(unit_2_combat_strength - unit_1_combat_strength))
         return (unit_1_damage_dealt, unit_1_damage_taken)
     
-    def get_combat_strength(self, unit_1, unit_2, tile_1, tile_2, type):
+    def get_combat_strength(unit_1, unit_2, tile_1, tile_2, type):
         unit_1_combat_strength = round(unit_1.attack - (10 * (100 - unit_1.health)) / 100)
         unit_2_combat_strength = round(unit_2.defense - (10 * (100 - unit_2.health)) / 100)
         unit_2_combat_bonus = 0 
@@ -69,7 +69,7 @@ class CombatManager:
         
         return (unit_1_combat_strength, unit_2_combat_strength)
     
-    def get_combat_bonus(self, unit_1, unit_2, tile_1, tile_2, type):
+    def get_combat_bonus(unit_1, unit_2, tile_1, tile_2, type):
         unit_1_combat_bonuses = {
             "Health": -round((10 * (100 - unit_1.health)) / 100),
             "Terrain": 0,

@@ -74,7 +74,7 @@ class UserInterface:
         self.clicked = True
         if self.is_clicked():
             self.clicked_button = True
-        else:
+        elif self.current_player == 0:
             self.unit_menu.left_click(event)
         self.set_init(event)
     
@@ -84,7 +84,7 @@ class UserInterface:
         unit = self.unit_handler.get_unit(tile.unit_id) if tile != None else None
         if self.clicked_button and self.is_clicked():
             self.button_clicked()   
-        else:
+        elif self.current_player == 0:
             self.unit_menu.left_click_up(self.current_player)
         
 
@@ -139,8 +139,9 @@ class UserInterface:
          
     
     def create_menu(self):
-        for key in self.button_menu.keys():
-            self.draw_button(key, self.button_menu[key][0], self.active_button == key)
+        if self.current_player == 0:
+            for key in self.button_menu.keys():
+                self.draw_button(key, self.button_menu[key][0], self.active_button == key)
         for key in self.ui_menu.keys():
             self.draw_UI(self.ui_menu[key][1], self.ui_menu[key][0])
         if self.display_unit_ui:

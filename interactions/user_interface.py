@@ -3,6 +3,10 @@ import config as config
 import utils as utils
 import interactions.controls as controls
 import math
+from players.units_utils import UnitUtils
+from players.units_utils import UnitMove
+from players.units_utils import UnitVisibility
+from players.units_utils import UnitAttack
 
 WHITE = (255, 255, 255)
 GRAY = (180, 180, 180)
@@ -951,8 +955,8 @@ class UnitControlMenu:
     
     def reset(self):
         if self.active_unit != None:
-            self.active_unit.clear_hover_path()
-            self.active_unit.clear_attackable()
+            UnitMove.clear_hover_path(self.active_unit, self.active_unit.game_state)
+            UnitAttack.clear_attackable(self.active_unit, self.active_unit.game_state)
         self.active_unit = None
         self.active_tile = None
         self.active_button = None
@@ -1217,19 +1221,19 @@ class UnitControlMenu:
 
                 elif self.active_button == key:
                     if self.active_button == "Move":
-                        unit.clear_hover_path()
+                        UnitMove.clear_hover_path(unit, unit.game_state)
                     if self.active_button == "Attack":
-                        unit.clear_attackable()
+                        UnitAttack.clear_attackable(unit, unit.game_state)
                     self.active_button = None
 
                 else:
                     self.active_button = key
-                    unit.clear_hover_path()
-                    unit.clear_attackable()
+                    UnitMove.clear_hover_path(unit, unit.game_state)
+                    UnitAttack.clear_attackable(unit, unit.game_state)
 
                     if self.active_button == "Attack":
                         unit = self.unit_handler.get_unit(self.active_tile.unit_id)
-                        unit.highlight_attackable()
+                        UnitAttack.highlight_attackable(unit, unit.game_state)
                     if self.active_button == "Fortify":
                         unit.cancel_action()
                         unit.fortify()
@@ -1277,8 +1281,8 @@ class UnitControlMenu:
         mouse_x, mouse_y = pygame.mouse.get_pos()
         x, y, z = utils.click_to_hex(mouse_x, mouse_y)
         if self.active_button == "Move" and not self.dragging:
-            unit.clear_hover_path()
-            movement_remaining = unit.move_to_helper((x, y, z))
+            UnitMove.clear_hover_path(unit, unit.game_state)
+            movement_remaining = unit.move_to((x, y, z))
             if movement_remaining == 0:
                 self.reset()
 

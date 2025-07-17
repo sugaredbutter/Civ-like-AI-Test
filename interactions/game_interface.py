@@ -43,7 +43,6 @@ class GameControlsInterface:
         self.button_menu["End"] = pygame.Rect(x, y, self.button_width, self.button_height)
 
     def left_click(self, event):
-        print("lol")
         self.clicked = True
         if self.is_clicked():
             self.clicked_button = True
@@ -112,7 +111,6 @@ class GameControlsInterface:
         mouse_x, mouse_y = pygame.mouse.get_pos()
         if self.button_menu[self.active_button].collidepoint(mouse_x, mouse_y):
             if self.active_button == "Start":
-                self.active_button = "End"
                 self.game_manager.setup()
                 self.active_menu = self.start_manager
             else:
@@ -132,19 +130,19 @@ class StartGameInterface:
         self.dragging = False
         self.clicked_button = False
         
-        self.button_width = 100
+        self.button_width = 150
         self.button_height = 40
         self.padding = 10
         self.valid_hover = True
         self.active_button = None
         
-        buttons = ["Test", "Player vs AI", "AI vs AI", "Back"]
+        buttons = ["Test", "Player vs AI Test", "AI vs AI Test", "Player vs AI", "AI vs AI", "Back"]
         self.button_menu = {}
         
 
         
         for i, name in enumerate(buttons):
-            x = WIDTH / 2 - self.padding / 2 - self.button_width - self.padding - self.button_width + i * (self.button_width + self.padding)
+            x = WIDTH / 2 - self.padding / 2 - 3 * self.button_width - 2 * self.padding + i * (self.button_width + self.padding)
             y = HEIGHT / 2 - self.button_width / 2
             self.button_menu[name] = pygame.Rect(x, y, self.button_width, self.button_height)
 
@@ -220,7 +218,17 @@ class StartGameInterface:
             if self.button_menu[key].collidepoint(mouse_x, mouse_y):
                 if key == "Back":
                     self.game_controls.active_menu = self.game_controls
+                    self.game_manager.end_game()
                 elif key == "Test":
-                    self.game_manager.start_game("Test")
+                    game_started = self.game_manager.start_game("Test")
                     self.game_controls.active_menu = self.game_controls
+                    if game_started: 
+                        self.game_controls.active_button = "End"
+
+                elif key == "Player vs AI Test":
+                    game_started = self.game_manager.start_game("PvAITest")
+                    self.game_controls.active_menu = self.game_controls
+                    if game_started: 
+                        self.game_controls.active_button = "End"
+
 

@@ -1,17 +1,20 @@
 import config as config
 import game_manager.turn_manager as turn_manager
 import utils as utils
+from Agents.agent import ScoreAgent 
 class GameManager:
-    def __init__(self, screen, players, units, generated_map, test_user_interface):
+    def __init__(self, screen, players, units, generated_map, test_user_interface, player_v_AI_interface, game_state):
         self.type = None
         self.screen = screen
         self.players = players
         self.units = units
         self.generated_map = generated_map
         self.test_user_interface = test_user_interface
+        self.player_v_AI_interface = player_v_AI_interface
+        self.game_state = game_state
         self.turn_manager = turn_manager.TurnManager(players, units, generated_map)
         
-        self.game_types = ["Test", "PvAI, AIvAI"]
+        self.game_types = ["Test", "PvAITest", "AIvAITest", "PvAI, AIvAI"]
         self.current_player = 0
                 
     def setup(self):
@@ -22,6 +25,7 @@ class GameManager:
         print("Attempting to start game of type:", game_type)
         if self.start_game_check(game_type) == False:
             print("Game start check failed for type:", game_type)
+            self.end_game()
             return False
         self.type = game_type
         self.turn_manager.in_game = True
@@ -29,15 +33,14 @@ class GameManager:
         self.turn_manager.current_player = 0
         print("Game started successfully with type:", game_type)
         config.game_type = game_type
-        current_player = self.players.get_player(self.current_player)
-        current_player.update_visibility()
+        self.players.start_game(game_type)
         self.generated_map.start_game()
         return True
 
     def start_game_check(self, game_type):
         if game_type == "Test":
             return True
-        elif game_type == "PvAI":
+        elif game_type == "PvAI" or game_type == "PvAITest":
             num_players = config.num_players
             for x in range(num_players):
                 player = self.players.get_player(x)
@@ -61,28 +64,51 @@ class GameManager:
         self.generated_map.end_game_reset()
         self.units.end_game_reset()
         self.test_user_interface.end_game_reset()
+        self.player_v_AI_interface.end_game_reset()
         self.current_player = 0
         self.players.end_game_reset()
         config.game_type = None
         
     def next_turn(self):
-        current_player = self.players.get_player(self.current_player)
+        if self.type == "Test":
+            current_player = self.players.get_player(self.current_player)
 
-        for unit_id in current_player.units:
-            self.units.get_unit(unit_id).end_turn()
-        current_player.update_visibility()
-        if self.current_player >= len(self.players.players) - 1:
-            self.current_player = 0
-        else:
-            self.current_player += 1
+            for unit_id in current_player.units:
+                self.units.get_unit(unit_id).end_turn()
+            current_player.update_visibility()
+            if self.current_player >= len(self.players.players) - 1:
+                self.current_player = 0
+            else:
+                self.current_player += 1
+                
+            current_player = self.players.get_player(self.current_player)
+            for unit in current_player.units:
+                self.units.get_unit(unit).turn_begin()
+            current_player.update_visibility()
+
+            self.test_user_interface.update_UI(self.current_player)
+        elif self.type == "PvAITest":
+            current_player = self.players.get_player(self.current_player)
+
+            for unit_id in current_player.units:
+                self.units.get_unit(unit_id).end_turn()
+            current_player.update_visibility()
+            if self.current_player >= len(self.players.players) - 1:
+                self.current_player = 0
+            else:
+                self.current_player += 1
+                
+            current_player = self.players.get_player(self.current_player)
+            for unit in current_player.units:
+                self.units.get_unit(unit).turn_begin()
+            current_player.update_visibility()
+
+            self.player_v_AI_interface.update_UI(self.current_player)
+            if current_player.AI:
+                ScoreAgent.choose_best_actions(self.current_player, self.game_state)
+                self.next_turn()
+                
             
-        current_player = self.players.get_player(self.current_player)
-        for unit in current_player.units:
-            self.units.get_unit(unit).turn_begin()
-        current_player.update_visibility()
-
-        self.test_user_interface.update_UI(self.current_player)
-        
     def cycle_unit(self):
         current_player = self.players.get_player(self.current_player)
 
