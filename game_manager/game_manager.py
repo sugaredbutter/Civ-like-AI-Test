@@ -3,7 +3,7 @@ import game_manager.turn_manager as turn_manager
 import utils as utils
 from Agents.agent import ScoreAgent 
 class GameManager:
-    def __init__(self, screen, players, units, generated_map, test_user_interface, player_v_AI_interface, game_state):
+    def __init__(self, screen, players, units, generated_map, test_user_interface, player_v_AI_interface, game_state, interfaces):
         self.type = None
         self.screen = screen
         self.players = players
@@ -12,6 +12,7 @@ class GameManager:
         self.test_user_interface = test_user_interface
         self.player_v_AI_interface = player_v_AI_interface
         self.game_state = game_state
+        self.interfaces = interfaces
         self.turn_manager = turn_manager.TurnManager(players, units, generated_map)
         
         self.game_types = ["Test", "PvAITest", "AIvAITest", "PvAI, AIvAI"]
@@ -103,10 +104,11 @@ class GameManager:
                 self.units.get_unit(unit).turn_begin()
             current_player.update_visibility()
 
-            self.player_v_AI_interface.update_UI(self.current_player)
-            if current_player.AI:
-                ScoreAgent.choose_best_actions(self.current_player, self.game_state)
-                self.next_turn()
+            self.interfaces.player_v_AI_test_interface.update_UI(self.current_player)
+
+            #if current_player.AI:
+            #    ScoreAgent.choose_best_actions(self.current_player, self.game_state)
+            #    self.next_turn()
                 
             
     def cycle_unit(self):

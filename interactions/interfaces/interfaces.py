@@ -1,0 +1,8 @@
+class Interfaces:
+    def __init__(self, user_interface, test_user_interface, player_v_AI_test_interface, player_v_AI_interface):
+        self.user_interface = user_interface
+        self.test_user_interface = test_user_interface
+        self.player_v_AI_test_interface = player_v_AI_test_interface
+        self.player_v_AI_interface = player_v_AI_interface
+
+    

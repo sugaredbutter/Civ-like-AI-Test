@@ -2,8 +2,10 @@ import pygame
 import config as config
 import utils as utils
 import interactions.controls as controls
-import interactions.user_interface as ui
+import interactions.interfaces.user_interface as ui
 import config as config
+from Agents.agent import ScoreAgent 
+
 WHITE = (255, 255, 255)
 GRAY = (180, 180, 180)
 DARK_GRAY = (120, 120, 120)
@@ -14,13 +16,11 @@ ROWS, COLUMNS = config.map_settings["tile_height"], config.map_settings["tile_wi
 ZOOM_SCALE = config.map_settings["zoom"]
 
 class UserInterface:
-    def __init__(self, screen, generated_map, player_handler, unit_handler):
+    def __init__(self, screen, game_state):
         self.screen = screen
-        self.generated_map = generated_map
-        self.player_handler = player_handler
-        self.unit_handler = unit_handler
+        self.game_state = game_state
         self.game_manager = None
-        self.unit_menu = ui.UnitControlMenu(screen, self, generated_map, player_handler, unit_handler)
+        self.unit_menu = ui.UnitControlMenu(screen, self, game_state.map, game_state.players, game_state.units)
 
         self.initX = 0
         self.initY = 0
@@ -39,9 +39,13 @@ class UserInterface:
                 
         self.current_player = 0
                 
-        self.Menus = [None, None]
+        self.menus = [None, None]
         menus_list = ["Next Turn", "Next Unit"]
         self.button_menu = {}
+
+        self.AI_menus = [None, None]
+        AI_menus_list = ["Next Turn", "Next Action"]
+        self.AI_button_menu = {}
         
         ui_list = ["Player"]
         self.ui_menu = {}
@@ -49,7 +53,12 @@ class UserInterface:
         for i, name in enumerate(menus_list):
             x = WIDTH - self.button_width - self.padding
             y = self.padding + i * (self.button_height + self.padding)
-            self.button_menu[name] = (pygame.Rect(x, y, self.button_width, self.button_height), self.Menus[i])
+            self.button_menu[name] = (pygame.Rect(x, y, self.button_width, self.button_height), self.menus[i])
+
+        for i, name in enumerate(AI_menus_list):
+            x = WIDTH - self.button_width - self.padding
+            y = self.padding + i * (self.button_height + self.padding)
+            self.AI_button_menu[name] = (pygame.Rect(x, y, self.button_width, self.button_height), self.AI_menus[i])
             
         for i, name in enumerate(ui_list):
             x = self.padding + (i + 1) * (self.button_width + self.padding)
@@ -80,8 +89,8 @@ class UserInterface:
     
     def left_click_up(self):
         mouse_x, mouse_y = pygame.mouse.get_pos()
-        tile = self.generated_map.get_tile_hex(*utils.click_to_hex(mouse_x, mouse_y))
-        unit = self.unit_handler.get_unit(tile.unit_id) if tile != None else None
+        tile = self.game_state.map.get_tile_hex(*utils.click_to_hex(mouse_x, mouse_y))
+        unit = self.game_state.units.get_unit(tile.unit_id) if tile != None else None
         if self.clicked_button and self.is_clicked():
             self.button_clicked()   
         elif self.current_player == 0:
@@ -139,9 +148,13 @@ class UserInterface:
          
     
     def create_menu(self):
-        if self.current_player == 0:
+        player = self.game_state.players.get_player(self.current_player)
+        if player.AI == False:
             for key in self.button_menu.keys():
                 self.draw_button(key, self.button_menu[key][0], self.active_button == key)
+        else:
+            for key in self.AI_button_menu.keys():
+                self.draw_button(key, self.AI_button_menu[key][0], self.active_button == key)
         for key in self.ui_menu.keys():
             self.draw_UI(self.ui_menu[key][1], self.ui_menu[key][0])
         if self.display_unit_ui:
@@ -179,18 +192,32 @@ class UserInterface:
         return False
 
     def button_clicked(self):
+        player = self.game_state.players.get_player(self.current_player)
+        print(player.AI)
         mouse_x, mouse_y = pygame.mouse.get_pos()
-        for key in self.button_menu.keys():
-            if self.button_menu[key][0].collidepoint(mouse_x, mouse_y):
-                if self.button_menu[key][1] != None:
-                    self.active_menu = self.button_menu[key][1]
-                elif key == "Next Turn":
-                    self.game_manager.next_turn()
-                    self.unit_menu.reset()
-                elif key == "Next Unit":
-                    result = self.game_manager.cycle_unit()
-                    if result != None:
-                        self.unit_menu.init_unit(result[0], result[1])
+        if player.AI == False:
+            for key in self.button_menu.keys():
+                if self.button_menu[key][0].collidepoint(mouse_x, mouse_y):
+                    if self.button_menu[key][1] != None:
+                        self.active_menu = self.button_menu[key][1]
+                    elif key == "Next Turn":
+                        self.game_manager.next_turn()
+                        self.unit_menu.reset()
+                    elif key == "Next Unit":
+                        result = self.game_manager.cycle_unit()
+                        if result != None:
+                            self.unit_menu.init_unit(result[0], result[1])
+        else:
+            for key in self.AI_button_menu.keys():
+                if self.AI_button_menu[key][0].collidepoint(mouse_x, mouse_y):
+                    if self.AI_button_menu[key][1] != None:
+                        self.active_menu = self.AI_button_menu[key][1]
+                    elif key == "Next Turn":
+                        self.game_manager.next_turn()
+                        self.unit_menu.reset()
+                    elif key == "Next Action":
+                        print("hi")
+                        ScoreAgent.choose_best_action(self.current_player, self.game_state)
                     
     def update_UI(self, player):
         self.current_player = player

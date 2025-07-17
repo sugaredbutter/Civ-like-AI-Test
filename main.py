@@ -4,10 +4,13 @@ import interactions.draw_map as draw_map
 import config as config
 import utils as utils
 import interactions.controls as controls
-import interactions.user_interface as ui
-import interactions.test_user_interface as test_ui
-import interactions.player_v_AI_interface as pvAI_ui
-import interactions.game_interface as game_ui
+import interactions.interfaces.user_interface as ui
+import interactions.interfaces.test_user_interface as test_ui
+import interactions.interfaces.player_v_AI_interface as pvAI_ui
+import interactions.interfaces.player_v_AI_test_interface as pvAI_test_ui
+import interactions.interfaces.interfaces as interfaces
+
+import interactions.interfaces.game_interface as game_ui
 import players.units as unit_handler
 import players.player_handler as player_handler
 import game_manager.game_manager as game
@@ -36,12 +39,16 @@ players.add_player()  # player 2
 user_interface = ui.UserInterface(screen, generated_map, players, units)
 test_user_interface = test_ui.UserInterface(screen, generated_map, players, units)
 player_v_AI_interface = pvAI_ui.UserInterface(screen, generated_map, players, units)
+player_v_AI_test_interface = pvAI_test_ui.UserInterface(screen, game_state)
+all_interfaces = interfaces.Interfaces(user_interface, test_user_interface, player_v_AI_test_interface, player_v_AI_interface)
+
 tile_click_controls = controls.TileClickControls(screen, user_interface, generated_map, players, units)
-game_manager = game.GameManager(screen, players, units, generated_map, test_user_interface, player_v_AI_interface, game_state)
+game_manager = game.GameManager(screen, players, units, generated_map, test_user_interface, player_v_AI_interface, game_state, all_interfaces)
 test_user_interface.game_manager = game_manager
 player_v_AI_interface.game_manager = game_manager
+player_v_AI_test_interface.game_manager = game_manager
 game_control_interface = game_ui.GameControlsInterface(screen, game_manager)
-mouse_controls = controls.MouseControls(screen, user_interface, test_user_interface, player_v_AI_interface, generated_map, tile_click_controls, game_control_interface, game_manager)
+mouse_controls = controls.MouseControls(screen, user_interface, test_user_interface, player_v_AI_interface, generated_map, tile_click_controls, game_control_interface, game_manager, all_interfaces)
 
 map = draw_map.Map(screen, generated_map, players, units, game_manager)
 
@@ -85,7 +92,7 @@ while running:
     elif game_manager.type == "Test":
         test_user_interface.active_menu.create_menu()
     elif game_manager.type == "PvAITest":
-        player_v_AI_interface.active_menu.create_menu()
+        player_v_AI_test_interface.active_menu.create_menu()
 
     visual_effects.display_visuals()
     pygame.display.flip()

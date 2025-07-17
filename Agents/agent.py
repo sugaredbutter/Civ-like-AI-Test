@@ -4,7 +4,7 @@ from Agents.actions import CompleteUnitAction
 class ScoreAgent:
     def choose_best_actions(player_id, game_state):
         while True:
-            if ScoreAgent.choose_action(player_id, game_state) == False:
+            if ScoreAgent.choose_best_action(player_id, game_state) == False:
                 return
 
     def choose_best_action(player_id, game_state):

@@ -1,16 +1,17 @@
 import pygame
 import config as config
 import utils as utils
-import interactions.user_interface as ui
+import interactions.interfaces.user_interface as ui
 
 ROWS, COLUMNS = config.map_settings["tile_height"], config.map_settings["tile_width"]
 ZOOM_SCALE = config.map_settings["zoom"]
 class MouseControls:
-    def __init__(self, screen, user_interface, test_user_interface, player_v_AI_interface, generated_map, tile_click_controls, game_control_interface, game_manager):
+    def __init__(self, screen, user_interface, test_user_interface, player_v_AI_interface, generated_map, tile_click_controls, game_control_interface, game_manager, interfaces):
         self.screen = screen
         self.user_interface = user_interface
         self.test_user_interface = test_user_interface
         self.player_v_AI_interface = player_v_AI_interface
+        self.interfaces = interfaces
         self.generated_map = generated_map
         self.initX = 0
         self.initY = 0
@@ -31,7 +32,7 @@ class MouseControls:
             elif self.game_manager.type == "Test":
                 self.test_user_interface.active_menu.left_click(event)
             elif self.game_manager.type == "PvAITest":
-                self.player_v_AI_interface.active_menu.left_click(event)
+                self.interfaces.player_v_AI_test_interface.active_menu.left_click(event)
             
 
         return
@@ -50,7 +51,7 @@ class MouseControls:
             elif self.game_manager.type == "Test":
                 self.test_user_interface.active_menu.left_click_up()
             elif self.game_manager.type == "PvAITest":
-                self.player_v_AI_interface.active_menu.left_click_up()
+                self.interfaces.player_v_AI_test_interface.active_menu.left_click_up()
 
         return
         mouse_x, mouse_y = pygame.mouse.get_pos()
@@ -79,7 +80,7 @@ class MouseControls:
         elif self.game_manager.type == "Test":
             self.test_user_interface.active_menu.mouse_move(event)
         elif self.game_manager.type == "PvAITest":
-            self.player_v_AI_interface.active_menu.mouse_move(event)
+            self.interfaces.player_v_AI_test_interface.active_menu.mouse_move(event)
 
 
         return
