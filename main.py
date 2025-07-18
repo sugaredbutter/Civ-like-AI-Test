@@ -1,4 +1,5 @@
 import pygame
+import sys
 import map_generator.map_generator as generate_map
 import interactions.draw_map as draw_map
 import config as config
@@ -80,6 +81,9 @@ while running:
             mouse_controls.mouse_move(event)
         elif event.type == pygame.MOUSEWHEEL:
             mouse_controls.zoom(event)
+        elif event.type == pygame.QUIT:
+            pygame.quit()
+            sys.exit()
 
 
     map.draw_tiles()

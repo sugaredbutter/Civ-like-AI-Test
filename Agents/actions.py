@@ -16,7 +16,7 @@ class Actions:
         legal_actions = []
         for unit_id in player.units:
             unit = game_state.units.get_unit(unit_id)
-            if unit.action == True:
+            if unit.AI_action == True:
                 legal_actions += UnitLegalActions.get_moves(unit, game_state)
         return legal_actions
 
@@ -61,3 +61,5 @@ class UnitAction:
 class CompleteUnitAction:
     def move_unit(unit, target):
         unit.move_to(target)
+        if unit.remaining_movement == 0:
+            unit.AI_action = False

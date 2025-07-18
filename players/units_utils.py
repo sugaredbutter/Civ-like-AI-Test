@@ -773,13 +773,53 @@ class UnitScoringUtils:
                 if movement_left - movement_cost >= 0:
                     queue.append((tile.get_coords(), movement_left - movement_cost, True if (current_tile.unit_id != None and current_tile.get_coords() != unit.coord) else False, is_zoc_locked))
         return reachable
+    
+    def BFS_ranged_attack(unit, tile_coord, game_state):
+        tile = game_state.map.get_tile_hex(*unit.coord)
+
+        
+        visibile = set()
+        visited_visibility = {}
+        queue = deque()
+        queue.append((tile_coord, unit.range, unit.vision))
+        while queue:
+            current_coord, visibility, distance = queue.popleft()
+            if current_coord in visited_visibility and visited_visibility[current_coord] >= visibility:
+                continue
+            visited_visibility[current_coord] = visibility
+            
+            # Did it this way so mountains are visible
+            if distance - 1 < 0:
+                continue
+            
+            
+            for neighbor_direction in utils.CUBE_DIRECTIONS_DICT.keys():
+                neighbor = utils.CUBE_DIRECTIONS_DICT[neighbor_direction]
+                neighbor_coord = tuple(x + y for x, y in zip(current_coord, neighbor))
+                tile = game_state.map.get_tile_hex(*neighbor_coord)     
+                if tile is not None and tile.get_coords():  
+                    neighbor_visibility_bonus = tile_config.biomes[tile.biome]["Terrain"][tile.terrain]["visibility_bonus"]
+                    neighbor_visibility_penalty = tile_config.biomes[tile.biome]["Terrain"][tile.terrain]["visibility_penalty"]
+
+                    if tile.feature != None:
+                        neighbor_visibility_bonus += tile_config.biomes[tile.biome]["Feature"][tile.feature]["visibility_bonus"]
+                        neighbor_visibility_penalty += tile_config.biomes[tile.biome]["Feature"][tile.feature]["visibility_penalty"]
+
+                    if visibility > 0 and visibility + neighbor_visibility_bonus > 0 and distance > 0:
+                        visibile.add(neighbor_coord) 
+                    
+                    elif visibility + neighbor_visibility_bonus > 0 and tile.terrain == "Mountain":
+                        visibile.add(neighbor_coord) 
+                    
+                    queue.append((tile.get_coords(), visibility - neighbor_visibility_penalty, distance - 1))
+        return visibile 
 
 class UnitMoveScoring:
     def get_attackable_units(unit, tile_coord, game_state):
         current_player = game_state.players.get_player(unit.owner_id)
         revealed_tiles = current_player.revealed_tiles
         visibile_tiles = current_player.visible_tiles
-        tiles_in_range = UnitScoringUtils.BFS_movement(unit, tile_coord, game_state) if unit.type != "Ranged" else UnitAttack.BFS_ranged_attack(unit, game_state)
+        tiles_in_range = UnitScoringUtils.BFS_movement(unit, tile_coord, unit.movement, game_state) if unit.type != "Ranged" else UnitScoringUtils.BFS_ranged_attack(unit, tile_coord, game_state)
         tiles_in_range &= visibile_tiles
 
         attackable_tiles = set()

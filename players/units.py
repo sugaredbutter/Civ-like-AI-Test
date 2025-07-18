@@ -15,7 +15,7 @@ class Unit:
         self.visual_effects = visual_effects
         self.owner_id = owner_id
         self.id = id
-        self.type = type
+        self.type = type    #Melee, Ranged, Cavalry 
         self.attack = units_config.units[type]["attack"]
         self.defense = units_config.units[type]["defense"]
         self.range = units_config.units[type].get("range", None)
@@ -55,6 +55,11 @@ class Unit:
         self.action = True
 
         self.game_state = game_state   
+
+
+        #AI stuff
+        self.AI_action = True
+        self.AI_last_move = None
 
     def remove(self):
         tile = self.game_state.map.get_tile_hex(*self.coord)
@@ -141,7 +146,7 @@ class Unit:
         else:
             self.turns_fortified += 1
         self.remaining_movement = self.movement
-
+        self.AI_action = True
             
 
     

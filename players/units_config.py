@@ -12,18 +12,19 @@ units = {
     "Ranged": {
         "health": 100,
         "attack": 25,
-        "defense": 15,
+        "defense": 20,
         "movement": 2,
         "visibility": 2,
         "range": 2,
         "fortified": 3,
         "defense_zoc": False,
-        "attack_zoc": True
+        "attack_zoc": True,
+        "melee_attack_defensive_debuff": .25        #Percentage (25% debuff)
     },
     "Cavalry": {
         "health": 100,
         "attack": 30,
-        "defense": 30,
+        "defense": 17,
         "movement": 4,
         "visibility": 2,
         "fortified": 3,

@@ -5,6 +5,9 @@ from players.units_utils import UnitUtils
 from players.units_utils import UnitMove
 from players.units_utils import UnitVisibility
 from players.units_utils import UnitAttack
+from players.units_utils import UnitMoveScoring
+from combat_manager.combat_manager import CombatManager
+
 
 class UnitMoveScore:
     def __init__(self, unit, target_coord, game_state):
@@ -39,18 +42,32 @@ class UnitMoveScore:
     def offensive_score(self):  #Score for being near enemies/approaching them
         offensive_score = 0
         if self.unit.type != "ranged":
-            attackable_enemies = UnitAttack.get_attackable_units(self.unit, self.game_state, True)
+            attackable_enemies = UnitMoveScoring.get_attackable_units(self.unit, self.target_coord, self.game_state)
             if len(attackable_enemies) > 0:
                 offensive_score += math.log2(len(attackable_enemies) + 1) * score_config.moveScore["off_attackable_enemy_units"]
-                print(attackable_enemies, offensive_score)
-        self.score += offensive_score
+                average_damage_inflicted = 0
+                most_damage_inflicted = 0
+                for tile_coord in attackable_enemies:
+                    enemy_tile = self.game_state.map.get_tile_hex(*tile_coord)
+                    current_tile = self.game_state.map.get_tile_hex(*self.target_coord)
+                    enemy_unit = self.game_state.units.get_unit(enemy_tile.unit_id)
+                    if self.unit.type == "Ranged":
+                        damage_inflicted, damage_taken = CombatManager.estimate_combat(self.unit, enemy_unit, current_tile, enemy_tile, "ranged")
+                    else:
+                        damage_inflicted, damage_taken = CombatManager.estimate_combat(self.unit, enemy_unit, current_tile, enemy_tile, "melee")
+                    average_damage_inflicted += damage_inflicted
+                    most_damage_inflicted = max(most_damage_inflicted, damage_inflicted)
+
+                self.score += average_damage_inflicted + most_damage_inflicted
 
     # enemies able to be attacked
-    # adjacent units (important for ranged units since they are weaker at defending)
     # type of unit (don't wanna get too close if unit is ranged for example)
+    # adjacent enemy units (important for ranged units since they are weaker at defending)
     # Health scaling (tunes down offensive score if unit is lower health for example (not too aggressive)
     # Nearby Friendly Units vs Enemy Units. Hopefully prefers attacking in groups.    
     def defensive_score(self):  #Score for retreating/advantageous location
         pass    
+    
+
     def distance_score(self):   #Score for how far target is
         pass
