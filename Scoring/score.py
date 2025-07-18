@@ -1,5 +1,6 @@
 import Scoring.score_config as score_config
 import utils as utils
+import math
 from players.units_utils import UnitUtils
 from players.units_utils import UnitMove
 from players.units_utils import UnitVisibility
@@ -36,8 +37,20 @@ class UnitMoveScore:
                     self.score += score_config.moveScore["adjacent_friendlies"]
 
     def offensive_score(self):  #Score for being near enemies/approaching them
-        pass
+        offensive_score = 0
+        if self.unit.type != "ranged":
+            attackable_enemies = UnitAttack.get_attackable_units(self.unit, self.game_state, True)
+            if len(attackable_enemies) > 0:
+                offensive_score += math.log2(len(attackable_enemies) + 1) * score_config.moveScore["off_attackable_enemy_units"]
+                print(attackable_enemies, offensive_score)
+        self.score += offensive_score
+
+    # enemies able to be attacked
+    # adjacent units (important for ranged units since they are weaker at defending)
+    # type of unit (don't wanna get too close if unit is ranged for example)
+    # Health scaling (tunes down offensive score if unit is lower health for example (not too aggressive)
+    # Nearby Friendly Units vs Enemy Units. Hopefully prefers attacking in groups.    
     def defensive_score(self):  #Score for retreating/advantageous location
-        pass
+        pass    
     def distance_score(self):   #Score for how far target is
         pass

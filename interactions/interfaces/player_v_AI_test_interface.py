@@ -216,7 +216,6 @@ class UserInterface:
                         self.game_manager.next_turn()
                         self.unit_menu.reset()
                     elif key == "Next Action":
-                        print("hi")
                         ScoreAgent.choose_best_action(self.current_player, self.game_state)
                     
     def update_UI(self, player):

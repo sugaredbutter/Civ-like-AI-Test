@@ -1,10 +1,10 @@
 moveScore = dict(
-    unrevealed = 50,
+    unrevealed = 10,
     
     adjacent_friendlies = 5,
 
     off_mult = 1,
-    off_enemy_units = 10,
+    off_attackable_enemy_units = 20,
 
     def_mult = 1,
     def_enemy_units = -10,

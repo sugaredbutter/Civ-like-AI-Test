@@ -724,3 +724,69 @@ class UnitAttack:
             tile = game_state.map.get_tile_hex(*tile_coord)     
             tile.attackable = False
 
+class UnitScoringUtils:
+    def BFS_movement(unit, tile_coord, movement, game_state):
+        current_player = game_state.players.get_player(unit.owner_id)
+        revealed_tiles = current_player.revealed_tiles
+        visibile_tiles = current_player.visible_tiles
+        reachable = set()
+        reachable_movement = {}
+        queue = deque()
+        queue.append((tile_coord, movement, False, False))
+        while queue:
+            current_coord, movement_left, unit_prior, zoc_locked = queue.popleft()
+            if current_coord in reachable_movement and reachable_movement[current_coord] >= movement_left:
+                continue
+            
+            current_tile = game_state.map.get_tile_hex(*current_coord)
+            if current_tile.unit_id != None:
+                other_unit = game_state.units.get_unit(current_tile.unit_id)
+                if other_unit.owner_id != unit.owner_id and unit_prior:
+                    continue
+            reachable_movement[current_coord] = movement_left
+            reachable.add(current_coord)
+            enter_ZOC = UnitUtils.zone_of_control(unit, current_coord, game_state)
+            is_zoc_locked = False
+            if enter_ZOC and unit.coord != current_coord:
+                is_zoc_locked = True
+            if movement_left == 0 or zoc_locked:
+                continue
+            if current_tile.unit_id != None:
+                other_unit = game_state.units.get_unit(current_tile.unit_id)
+                if other_unit.owner_id != unit.owner_id:
+                    continue
+            
+            
+            for neighbor_direction in utils.CUBE_DIRECTIONS_DICT.keys():
+                neighbor = utils.CUBE_DIRECTIONS_DICT[neighbor_direction]
+                neighbor_coord = tuple(x + y for x, y in zip(current_coord, neighbor))
+                tile = game_state.map.get_tile_hex(*neighbor_coord)
+                if tile is None:
+                    continue
+                if tile.get_coords() not in revealed_tiles:
+                    continue
+                else:
+                    movement_cost = tile.get_movement(utils.OPPOSITE_EDGES[neighbor_direction])
+                    if movement_cost == -1:
+                        continue
+                    movement_cost = min(unit.movement, movement_cost)
+                if movement_left - movement_cost >= 0:
+                    queue.append((tile.get_coords(), movement_left - movement_cost, True if (current_tile.unit_id != None and current_tile.get_coords() != unit.coord) else False, is_zoc_locked))
+        return reachable
+
+class UnitMoveScoring:
+    def get_attackable_units(unit, tile_coord, game_state):
+        current_player = game_state.players.get_player(unit.owner_id)
+        revealed_tiles = current_player.revealed_tiles
+        visibile_tiles = current_player.visible_tiles
+        tiles_in_range = UnitScoringUtils.BFS_movement(unit, tile_coord, game_state) if unit.type != "Ranged" else UnitAttack.BFS_ranged_attack(unit, game_state)
+        tiles_in_range &= visibile_tiles
+
+        attackable_tiles = set()
+        for tile_coord in tiles_in_range:
+            tile = game_state.map.get_tile_hex(*tile_coord)     
+            if tile.unit_id != None:
+                other_unit = game_state.units.get_unit(tile.unit_id)
+                if other_unit.owner_id != unit.owner_id:
+                    attackable_tiles.add(tile_coord)
+        return attackable_tiles
