@@ -10,7 +10,7 @@ moveScore = dict(
     off_damage_mult = 1,
 
     def_mult = 1,
-    def_enemy_units = -10,
+    def_num_attackable_by_penalty = 50,
     def_defensive_bonus = 10,
 
 

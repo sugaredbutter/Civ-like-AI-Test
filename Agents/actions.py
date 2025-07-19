@@ -2,11 +2,15 @@ from players.units_utils import UnitUtils
 from players.units_utils import UnitMove
 from players.units_utils import UnitVisibility
 from players.units_utils import UnitAttack
+from players.units_utils import UnitMoveScoring
 import Scoring.score as scoring
 class Actions:
 
     #Culmination of actions
     def get_actions(player_id, game_state):
+        tile_attackable_by = Actions.get_enemy_attackable_tiles(player_id, game_state)
+        game_state.tile_attackable_by = tile_attackable_by
+        print("Enemy Attackable Tiles: ", tile_attackable_by)
         return Actions.get_moves(player_id, game_state)
         
 
@@ -27,6 +31,29 @@ class Actions:
     #Fortify, Heal, Skip, etc
     def get_secondary_actions(self):
         pass
+    
+    def get_enemy_attackable_tiles(player_id, game_state):
+        player = game_state.players.get_player(player_id)
+        tile_attackable_by = {}
+        visible_tiles = player.visible_tiles
+        for tile_coord in visible_tiles:
+            tile = game_state.map.get_tile_hex(*tile_coord)
+            if tile.unit_id is not None:
+                unit = game_state.units.get_unit(tile.unit_id)
+                if unit.owner_id != player_id:
+                    enemy_attackable_tiles = UnitMoveScoring.get_attackable_tiles(unit, tile_coord, game_state)
+                    enemy_attackable_tiles &= visible_tiles
+                    for enemy_attackable_tile in enemy_attackable_tiles:
+                        if tile_attackable_by.get(enemy_attackable_tile, None) is None:
+                            tile_attackable_by[enemy_attackable_tile] = {tile.unit_id}
+                        else:
+                            tile_attackable_by[enemy_attackable_tile].add(tile.unit_id)
+
+                        
+                        
+        return tile_attackable_by
+                    
+        
 
 class UnitLegalActions:
     def get_moves(unit, game_state):

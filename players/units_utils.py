@@ -830,3 +830,12 @@ class UnitMoveScoring:
                 if other_unit.owner_id != unit.owner_id:
                     attackable_tiles.add(tile_coord)
         return attackable_tiles
+    
+    def get_attackable_tiles(unit, tile_coord, game_state):
+        current_player = game_state.players.get_player(unit.owner_id)
+        revealed_tiles = current_player.revealed_tiles
+        visibile_tiles = current_player.visible_tiles
+        tiles_in_range = UnitScoringUtils.BFS_movement(unit, tile_coord, unit.movement, game_state) if unit.type != "Ranged" else UnitScoringUtils.BFS_ranged_attack(unit, tile_coord, game_state)
+        tiles_in_range &= visibile_tiles
+
+        return tiles_in_range

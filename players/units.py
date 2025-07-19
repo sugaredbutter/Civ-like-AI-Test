@@ -86,10 +86,12 @@ class Unit:
         
     def move_to(self, destination):
         destination_tile = self.game_state.map.get_tile_hex(*destination)
+        current_player = self.game_state.players.get_player(self.owner_id)
         if destination_tile != None and destination_tile.unit_id != None and not self.ZOC_locked:
             destination_unit = self.game_state.units.get_unit(destination_tile.unit_id)
             if destination_unit.owner_id == self.owner_id:
                 UnitMove.swap_units(self, destination, destination_unit, self.game_state)
+                current_player.update_visibility()
                 return self.remaining_movement
                 
         done_move = False
@@ -99,6 +101,8 @@ class Unit:
             self.action = True
         else:
             self.action = False
+        current_player.update_visibility()
+        print("Current_coord", self.coord)
         return self.remaining_movement
 
                     
@@ -207,6 +211,8 @@ class Unit:
             self.action = False
         self.fortified = False
         self.turns_fortified = 0
+        current_player = self.game_state.players.get_player(self.owner_id)
+        current_player.update_visibility()
         return self.remaining_movement
 
             

@@ -1289,7 +1289,6 @@ class UnitControlMenu:
             else:
                 self.active_tile = self.generated_map.get_tile_hex(*unit.coord)
                 self.generated_map.selected_tile = self.active_tile
-            self.player_handler.get_player(self.current_player).update_visibility()
 
         if self.active_button == "Attack" and not self.dragging:
             movement_remaining = unit.attack_enemy((x, y, z))
@@ -1299,7 +1298,6 @@ class UnitControlMenu:
             else:
                 self.active_tile = self.generated_map.get_tile_hex(*unit.coord)
                 self.generated_map.selected_tile = self.active_tile
-            self.player_handler.get_player(self.current_player).update_visibility()
             self.display_combat_info = False
         if (self.active_button == "Fortify" or self.active_button == "Heal") and not self.dragging:
             self.reset()
