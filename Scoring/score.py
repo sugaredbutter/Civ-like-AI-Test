@@ -45,6 +45,8 @@ class UnitMoveScore:
             attackable_enemies = UnitMoveScoring.get_attackable_units(self.unit, self.target_coord, self.game_state)
             if len(attackable_enemies) > 0:
                 offensive_score += math.log2(len(attackable_enemies) + 1) * score_config.moveScore["off_attackable_enemy_units"]
+                
+                # Attackable Units                
                 average_damage_inflicted = 0
                 most_damage_inflicted = 0
                 for tile_coord in attackable_enemies:
@@ -58,15 +60,34 @@ class UnitMoveScore:
                     average_damage_inflicted += damage_inflicted
                     most_damage_inflicted = max(most_damage_inflicted, damage_inflicted)
 
-                self.score += average_damage_inflicted + most_damage_inflicted
+                offensive_score += average_damage_inflicted + most_damage_inflicted
+                adjacent_tiles = utils.adjacent_tiles(self.target_coord)
+
+                # Adjacent Enemies
+                num_adjacent_units = 0
+                for tile_coord in adjacent_tiles:
+                    adjacent_tile = self.game_state.map.get_tile_hex(*tile_coord)
+                    if adjacent_tile.unit_id != None:
+                        tile_unit = self.game_state.units.get_unit(adjacent_tile.unit_id)
+                        if tile_unit.owner_id != self.unit.owner_id:
+                            num_adjacent_units += 1
+                if num_adjacent_units > 0:
+                    offensive_score += math.log2(len(attackable_enemies) + 1) * score_config.moveScore["off_adj_enemy_units"]
+                
+                
+
+        unit_health_mult = score_config.moveScore["off_mult"] * (self.unit.health / 50)
+        offensive_score * unit_health_mult
+        self.score += offensive_score
 
     # enemies able to be attacked
     # type of unit (don't wanna get too close if unit is ranged for example)
-    # adjacent enemy units (important for ranged units since they are weaker at defending)
     # Health scaling (tunes down offensive score if unit is lower health for example (not too aggressive)
     # Nearby Friendly Units vs Enemy Units. Hopefully prefers attacking in groups.    
-    def defensive_score(self):  #Score for retreating/advantageous location
+
+    def defensive_score(self):  #Reasons for not choosing that tile (due to weakness/other reasons)
         pass    
+    # adjacent enemy units (important for ranged units since they are weaker at defending)
     
 
     def distance_score(self):   #Score for how far target is

@@ -105,6 +105,13 @@ def get_relative_position(first_coord, second_coord):
             return x
     return None
 
+def adjacent_tiles(tile_coord):
+    neighbor_coords = []
+    for neighbor_direction in CUBE_DIRECTIONS_DICT.keys():
+        neighbor = CUBE_DIRECTIONS_DICT[neighbor_direction]
+        neighbor_coords.append(tuple(x + y for x, y in zip(tile_coord, neighbor)))
+    return neighbor_coords
+
 CUBE_DIRECTIONS = [
     (+1, -1, 0),   # direction 0
     (+1, 0, -1),   # direction 1

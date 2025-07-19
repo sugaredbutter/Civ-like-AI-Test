@@ -193,7 +193,6 @@ class UserInterface:
 
     def button_clicked(self):
         player = self.game_state.players.get_player(self.current_player)
-        print(player.AI)
         mouse_x, mouse_y = pygame.mouse.get_pos()
         if player.AI == False:
             for key in self.button_menu.keys():
