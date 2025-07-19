@@ -10,7 +10,6 @@ class Actions:
     def get_actions(player_id, game_state):
         tile_attackable_by = Actions.get_enemy_attackable_tiles(player_id, game_state)
         game_state.tile_attackable_by = tile_attackable_by
-        print("Enemy Attackable Tiles: ", tile_attackable_by)
         return Actions.get_moves(player_id, game_state)
         
 
@@ -19,9 +18,11 @@ class Actions:
         player = game_state.players.get_player(player_id)
         legal_actions = []
         for unit_id in player.units:
+            #WIP, need to account score of tile of first move. Basically, consider first stop in unit path in calculations. 
+            unit_legal_actions = []
             unit = game_state.units.get_unit(unit_id)
             if unit.AI_action == True:
-                legal_actions += UnitLegalActions.get_moves(unit, game_state)
+                unit_legal_actions += UnitLegalActions.get_moves(unit, game_state)
         return legal_actions
 
     #Units able to be attacked
@@ -59,13 +60,14 @@ class UnitLegalActions:
     def get_moves(unit, game_state):
         tiles = game_state.map.tiles
         legal_moves = []
+        legal_moves_dict = {}
         for tile_coord in tiles.keys():
-            if UnitUtils.valid_destination(unit, tile_coord, game_state):
-                legal_moves.append(UnitAction("Move", unit, game_state, tile_coord))
+            if UnitMoveScoring.legal_destination(unit, tile_coord, game_state):
+                legal_moves_dict[tile_coord] = UnitAction("Move", unit, game_state, tile_coord)
             elif UnitUtils.valid_swappable(unit, tile_coord, game_state):
                 # legal_moves.append(UnitAction("Swap", unit, game_state, tile_coord))
                 pass
-                
+        
         return legal_moves
 
 

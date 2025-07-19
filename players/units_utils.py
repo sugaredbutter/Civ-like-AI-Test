@@ -168,7 +168,7 @@ class UnitUtils:
                     if tile.get_coords() in visibile_tiles:
                         if additional_cost > 0:
                             temp_movement_remaining = unit.movement
-                        if attack == False and swap == False and temp_movement_remaining - movement_cost <= 0 and tile.unit_id is not None:
+                        if attack == False and swap == False and (temp_movement_remaining - movement_cost <= 0 or UnitUtils.zone_of_control(unit, neighbor_coord, game_state)) and tile.unit_id is not None:
                             continue
                         if attack == False and tile.unit_id is not None and game_state.units.get_unit(tile.unit_id).owner_id != unit.owner_id:
                             continue
@@ -815,6 +815,37 @@ class UnitScoringUtils:
         return visibile 
 
 class UnitMoveScoring:
+    def legal_destination(unit, destination, game_state):
+
+        # Gets visible and revealed tile for current player
+        current_player = game_state.players.get_player(unit.owner_id)
+        revealed_tiles = current_player.revealed_tiles
+        visibile_tiles = current_player.visible_tiles
+        tile = game_state.map.get_tile_hex(*destination)
+
+        # tile doesn't exist
+        if tile is None:
+            return False
+        
+        # destination is itself
+        if destination == unit.coord:
+            return False
+        
+        # tile visible and unreachable due to terrain
+        if tile.get_coords() in visibile_tiles and tile.get_movement() == -1:
+            return False
+        
+        # tile visible
+        if tile.get_coords() in visibile_tiles:
+            # tile occupied by unit
+            if tile.unit_id is not None:
+                return False
+        path = UnitUtils.A_star(unit, destination, game_state)
+        if destination not in path:
+            return False
+        
+        return True
+
     def get_attackable_units(unit, tile_coord, game_state):
         current_player = game_state.players.get_player(unit.owner_id)
         revealed_tiles = current_player.revealed_tiles

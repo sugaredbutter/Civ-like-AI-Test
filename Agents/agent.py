@@ -13,6 +13,7 @@ class ScoreAgent:
             return False
         best_action = None
         for action in legal_actions:
+            print(action.type, action.target, action.score)
             if best_action == None or action.score > best_action.score:
                 best_action = action
         print(best_action.type, best_action.unit.id, best_action.score, best_action.target)

@@ -30,7 +30,13 @@ class UnitMoveScore:
         if self.target_coord not in revealed_tiles:
             self.score += score_config.moveScore["unrevealed"]
         
-    def offensive_score(self):  #Score for being near enemies/approaching them
+    # Offensive Behavior
+    # + Number of attackable units 
+    # + Average damage + max inflicted damage on units
+    # + Adjacent Enemies (for melee specifically)
+    # Health Multiplier so this behavior is tuned down when lower health
+
+    def offensive_score(self):  #Offensive/more aggressive behavior
         offensive_score = 0
         if self.unit.type != "ranged":
             attackable_enemies = UnitMoveScoring.get_attackable_units(self.unit, self.target_coord, self.game_state)
@@ -71,26 +77,47 @@ class UnitMoveScore:
         offensive_score * unit_health_mult
         self.score += offensive_score
 
-    # enemies able to be attacked
-    # type of unit (don't wanna get too close if unit is ranged for example)
-    # Health scaling (tunes down offensive score if unit is lower health for example (not too aggressive)
-    # Nearby Friendly Units vs Enemy Units. Hopefully prefers attacking in groups.    
+    
 
-    def defensive_score(self):  #Reasons for not choosing that tile (due to weakness/other reasons)
+    # Defensive Behavior
+    # + Number of Adjacent Friendlies 
+    # - Enemy potential damage to unit at tile
+    # + Retaliatory Damage from unit at tile
+    # Health Multiplier so this behavior is tuned down when higher health
+
+    def defensive_score(self):  #Defensive Behavior
         defensive_score = 0
         reachable_tiles = UnitUtils.BFS_movement(self.unit, self.unit.movement, self.game_state)
+
+        #Adjacent Friendlies
         for tile_coord in reachable_tiles:
             tile = self.game_state.map.get_tile_hex(*tile_coord)
             if tile.unit_id != None:
                 tile_unit = self.game_state.units.get_unit(tile.unit_id)
                 if tile_unit.owner_id == self.unit.owner_id:
                     defensive_score += score_config.moveScore["adjacent_friendlies"]
-        defensive_score -= len(self.game_state.tile_attackable_by.get(self.target_coord, set())) * score_config.moveScore["def_num_attackable_by_penalty"]
+
+        #Enemy potential damage to unit at tile
+        enemy_units = self.game_state.tile_attackable_by.get(self.target_coord, set())
+        potential_damage_taken = 0
+        potential_damage_inflicted = 0
+        for enemy_unit_ids in enemy_units:
+            enemy_unit = self.game_state.units.get_unit(enemy_unit_ids)
+            enemy_tile = self.game_state.map.get_tile_hex(*enemy_unit.coord)
+            current_tile = self.game_state.map.get_tile_hex(*self.target_coord)
+            if self.unit.type == "Ranged":
+                damage_inflicted, damage_taken = CombatManager.estimate_combat(enemy_unit, self.unit, enemy_tile, current_tile, "ranged")
+            else:
+                damage_inflicted, damage_taken = CombatManager.estimate_combat(enemy_unit, self.unit, enemy_tile, current_tile, "melee")
+            potential_damage_taken += damage_inflicted
+            potential_damage_inflicted += damage_taken
+        defensive_score -= potential_damage_taken * score_config.moveScore["def_damage_taken_mult"]
+        defensive_score += potential_damage_inflicted * score_config.moveScore["def_damage_inflicted_mult"]
         unit_health_mult = score_config.moveScore["off_mult"] * ((100 - self.unit.health) / 50)
         defensive_score * unit_health_mult
+        print(defensive_score)
         self.score += defensive_score
 
-        
 
     def distance_score(self):   #Score for how far target is
         pass
