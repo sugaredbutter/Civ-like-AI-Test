@@ -1,4 +1,5 @@
 import config as config
+import psutil, os
 import game_manager.turn_manager as turn_manager
 import utils as utils
 from Agents.agent import ScoreAgent 
@@ -109,8 +110,8 @@ class GameManager:
             #if current_player.AI:
             #    ScoreAgent.choose_best_actions(self.current_player, self.game_state)
             #    self.next_turn()
-                
-            
+        process = psutil.Process(os.getpid())
+        print("Memory (MB):", process.memory_info().rss / (1024 * 1024))
     def cycle_unit(self):
         current_player = self.players.get_player(self.current_player)
 

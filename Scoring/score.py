@@ -73,8 +73,9 @@ class UnitMoveScore:
                 
                 
         # Health Multiplier
-        unit_health_mult = score_config.moveScore["off_mult"] * (self.unit.health / 50)
-        offensive_score * unit_health_mult
+        unit_health_mult = score_config.moveScore["off_mult"] * ((self.unit.health - 50) / 50)
+        offensive_score = offensive_score * unit_health_mult
+        print(self.target_coord, "Off", offensive_score, unit_health_mult)
         self.score += offensive_score
 
     
@@ -111,11 +112,15 @@ class UnitMoveScore:
                 damage_inflicted, damage_taken = CombatManager.estimate_combat(enemy_unit, self.unit, enemy_tile, current_tile, "melee")
             potential_damage_taken += damage_inflicted
             potential_damage_inflicted += damage_taken
+
+        #Potential Damage Taken
         defensive_score -= potential_damage_taken * score_config.moveScore["def_damage_taken_mult"]
+
+        #Potential Damage inflicted back (good if in very defensible location)
         defensive_score += potential_damage_inflicted * score_config.moveScore["def_damage_inflicted_mult"]
-        unit_health_mult = score_config.moveScore["off_mult"] * ((100 - self.unit.health) / 50)
-        defensive_score * unit_health_mult
-        print(defensive_score)
+        unit_health_mult = score_config.moveScore["off_mult"] * ((100 - self.unit.health - 50) / 50)
+        defensive_score = defensive_score * unit_health_mult
+        print(self.target_coord, "Def", defensive_score, unit_health_mult)
         self.score += defensive_score
 
 

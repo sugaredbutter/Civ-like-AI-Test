@@ -102,7 +102,6 @@ class Unit:
         else:
             self.action = False
         current_player.update_visibility()
-        print("Current_coord", self.coord)
         return self.remaining_movement
 
                     

@@ -813,7 +813,72 @@ class UnitScoringUtils:
                     
                     queue.append((tile.get_coords(), visibility - neighbor_visibility_penalty, distance - 1))
         return visibile 
+    
+    def djikstra(unit, tile_coord, game_state):
+        current_player = game_state.players.get_player(unit.owner_id)
+        revealed_tiles = current_player.revealed_tiles
+        visibile_tiles = current_player.visible_tiles
+        tile_score = {}
+        visited_tiles = set()
+        path = {}
+        heap = [(0, tile_coord)]
+        tile_score[tile_coord] = 0
+        visibile_tiles.add(tile_coord)
+        
+        while heap:
+            current_distance, current_tile_coord = heapq.heappop(heap)
+            if current_tile_coord in visited_tiles:
+                continue
+            visited_tiles.add(current_tile_coord)
+            # Is tile in ZOC
+            movement_remaining = (unit.movement - current_distance) % unit.movement
+            enter_ZOC = UnitUtils.zone_of_control(unit, current_tile_coord, game_state)
+            for neighbor_direction in utils.CUBE_DIRECTIONS_DICT.keys():
+                neighbor = utils.CUBE_DIRECTIONS_DICT[neighbor_direction]
+                neighbor_coord = tuple(x + y for x, y in zip(current_tile_coord, neighbor))
+                tile = game_state.map.get_tile_hex(*neighbor_coord)
+                # Tile doesn't exist
+                if tile is None:
+                    continue
 
+                # Tile not revealed so assume cost of 1
+                if tile.get_coords() not in revealed_tiles:
+                    movement_cost = 1
+                else:
+                    # If visible, get movement
+                    movement_cost = tile.get_movement(utils.OPPOSITE_EDGES[neighbor_direction])
+                    if movement_cost == -1:
+                        continue
+                    movement_cost = min(unit.movement, movement_cost)
+
+                # Make sure neighbor_coord not visited yet in a more efficient manner
+               
+                    
+                #Add cost if not reachable in current turn
+                additional_cost = 0 if movement_remaining >= movement_cost else unit.movement - movement_remaining
+                temp_movement_remaining = movement_remaining
+                
+                #Allow unit to pass thru other units of same owner but not land on same tile
+                if tile.get_coords() in visibile_tiles:
+                    if additional_cost > 0:
+                        temp_movement_remaining = unit.movement
+                    if (temp_movement_remaining - movement_cost <= 0 or UnitUtils.zone_of_control(unit, neighbor_coord, game_state)) and tile.unit_id is not None:
+                        continue
+                    if tile.unit_id is not None and game_state.units.get_unit(tile.unit_id).owner_id != unit.owner_id:
+                        continue
+
+                # Score to target and cost of reaching neighbor tile
+                cost = current_distance + movement_cost + additional_cost
+
+                # Additional turn if prev tile is ZOC
+                cost += unit.movement if enter_ZOC else 0
+
+                if tile_score.get(neighbor_coord, None) == None or tile_score.get(neighbor_coord, None) > cost:
+                    tile_score[neighbor_coord] = cost
+                    path[neighbor_coord] = current_tile_coord
+                
+                heapq.heappush(heap, (cost, neighbor_coord))
+        return path
 class UnitMoveScoring:
     def legal_destination(unit, destination, game_state):
 
@@ -840,9 +905,9 @@ class UnitMoveScoring:
             # tile occupied by unit
             if tile.unit_id is not None:
                 return False
-        path = UnitUtils.A_star(unit, destination, game_state)
-        if destination not in path:
-            return False
+        #path = UnitUtils.A_star(unit, destination, game_state)
+        #if destination not in path:
+        #    return False
         
         return True
 
