@@ -14,9 +14,10 @@ class UnitMoveScore:
         self.game_state = game_state
         self.unit = unit
         self.target_coord = target_coord
-        self.tile = self.game_state.map.get_tile_hex(*target_coord)
+        self.target_tile = self.game_state.map.get_tile_hex(*target_coord)
         self.player = game_state.players.get_player(self.unit.owner_id)
         self.score = 0
+        self.reachable_tiles = None
         
     def get_score(self):  #Get score
         self.exploration_score()
@@ -48,12 +49,12 @@ class UnitMoveScore:
                 most_damage_inflicted = 0
                 for tile_coord in attackable_enemies:
                     enemy_tile = self.game_state.map.get_tile_hex(*tile_coord)
-                    current_tile = self.game_state.map.get_tile_hex(*self.target_coord)
+
                     enemy_unit = self.game_state.units.get_unit(enemy_tile.unit_id)
                     if self.unit.type == "Ranged":
-                        damage_inflicted, damage_taken = CombatManager.estimate_combat(self.unit, enemy_unit, current_tile, enemy_tile, "ranged")
+                        damage_inflicted, damage_taken = CombatManager.estimate_combat(self.unit, enemy_unit, self.target_tile, enemy_tile, "ranged")
                     else:
-                        damage_inflicted, damage_taken = CombatManager.estimate_combat(self.unit, enemy_unit, current_tile, enemy_tile, "melee")
+                        damage_inflicted, damage_taken = CombatManager.estimate_combat(self.unit, enemy_unit, self.target_tile, enemy_tile, "melee")
                     average_damage_inflicted += damage_inflicted
                     most_damage_inflicted = max(most_damage_inflicted, damage_inflicted)
 
@@ -75,7 +76,7 @@ class UnitMoveScore:
         # Health Multiplier
         unit_health_mult = score_config.moveScore["off_mult"] * ((self.unit.health - 50) / 50)
         offensive_score = offensive_score * unit_health_mult
-        print(self.target_coord, "Off", offensive_score, unit_health_mult)
+        #print(self.target_coord, "Off", offensive_score, unit_health_mult)
         self.score += offensive_score
 
     
@@ -89,7 +90,7 @@ class UnitMoveScore:
     def defensive_score(self):  #Defensive Behavior
         defensive_score = 0
         reachable_tiles = UnitUtils.BFS_movement(self.unit, self.unit.movement, self.game_state)
-
+        self.reachable_tiles = reachable_tiles
         #Adjacent Friendlies
         for tile_coord in reachable_tiles:
             tile = self.game_state.map.get_tile_hex(*tile_coord)
@@ -118,11 +119,102 @@ class UnitMoveScore:
 
         #Potential Damage inflicted back (good if in very defensible location)
         defensive_score += potential_damage_inflicted * score_config.moveScore["def_damage_inflicted_mult"]
+
+        # Health Multiplier
         unit_health_mult = score_config.moveScore["off_mult"] * ((100 - self.unit.health - 50) / 50)
         defensive_score = defensive_score * unit_health_mult
-        print(self.target_coord, "Def", defensive_score, unit_health_mult)
+        #print(self.target_coord, "Def", defensive_score, unit_health_mult)
         self.score += defensive_score
 
 
     def distance_score(self):   #Score for how far target is
-        pass
+        if self.target_coord in self.reachable_tiles:
+            return
+        a = self.unit.coord
+        b = self.target_coord
+        distance = max(abs(a[0] - b[0]), abs(a[1] - b[1]), abs(a[2] - b[2]))
+        self.score = self.score * math.exp(-score_config.moveScore["dist_move_penalty_alpha"] * distance)
+
+class UnitAttackScore:
+    def __init__(self, unit, target_coord, game_state):
+        self.game_state = game_state
+        self.unit = unit
+        self.unit_tile = self.game_state.map.get_tile_hex(*unit.coord)
+        self.target_coord = target_coord
+        self.target_tile = self.game_state.map.get_tile_hex(*target_coord)
+        self.target_unit = self.game_state.units.get_unit(self.target_tile.unit_id)
+        self.player = game_state.players.get_player(self.unit.owner_id)
+        self.score = 0
+        self.reachable_tiles = None
+
+    def get_score(self):  #Get score
+        self.combat_score()
+        return self.score
+
+    def combat_score(self):
+        combat_score = 0
+        if self.unit.type == "Ranged":
+            damage_inflicted, damage_taken = CombatManager.estimate_combat(self.unit, self.target_unit, self.unit_tile, self.target_tile, "ranged")
+        else:
+            damage_inflicted, damage_taken = CombatManager.estimate_combat(self.unit, self.target_unit, self.unit_tile, self.target_tile, "melee")
+        if self.target_unit.health - damage_inflicted <= 0:
+            combat_score += score_config.attackScore["combat_kill_bonus"]
+        if self.unit.health - damage_taken <= 0:
+            combat_score += score_config.attackScore["combat_death_penalty"]
+
+        combat_score += (damage_inflicted - damage_taken) * score_config.attackScore["combat_damage_mult"]
+        unit_health_mult = score_config.attackScore["combat_mult"] * ((self.unit.health ) / 50)
+        combat_score = combat_score * unit_health_mult
+        #print(self.target_coord, "Off", offensive_score, unit_health_mult)
+        self.score += combat_score
+        if self.unit.type == "Ranged":
+            pass
+        else:
+            if self.unit.health - damage_taken <= 0:
+                full_path = UnitUtils.A_star(self.unit, self.target_coord, self.game_state, False, True)
+                current_player = self.game_state.players.get_player(self.unit.owner_id)
+                revealed_tiles = current_player.revealed_tiles
+                visibile_tiles = current_player.visible_tiles
+                tile_before = None
+                #Find next tile for unit to move to
+                if self.target_coord in full_path:
+                    self.unit.path = full_path
+                    movement_left = self.unit.remaining_movement
+                    for x in range(len(full_path)):
+                        tile = self.game_state.map.get_tile_hex(*full_path[x])
+                        enter_ZOC = UnitUtils.zone_of_control(self.unit, tile.get_coords(), self.game_state)
+                        if enter_ZOC and tile.get_coords() != self.unit.coord:
+                            tile_before = tile.get_coords()
+                            break
+                        tile_before = tile.get_coords()
+                        current_player.update_visibility()
+                        
+                        
+                        # Update visibility of unit at tile
+                        next_tile = self.game_state.map.get_tile_hex(*full_path[x + 1])
+                        
+                        if next_tile.get_coords() == self.target_coord:
+                            tile_before = tile.get_coords()
+                            break
+
+
+                        direction = utils.get_relative_position(tile.get_coords(), next_tile.get_coords())
+                        direction = utils.OPPOSITE_EDGES[direction]
+
+                        
+                        next_tile_movement = min(self.unit.movement, next_tile.get_movement(direction))
+                        
+
+                        
+                        if movement_left - next_tile_movement < 0:
+                            tile_before = tile.get_coords()
+                            break
+                        else:
+                            movement_left -= next_tile_movement
+                    scorer = UnitMoveScore(self.unit, tile_before, self.game_state)
+                    combat_score += scorer.get_score()
+            else:
+                scorer = UnitMoveScore(self.unit, self.target_coord, self.game_state)
+                combat_score += scorer.get_score()
+
+        

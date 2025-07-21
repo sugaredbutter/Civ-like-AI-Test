@@ -14,6 +14,14 @@ moveScore = dict(
     def_damage_taken_mult = 1,
     def_damage_inflicted_mult = 1,
 
-    dist_move_penalty_mult = 1,
+    dist_move_penalty_alpha = 0.1,
+)
+
+attackScore = dict(
+    combat_mult = 1,
+    combat_kill_bonus = 100,
+    combat_death_penalty = 100,
+    combat_damage_mult = 10,
+
 )
 

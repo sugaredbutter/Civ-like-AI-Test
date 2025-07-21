@@ -16,8 +16,11 @@ class ScoreAgent:
             if best_action == None or action.score > best_action.score:
                 best_action = action
         print(best_action.type, best_action.unit.id, best_action.score, best_action.target)
-        if best_action.type == "Move":
+        if best_action.type == "Move" or best_action.type == "Swap":
             CompleteUnitAction.move_unit(best_action.unit, best_action.target)
+        elif best_action.type == "Attack":
+            CompleteUnitAction.attack(best_action.unit, best_action.target)
+
         best_action.unit.AI_last_move = best_action.type
         return True
     

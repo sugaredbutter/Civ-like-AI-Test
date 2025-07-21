@@ -41,6 +41,9 @@ Phase 5 (General Cleanup and Foundations)
 
 Phase 6 (AI):
 / Implement Basic Rule/Score based AI
+/ AI movement
+/ AI attack
+- Secondary Actions
 - Multi-Threading
 - Investigate and Implement ML techniques
 - AI v AI

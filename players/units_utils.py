@@ -9,7 +9,6 @@ from combat_manager.combat_manager import CombatManager
 class UnitUtils:
     # Checks to see that given the player's info, a destination is able to be reached
     def valid_destination(unit, destination, game_state):
-
         # Gets visible and revealed tile for current player
         current_player = game_state.players.get_player(unit.owner_id)
         revealed_tiles = current_player.revealed_tiles
@@ -123,7 +122,10 @@ class UnitUtils:
                 continue
 
             # Calculate movement left
-            movement_remaining = (unit.movement - current_distance) % unit.movement
+            if current_coord == unit.coord:
+                movement_remaining = unit.remaining_movement
+            else:
+                movement_remaining = (unit.movement - current_distance) % unit.movement
 
             # Is tile in ZOC
             enter_ZOC = UnitUtils.zone_of_control(unit, current_coord, game_state)
@@ -831,7 +833,10 @@ class UnitScoringUtils:
                 continue
             visited_tiles.add(current_tile_coord)
             # Is tile in ZOC
-            movement_remaining = (unit.movement - current_distance) % unit.movement
+            if current_tile_coord == tile_coord:
+                movement_remaining = unit.remaining_movement
+            else:
+                movement_remaining = (unit.movement - current_distance) % unit.movement
             enter_ZOC = UnitUtils.zone_of_control(unit, current_tile_coord, game_state)
             for neighbor_direction in utils.CUBE_DIRECTIONS_DICT.keys():
                 neighbor = utils.CUBE_DIRECTIONS_DICT[neighbor_direction]
