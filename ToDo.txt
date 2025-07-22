@@ -43,7 +43,7 @@ Phase 6 (AI):
 / Implement Basic Rule/Score based AI
 / AI movement
 / AI attack
-- Secondary Actions
+/ Secondary Actions
 - Multi-Threading
 - Investigate and Implement ML techniques
 - AI v AI

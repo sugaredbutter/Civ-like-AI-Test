@@ -136,7 +136,7 @@ class UnitUtils:
             # Destination reached
             if current_coord == destination:
                 break
-
+            current_tile = game_state.map.get_tile_hex(*current_coord)
             # Neighboring tiles
             for neighbor_direction in utils.CUBE_DIRECTIONS_DICT.keys():
                 neighbor = utils.CUBE_DIRECTIONS_DICT[neighbor_direction]
@@ -163,7 +163,12 @@ class UnitUtils:
                 if (neighbor_coord not in visited or current_distance + movement_cost < visited.get(neighbor_coord, float('inf'))):
                     
                     #Add cost if not reachable in current turn
-                    additional_cost = 0 if movement_remaining >= movement_cost else unit.movement - movement_remaining
+                    if movement_remaining >= movement_cost:
+                        additional_cost = 0
+                    else:
+                        additional_cost = unit.movement - movement_remaining
+                        if current_tile.unit_id != None:
+                            continue
                     temp_movement_remaining = movement_remaining
                     
                     #Allow unit to pass thru other units of same owner but not land on same tile
@@ -172,7 +177,7 @@ class UnitUtils:
                             temp_movement_remaining = unit.movement
                         if attack == False and swap == False and (temp_movement_remaining - movement_cost <= 0 or UnitUtils.zone_of_control(unit, neighbor_coord, game_state)) and tile.unit_id is not None:
                             continue
-                        if attack == False and tile.unit_id is not None and game_state.units.get_unit(tile.unit_id).owner_id != unit.owner_id:
+                        if (neighbor_coord != destination and attack == True) or (attack == False and tile.unit_id is not None and game_state.units.get_unit(tile.unit_id).owner_id != unit.owner_id):
                             continue
 
                     # Score to target and cost of reaching neighbor tile

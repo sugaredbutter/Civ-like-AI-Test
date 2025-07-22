@@ -20,6 +20,8 @@ class ScoreAgent:
             CompleteUnitAction.move_unit(best_action.unit, best_action.target)
         elif best_action.type == "Attack":
             CompleteUnitAction.attack(best_action.unit, best_action.target)
+        elif best_action.type == "Fortify":
+            CompleteUnitAction.fortify(best_action.unit)
 
         best_action.unit.AI_last_move = best_action.type
         return True

@@ -117,7 +117,7 @@ class GameManager:
 
         for unit_id in current_player.units:
             unit = self.units.get_unit(unit_id)
-            if unit.action:
+            if unit.action and unit.alive:
                 tile = self.generated_map.get_tile_hex(*unit.coord)
                 utils.move_screen_to_tile(tile, self.screen)
                 return (tile, unit)

@@ -22,6 +22,8 @@ class Actions:
                 legal_actions += unit_legal_actions.get_moves()
             if unit.AI_action == True:
                 legal_actions += unit_legal_actions.get_attacks()
+                legal_actions += unit_legal_actions.get_secondary()
+            
         return legal_actions
         
     
@@ -121,7 +123,7 @@ class UnitLegalActions:
                 else:
                     movement_left -= next_tile_movement
             legal_moves_dict[destination].score += legal_moves_dict[next_step_tile].score
-
+        self.game_state.legal_moves_dict = legal_moves_dict
         return legal_moves
     
     def get_attacks(self):
@@ -131,6 +133,9 @@ class UnitLegalActions:
             action = UnitAction("Attack", self.unit, self.game_state, tile_coord)
             legal_moves.append(action)
         return legal_moves
+    
+    def get_secondary(self):
+        return [UnitAction("Fortify", self.unit, self.game_state)]
 
 
 
@@ -157,6 +162,9 @@ class UnitAction:
         elif self.type == "Attack":
             scorer = scoring.UnitAttackScore(self.unit, self.target, self.game_state)
             self.score = scorer.get_score()
+        elif self.type == "Fortify":
+            scorer = scoring.UnitFortifyScore(self.unit, self.game_state)
+            self.score = scorer.get_score()
 
 
 
@@ -171,4 +179,7 @@ class CompleteUnitAction:
             unit.AI_action = False
     def attack(unit, target):
         unit.attack_enemy(target)
+        unit.AI_action = False
+    def fortify(unit):
+        unit.fortify()
         unit.AI_action = False

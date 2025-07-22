@@ -20,10 +20,11 @@ class UnitMoveScore:
         self.reachable_tiles = None
         
     def get_score(self):  #Get score
-        self.exploration_score()
         self.offensive_score()
         self.defensive_score()
         self.distance_score()
+        self.exploration_score()
+
         return self.score
         
     def exploration_score(self):    #Score for exploring new lands
@@ -157,18 +158,27 @@ class UnitAttackScore:
             damage_inflicted, damage_taken = CombatManager.estimate_combat(self.unit, self.target_unit, self.unit_tile, self.target_tile, "ranged")
         else:
             damage_inflicted, damage_taken = CombatManager.estimate_combat(self.unit, self.target_unit, self.unit_tile, self.target_tile, "melee")
+
+        # Bonus for possibly killing enemy (> 50% chance)
         if self.target_unit.health - damage_inflicted <= 0:
             combat_score += score_config.attackScore["combat_kill_bonus"]
+
+        # Penalty for possibly dying (> 50% chance)
         if self.unit.health - damage_taken <= 0:
             combat_score += score_config.attackScore["combat_death_penalty"]
 
+        # Damage Inflicted vs Damage Taken ratio
         combat_score += (damage_inflicted - damage_taken) * score_config.attackScore["combat_damage_mult"]
+
+        # Health Multiplier
         unit_health_mult = score_config.attackScore["combat_mult"] * ((self.unit.health ) / 50)
         combat_score = combat_score * unit_health_mult
         #print(self.target_coord, "Off", offensive_score, unit_health_mult)
         self.score += combat_score
         if self.unit.type == "Ranged":
             pass
+        
+        # Take into account move to tile for melee
         else:
             if self.unit.health - damage_taken <= 0:
                 full_path = UnitUtils.A_star(self.unit, self.target_coord, self.game_state, False, True)
@@ -211,10 +221,45 @@ class UnitAttackScore:
                             break
                         else:
                             movement_left -= next_tile_movement
-                    scorer = UnitMoveScore(self.unit, tile_before, self.game_state)
-                    combat_score += scorer.get_score()
+                    combat_score += self.game_state.legal_moves_dict[tile_before].score
             else:
                 scorer = UnitMoveScore(self.unit, self.target_coord, self.game_state)
                 combat_score += scorer.get_score()
+
+class UnitFortifyScore:
+    def __init__(self, unit, game_state):
+        self.game_state = game_state
+        self.unit = unit
+        self.unit_tile = self.game_state.map.get_tile_hex(*unit.coord)
+        self.player = game_state.players.get_player(self.unit.owner_id)
+        self.score = 0
+        self.reachable_tiles = None
+
+    def get_score(self):  #Get score
+        self.get_fortify_score()
+        return self.score
+    
+    def get_fortify_score(self):
+        fortify_score = 0
+
+        # Current tile's status
+        if self.game_state.legal_moves_dict.get(self.unit.coord, None) == None:
+            scorer = UnitMoveScore(self.unit, self.unit.coord, self.game_state)
+            fortify_score += scorer.get_score()
+        else:
+            fortify_score += self.game_state.legal_moves_dict[self.unit.coord].score
+        if self.unit.fortified == True:
+            fortify_score += score_config.fortifyScore["fortify_continued"]
+        if self.unit.health < 100:
+            fortify_score += score_config.fortifyScore["fortify_not_full"]
+        else:
+            fortify_score -= score_config.fortifyScore["fortify_full_penalty"]
+
+
+        unit_health_mult = score_config.fortifyScore["fortify_mult"] * ((100 - self.unit.health - 50) / 50)
+        fortify_score = fortify_score * unit_health_mult
+        #print(self.target_coord, "Def", defensive_score, unit_health_mult)
+        self.score += fortify_score
+        
 
         

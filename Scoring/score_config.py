@@ -1,5 +1,5 @@
 moveScore = dict(
-    unrevealed = 10,
+    unrevealed = 20,
     
     adjacent_friendlies = 5,
 
@@ -18,10 +18,16 @@ moveScore = dict(
 )
 
 attackScore = dict(
-    combat_mult = 1,
+    combat_mult = 3,
     combat_kill_bonus = 100,
     combat_death_penalty = 100,
     combat_damage_mult = 10,
 
 )
 
+fortifyScore = dict(
+    fortify_mult = 1,
+    fortify_continued = 20,
+    fortify_not_full = 40,
+    fortify_full_penalty = 20
+)

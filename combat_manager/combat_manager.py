@@ -50,7 +50,6 @@ class CombatManager:
         if unit_2.type == "Ranged" and type == "melee":
             unit_2_combat_strength -= round(unit_2_combat_strength * unit_config.units[unit_2.type]["melee_attack_defensive_debuff"])
 
-
         unit_1_damage_dealt = 30*math.exp(.04*(unit_1_combat_strength - unit_2_combat_strength))
         unit_1_damage_taken = 30*math.exp(.04*(unit_2_combat_strength - unit_1_combat_strength))
         return (unit_1_damage_dealt, unit_1_damage_taken)
