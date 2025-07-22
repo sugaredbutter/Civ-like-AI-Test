@@ -177,7 +177,7 @@ class UnitUtils:
                             temp_movement_remaining = unit.movement
                         if attack == False and swap == False and (temp_movement_remaining - movement_cost <= 0 or UnitUtils.zone_of_control(unit, neighbor_coord, game_state)) and tile.unit_id is not None:
                             continue
-                        if (neighbor_coord != destination and attack == True) or (attack == False and tile.unit_id is not None and game_state.units.get_unit(tile.unit_id).owner_id != unit.owner_id):
+                        if (((neighbor_coord != destination and attack == True) or attack == False) and tile.unit_id is not None and game_state.units.get_unit(tile.unit_id).owner_id != unit.owner_id):
                             continue
 
                     # Score to target and cost of reaching neighbor tile
@@ -189,7 +189,6 @@ class UnitUtils:
                     
                     heapq.heappush(to_visit, (score, cost, neighbor_coord, current_coord))
         full_path = []
-
         if destination in path:
             current = destination
             while current != unit.coord:
@@ -627,7 +626,6 @@ class UnitAttack:
         attackable_tiles = UnitAttack.get_attackable_units(unit, game_state)
         if destination not in attackable_tiles or unit.remaining_movement == 0:
             return unit.movement
-
         full_path = UnitUtils.A_star(unit, destination, game_state, False, True)
         current_player = game_state.players.get_player(unit.owner_id)
         revealed_tiles = current_player.revealed_tiles
@@ -781,6 +779,50 @@ class UnitScoringUtils:
                     queue.append((tile.get_coords(), movement_left - movement_cost, True if (current_tile.unit_id != None and current_tile.get_coords() != unit.coord) else False, is_zoc_locked))
         return reachable
     
+    def BFS_nearby_units(unit, tile_coord, movement, game_state):
+        current_player = game_state.players.get_player(unit.owner_id)
+        revealed_tiles = current_player.revealed_tiles
+        visibile_tiles = current_player.visible_tiles
+        reachable = set()
+        reachable_movement = {}
+        queue = deque()
+        queue.append((tile_coord, movement))
+        while queue:
+            current_coord, movement_left = queue.popleft()
+            if current_coord in reachable_movement and reachable_movement[current_coord] >= movement_left:
+                continue
+            
+            current_tile = game_state.map.get_tile_hex(*current_coord)
+            if current_tile.unit_id != None:
+                other_unit = game_state.units.get_unit(current_tile.unit_id)
+            reachable_movement[current_coord] = movement_left
+            reachable.add(current_coord)
+            enter_ZOC = UnitUtils.zone_of_control(unit, current_coord, game_state)
+            if movement_left == 0:
+                continue
+            if current_tile.unit_id != None:
+                other_unit = game_state.units.get_unit(current_tile.unit_id)
+                if other_unit.owner_id != unit.owner_id:
+                    continue
+            
+            
+            for neighbor_direction in utils.CUBE_DIRECTIONS_DICT.keys():
+                neighbor = utils.CUBE_DIRECTIONS_DICT[neighbor_direction]
+                neighbor_coord = tuple(x + y for x, y in zip(current_coord, neighbor))
+                tile = game_state.map.get_tile_hex(*neighbor_coord)
+                if tile is None:
+                    continue
+                if tile.get_coords() not in visibile_tiles:
+                    continue
+                else:
+                    movement_cost = tile.get_movement(utils.OPPOSITE_EDGES[neighbor_direction])
+                    if movement_cost == -1:
+                        continue
+                    movement_cost = min(unit.movement, movement_cost)
+                if movement_left - movement_cost >= 0:
+                    queue.append((tile.get_coords(), movement_left - movement_cost))
+        return reachable
+    
     def BFS_ranged_attack(unit, tile_coord, game_state):
         tile = game_state.map.get_tile_hex(*unit.coord)
 
@@ -843,6 +885,7 @@ class UnitScoringUtils:
             else:
                 movement_remaining = (unit.movement - current_distance) % unit.movement
             enter_ZOC = UnitUtils.zone_of_control(unit, current_tile_coord, game_state)
+            current_tile = game_state.map.get_tile_hex(*current_tile_coord)
             for neighbor_direction in utils.CUBE_DIRECTIONS_DICT.keys():
                 neighbor = utils.CUBE_DIRECTIONS_DICT[neighbor_direction]
                 neighbor_coord = tuple(x + y for x, y in zip(current_tile_coord, neighbor))
@@ -865,7 +908,12 @@ class UnitScoringUtils:
                
                     
                 #Add cost if not reachable in current turn
-                additional_cost = 0 if movement_remaining >= movement_cost else unit.movement - movement_remaining
+                if movement_remaining >= movement_cost:
+                        additional_cost = 0
+                else:
+                    additional_cost = unit.movement - movement_remaining
+                    if current_tile.unit_id != None:
+                        continue
                 temp_movement_remaining = movement_remaining
                 
                 #Allow unit to pass thru other units of same owner but not land on same tile

@@ -124,3 +124,7 @@ class CombatManager:
 
 
         return unit_1_combat_bonuses, unit_2_combat_bonuses
+
+    def get_offensive_CS(unit):
+        unit_1_combat_strength = round(unit.attack - (10 * (100 - unit.health)) / 100)
+        return unit_1_combat_strength

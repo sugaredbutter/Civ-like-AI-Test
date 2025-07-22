@@ -17,6 +17,9 @@ class Actions:
         legal_actions = []
         for unit_id in player.units:
             unit = game_state.units.get_unit(unit_id)
+            game_state.legal_moves_dict = {}
+            action = UnitAction("Move", unit, game_state, unit.coord)
+            game_state.legal_moves_dict[unit.coord] = action
             unit_legal_actions = UnitLegalActions(unit, player, game_state)
             if unit.AI_action == True and unit.ZOC_locked == False:
                 legal_actions += unit_legal_actions.get_moves()
@@ -60,21 +63,18 @@ class UnitLegalActions:
         visible_tiles = self.player.visible_tiles
         tiles = self.game_state.map.tiles
         legal_moves = []
-        legal_moves_dict = {}
-        action = UnitAction("Move", self.unit, self.game_state, self.unit.coord)
-        legal_moves_dict[self.unit.coord] = action
         moveable_tiles = UnitScoringUtils.djikstra(self.unit, self.unit.coord, self.game_state)
         for tile_coord in tiles.keys():
             tile = self.game_state.map.get_tile_hex(*tile_coord)
             if tile_coord in moveable_tiles.keys() and (tile.unit_id == None or tile_coord not in visible_tiles):
                 action = UnitAction("Move", self.unit, self.game_state, tile_coord)
-                legal_moves_dict[tile_coord] = action
+                self.game_state.legal_moves_dict[tile_coord] = action
                 legal_moves.append(action)
             elif UnitUtils.valid_swappable(self.unit, tile_coord, self.game_state):
                 legal_moves.append(UnitAction("Swap", self.unit, self.game_state, tile_coord))
                 pass
             
-        for destination in legal_moves_dict.keys():
+        for destination in self.game_state.legal_moves_dict.keys():
             full_path = []
 
             if destination in moveable_tiles:
@@ -122,8 +122,8 @@ class UnitLegalActions:
                     break
                 else:
                     movement_left -= next_tile_movement
-            legal_moves_dict[destination].score += legal_moves_dict[next_step_tile].score
-        self.game_state.legal_moves_dict = legal_moves_dict
+            self.game_state.legal_moves_dict[destination].score += self.game_state.legal_moves_dict[next_step_tile].score
+        
         return legal_moves
     
     def get_attacks(self):

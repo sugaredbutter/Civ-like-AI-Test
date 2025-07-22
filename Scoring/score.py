@@ -5,6 +5,7 @@ from players.units_utils import UnitUtils
 from players.units_utils import UnitMove
 from players.units_utils import UnitVisibility
 from players.units_utils import UnitAttack
+from players.units_utils import UnitScoringUtils
 from players.units_utils import UnitMoveScoring
 from combat_manager.combat_manager import CombatManager
 
@@ -29,8 +30,19 @@ class UnitMoveScore:
         
     def exploration_score(self):    #Score for exploring new lands
         revealed_tiles = self.player.revealed_tiles
+        visible_tiles = self.player.visible_tiles
+        # Explore unrevealed tiles
         if self.target_coord not in revealed_tiles:
-            self.score += score_config.moveScore["unrevealed"]
+            self.score += score_config.moveScore["exp_unrevealed"]
+        elif self.target_coord not in visible_tiles:
+            self.score += score_config.moveScore["exp_nonvisible"]
+        # Bonus for Path to org destination (prevents going back and forward between 2 target tiles)
+        if self.target_coord == self.unit.destination:
+            self.score += score_config.moveScore["exp_org_destination"]
+
+        
+
+
         
     # Offensive Behavior
     # + Number of attackable units 
@@ -98,7 +110,7 @@ class UnitMoveScore:
             if tile.unit_id != None:
                 tile_unit = self.game_state.units.get_unit(tile.unit_id)
                 if tile_unit.owner_id == self.unit.owner_id:
-                    defensive_score += score_config.moveScore["adjacent_friendlies"]
+                    defensive_score += score_config.moveScore["def_adjacent_friendlies"]
 
         #Enemy potential damage to unit at tile
         enemy_units = self.game_state.tile_attackable_by.get(self.target_coord, set())
@@ -165,11 +177,27 @@ class UnitAttackScore:
 
         # Penalty for possibly dying (> 50% chance)
         if self.unit.health - damage_taken <= 0:
-            combat_score += score_config.attackScore["combat_death_penalty"]
+            combat_score -= score_config.attackScore["combat_death_penalty"]
+
+        combat_score += unit.health / 100 * score_config.attackScore["combat_health_aggro"]
 
         # Damage Inflicted vs Damage Taken ratio
         combat_score += (damage_inflicted - damage_taken) * score_config.attackScore["combat_damage_mult"]
 
+        # Nearby Allies as support vs Enemies
+        nearby_tiles = UnitScoringUtils.BFS_nearby_units(self.unit, self.unit.coord, 5, self.game_state)
+        player_CS = 0
+        enemy_CS = 0
+        for tile_coord in nearby_tiles:
+            tile = self.game_state.map.get_tile_hex(*tile_coord)
+            if tile.unit_id != None:
+                unit = self.game_state.units.get_unit(tile.unit_id)
+                if unit.owner_id == self.unit.owner_id:
+                    player_CS += CombatManager.get_offensive_CS(unit)
+                else:
+                    enemy_CS += CombatManager.get_offensive_CS(unit)
+        combat_score += player_CS * score_config.attackScore["combat_ally_bonus_mult_bonus"]
+        combat_score -= enemy_CS * score_config.attackScore["combat_enemy_bonus_mult_penalty"]
         # Health Multiplier
         unit_health_mult = score_config.attackScore["combat_mult"] * ((self.unit.health ) / 50)
         combat_score = combat_score * unit_health_mult
@@ -221,7 +249,11 @@ class UnitAttackScore:
                             break
                         else:
                             movement_left -= next_tile_movement
-                    combat_score += self.game_state.legal_moves_dict[tile_before].score
+                    if self.game_state.legal_moves_dict.get(tile_before, None) == None:
+                        scorer = UnitMoveScore(self.unit, tile_before, self.game_state)
+                        combat_score += scorer.get_score()
+                    else:
+                        combat_score += self.game_state.legal_moves_dict[tile_before].score
             else:
                 scorer = UnitMoveScore(self.unit, self.target_coord, self.game_state)
                 combat_score += scorer.get_score()
@@ -256,7 +288,7 @@ class UnitFortifyScore:
             fortify_score -= score_config.fortifyScore["fortify_full_penalty"]
 
 
-        unit_health_mult = score_config.fortifyScore["fortify_mult"] * ((100 - self.unit.health - 50) / 50)
+        unit_health_mult = score_config.fortifyScore["fortify_mult"] * (((100 - self.unit.health) / 100) ** 2)
         fortify_score = fortify_score * unit_health_mult
         #print(self.target_coord, "Def", defensive_score, unit_health_mult)
         self.score += fortify_score
