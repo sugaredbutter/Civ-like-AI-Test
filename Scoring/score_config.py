@@ -24,7 +24,7 @@ attackScore = dict(
     combat_mult = 3,
     combat_health_aggro = 200,
     combat_kill_bonus = 100,
-    combat_death_penalty = 200,
+    combat_death_penalty = 400,
     combat_ally_bonus_mult_bonus = 2.3,
     combat_enemy_bonus_mult_penalty = 1.5,
     combat_damage_mult = 2,
@@ -34,6 +34,6 @@ attackScore = dict(
 fortifyScore = dict(
     fortify_mult = 2,
     fortify_continued = 20,
-    fortify_not_full = 40,
-    fortify_full_penalty = 20
+    fortify_not_full = 50,
+    fortify_full_penalty = 40
 )

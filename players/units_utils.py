@@ -167,16 +167,25 @@ class UnitUtils:
                         additional_cost = 0
                     else:
                         additional_cost = unit.movement - movement_remaining
+                        #If neighbor tile not reachable in current turn and previous tile already occupied, then skip tile
                         if current_tile.unit_id != None:
                             continue
+
+                    # Can't pass thru unit into tile occupied by enemy
+                    if current_tile.unit_id != None and tile.unit_id != None and game_state.units.get_unit(tile.unit_id).owner_id != unit.owner_id:
+                        continue
                     temp_movement_remaining = movement_remaining
                     
                     #Allow unit to pass thru other units of same owner but not land on same tile
                     if tile.get_coords() in visibile_tiles:
                         if additional_cost > 0:
                             temp_movement_remaining = unit.movement
+                        
+                        # If neighbor tile under ZOC or currently no movement and tile occupied, don't bother going to next tile
                         if attack == False and swap == False and (temp_movement_remaining - movement_cost <= 0 or UnitUtils.zone_of_control(unit, neighbor_coord, game_state)) and tile.unit_id is not None:
                             continue
+
+                        # Prevents pathing thru enemy units (except when attacking and it is destination)
                         if (((neighbor_coord != destination and attack == True) or attack == False) and tile.unit_id is not None and game_state.units.get_unit(tile.unit_id).owner_id != unit.owner_id):
                             continue
 
@@ -188,6 +197,8 @@ class UnitUtils:
                     cost += unit.movement if enter_ZOC else 0
                     
                     heapq.heappush(to_visit, (score, cost, neighbor_coord, current_coord))
+
+        # Convert dict to list
         full_path = []
         if destination in path:
             current = destination
@@ -909,12 +920,16 @@ class UnitScoringUtils:
                     
                 #Add cost if not reachable in current turn
                 if movement_remaining >= movement_cost:
-                        additional_cost = 0
+                    additional_cost = 0
                 else:
                     additional_cost = unit.movement - movement_remaining
                     if current_tile.unit_id != None:
                         continue
                 temp_movement_remaining = movement_remaining
+
+                # Can't pass thru unit into tile occupied by enemy
+                if current_tile.unit_id != None and tile.unit_id != None and game_state.units.get_unit(tile.unit_id).owner_id != unit.owner_id:
+                    continue
                 
                 #Allow unit to pass thru other units of same owner but not land on same tile
                 if tile.get_coords() in visibile_tiles:

@@ -7,7 +7,8 @@ units = {
         "visibility": 2,
         "fortified": 3,
         "defense_zoc": True,
-        "attack_zoc": True
+        "attack_zoc": True,
+        "combat_type": "melee"
     },
     "Ranged": {
         "health": 100,
@@ -19,7 +20,9 @@ units = {
         "fortified": 3,
         "defense_zoc": False,
         "attack_zoc": True,
-        "melee_attack_defensive_debuff": .25        #Percentage (25% debuff)
+        "melee_attack_defensive_debuff": .25, #Percentage (25% debuff)
+        "combat_type": "ranged"        
+        
     },
     "Cavalry": {
         "health": 100,
@@ -29,6 +32,7 @@ units = {
         "visibility": 2,
         "fortified": 3,
         "defense_zoc": True,
-        "attack_zoc": True
+        "attack_zoc": False,
+        "combat_type": "melee"
     }
 }

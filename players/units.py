@@ -21,6 +21,7 @@ class Unit:
         self.range = units_config.units[type].get("range", None)
         self.health = random.randint(1, 100)
         self.orig_health = self.health
+        self.combat_type = units_config.units[type]["combat_type"]
 
 
         self.vision = vision
