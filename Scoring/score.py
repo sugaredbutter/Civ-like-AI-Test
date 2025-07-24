@@ -56,9 +56,10 @@ class UnitMoveScore:
 
     def offensive_score(self):  #Offensive/more aggressive behavior
         offensive_score = 0
-        if self.unit.type != "ranged":
+        if self.unit.combat_type == "melee":
             attackable_enemies = UnitMoveScoring.get_attackable_units(self.unit, self.target_coord, self.game_state)
             if len(attackable_enemies) > 0:
+                # Number of attackable enemies
                 offensive_score += math.log2(len(attackable_enemies) + 1) * score_config.moveScore["off_attackable_enemy_units"]
                 
                 # Attackable Units                
@@ -92,7 +93,9 @@ class UnitMoveScore:
         else:
             attackable_enemies = UnitMoveScoring.get_attackable_units(self.unit, self.target_coord, self.game_state)
             if len(attackable_enemies) > 0:
-                offensive_score += math.log2(len(attackable_enemies) + 1) * score_config.moveScore["off_attackable_enemy_units"]
+
+                # Attackable enemy (does not scale with more)
+                offensive_score += score_config.moveScore["off_attackable_enemy_units"]
                 
                 # Attackable Units                
                 average_damage_inflicted = 0
@@ -108,7 +111,7 @@ class UnitMoveScore:
                     average_damage_inflicted += damage_inflicted
                     most_damage_inflicted = max(most_damage_inflicted, damage_inflicted)
 
-                offensive_score += average_damage_inflicted + most_damage_inflicted
+                offensive_score += most_damage_inflicted
                 adjacent_tiles = utils.adjacent_tiles(self.target_coord)
 
         # Health Multiplier
@@ -158,11 +161,15 @@ class UnitMoveScore:
 
         #Potential Damage inflicted back (good if in very defensible location)
         defensive_score += potential_damage_inflicted * score_config.moveScore["def_damage_inflicted_mult"]
-
-        # Health Multiplier
-        unit_health_mult = score_config.moveScore["off_mult"] * ((100 - self.unit.health) / 50)
-        defensive_score = defensive_score * unit_health_mult
-        #print(self.target_coord, "Def", defensive_score, unit_health_mult)
+        if self.unit.combat_type == "melee":
+            # Health Multiplier
+            unit_health_mult = score_config.moveScore["off_mult"] * ((100 - self.unit.health) / 50)
+            defensive_score = defensive_score * unit_health_mult
+            #print(self.target_coord, "Def", defensive_score, unit_health_mult)
+        else:
+            # Health Multiplier
+            unit_health_mult = score_config.moveScore["off_mult"] * ((100 - self.unit.health + 25) / 50)
+            defensive_score = defensive_score * unit_health_mult
         self.score += defensive_score
 
 
@@ -193,7 +200,7 @@ class UnitAttackScore:
 
     def combat_score(self):
         combat_score = 0
-        if self.unit.type != "ranged":
+        if self.unit.combat_type == "melee":
             damage_inflicted, damage_taken = CombatManager.estimate_combat(self.unit, self.target_unit, self.unit_tile, self.target_tile, self.unit.combat_type)
 
             # Bonus for possibly killing enemy (> 50% chance)
@@ -278,6 +285,26 @@ class UnitAttackScore:
             else:
                 scorer = UnitMoveScore(self.unit, self.target_coord, self.game_state)
                 combat_score += scorer.get_score()
+        else:
+            damage_inflicted, damage_taken = CombatManager.estimate_combat(self.unit, self.target_unit, self.unit_tile, self.target_tile, self.unit.combat_type)
+
+            # Bonus for possibly killing enemy (> 50% chance)
+            if self.target_unit.health - damage_inflicted <= 0:
+                combat_score += score_config.attackScore["combat_kill_bonus"]
+
+            # Current tile's status
+            if self.game_state.legal_moves_dict.get(self.unit.coord, None) == None:
+                scorer = UnitMoveScore(self.unit, self.unit.coord, self.game_state)
+                combat_score += scorer.get_score()
+            else:
+                combat_score += self.game_state.legal_moves_dict[self.unit.coord].score
+
+            # Health Multiplier
+            unit_health_mult = score_config.attackScore["combat_mult"] * ((self.unit.health ) / 50)
+            combat_score = combat_score * unit_health_mult
+            #print(self.target_coord, "Off", offensive_score, unit_health_mult)
+            self.score += combat_score
+
 
 class UnitFortifyScore:
     def __init__(self, unit, game_state):

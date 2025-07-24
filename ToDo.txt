@@ -37,6 +37,7 @@ x Complete unit options (fortify, skip turn) excluding attacks
 Phase 5 (General Cleanup and Foundations)
 / GameState
 / Clean Unit code as it is not scalable and getting quite messy
+- Win Screen/Reset
 
 
 Phase 6 (AI):
@@ -48,6 +49,7 @@ Phase 6 (AI):
 - Investigate and Implement ML techniques
 - AI v AI
 / Player v AI
+- ML implementation vs Score based implementation
 
 Phase 7 (Improving Combat (Not priority)):
 - Implement visuals for combat to better display which unit is attacking what

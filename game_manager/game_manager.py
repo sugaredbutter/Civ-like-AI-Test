@@ -65,8 +65,9 @@ class GameManager:
         self.turn_manager.current_player = 0
         self.generated_map.end_game_reset()
         self.units.end_game_reset()
-        self.test_user_interface.end_game_reset()
-        self.player_v_AI_interface.end_game_reset()
+        self.interfaces.test_user_interface.end_game_reset()
+        self.interfaces.player_v_AI_interface.end_game_reset()
+        self.interfaces.player_v_AI_test_interface.end_game_reset()
         self.current_player = 0
         self.players.end_game_reset()
         config.game_type = None

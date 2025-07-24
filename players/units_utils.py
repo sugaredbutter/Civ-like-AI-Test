@@ -168,11 +168,11 @@ class UnitUtils:
                     else:
                         additional_cost = unit.movement - movement_remaining
                         #If neighbor tile not reachable in current turn and previous tile already occupied, then skip tile
-                        if current_tile.unit_id != None:
+                        if current_tile.unit_id != None and current_coord != unit.coord:
                             continue
 
                     # Can't pass thru unit into tile occupied by enemy
-                    if current_tile.unit_id != None and tile.unit_id != None and game_state.units.get_unit(tile.unit_id).owner_id != unit.owner_id:
+                    if current_tile.unit_id != None and tile.unit_id != None and game_state.units.get_unit(tile.unit_id).owner_id != unit.owner_id and current_coord != unit.coord:
                         continue
                     temp_movement_remaining = movement_remaining
                     
@@ -615,8 +615,8 @@ class UnitAttack:
                     queue.append((tile.get_coords(), visibility - neighbor_visibility_penalty, distance - 1))
         return visibile 
     
-    def ranged_attack(unit, destination, game_state):
-        attackable_tiles = UnitAttack.get_attackable_units()
+    def ranged_attack(unit, destination, game_state, visual_effects):
+        attackable_tiles = UnitAttack.get_attackable_units(unit, game_state)
         if destination not in attackable_tiles or unit.remaining_movement == 0:
             return unit.movement
         enemy_tile = game_state.map.get_tile_hex(*destination)
@@ -630,8 +630,9 @@ class UnitAttack:
 
         
         unit.remaining_movement = 0
-        UnitAttack.clear_attackable()
-        UnitMove.clear_hover_path()
+        visual_effects.add_damage(damage_inflicted, enemy_tile.get_coords(), True)
+        UnitAttack.clear_attackable(unit, game_state)
+        UnitMove.clear_hover_path(unit, game_state)
 
     def melee_attack(unit, destination, game_state, visual_effects):
         attackable_tiles = UnitAttack.get_attackable_units(unit, game_state)

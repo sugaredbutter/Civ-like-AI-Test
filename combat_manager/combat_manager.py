@@ -25,9 +25,14 @@ class CombatManager:
             unit_2_combat_strength -= round(unit_2_combat_strength * unit_config.units[unit_2.type]["melee_attack_defensive_debuff"])
 
 
-
-        unit_1_damage_dealt = 30*math.exp(.04*(unit_1_combat_strength - unit_2_combat_strength)) * random.uniform(0.8, 1.2)
-        unit_1_damage_taken = 30*math.exp(.04*(unit_2_combat_strength - unit_1_combat_strength)) * random.uniform(0.8, 1.2)
+        try:
+            unit_1_damage_dealt = 30*math.exp(.04*(unit_1_combat_strength - unit_2_combat_strength)) * random.uniform(0.8, 1.2)
+            unit_1_damage_taken = 30*math.exp(.04*(unit_2_combat_strength - unit_1_combat_strength)) * random.uniform(0.8, 1.2)
+        except OverflowError:
+            print("Combat")
+            print("Unit 1 CS:", unit_1_combat_strength, "Unit 2 CS:", unit_2_combat_strength)
+            print("Unit 1 HP:", unit_1.health, "Unit 2 HP:", unit_2.health)
+            return (0, 0)
         return (unit_1_damage_dealt, unit_1_damage_taken)
     
     def estimate_combat(unit_1, unit_2, tile_1, tile_2, type):
@@ -49,9 +54,14 @@ class CombatManager:
         
         if unit_2.type == "Ranged" and type == "melee":
             unit_2_combat_strength -= round(unit_2_combat_strength * unit_config.units[unit_2.type]["melee_attack_defensive_debuff"])
-
-        unit_1_damage_dealt = 30*math.exp(.04*(unit_1_combat_strength - unit_2_combat_strength))
-        unit_1_damage_taken = 30*math.exp(.04*(unit_2_combat_strength - unit_1_combat_strength))
+        try:
+            unit_1_damage_dealt = 30*math.exp(.04*(unit_1_combat_strength - unit_2_combat_strength))
+            unit_1_damage_taken = 30*math.exp(.04*(unit_2_combat_strength - unit_1_combat_strength))
+        except OverflowError:
+            print("Estimate Combat")
+            print("Unit 1 CS:", unit_1_combat_strength, "Unit 2 CS:", unit_2_combat_strength)
+            print("Unit 1 HP:", unit_1.health, "Unit 2 HP:", unit_2.health)
+            return (0, 0)
         return (unit_1_damage_dealt, unit_1_damage_taken)
     
     def get_combat_strength(unit_1, unit_2, tile_1, tile_2, type):

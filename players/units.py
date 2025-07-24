@@ -124,6 +124,8 @@ class Unit:
             UnitMove.display_hover_path(self, full_path, destination, self.game_state)
     
     def end_turn(self):
+        if self.alive == False:
+            return
         if self.remaining_movement > 0 and self.destination is not None and not self.ZOC_locked:
             if self.coord != self.destination:
                 self.move_to(self.destination)
@@ -133,6 +135,8 @@ class Unit:
                 
     
     def turn_begin(self):
+        if self.alive == False:
+            return
         self.ZOC_locked = False
         if self.fortified:
             health_healed = 5 * (self.remaining_movement / self.movement) + min(10, self.turns_fortified * 5)
@@ -166,25 +170,26 @@ class Unit:
         attackable_tiles = UnitAttack.get_attackable_units(self, self.game_state)
         if destination not in attackable_tiles or self.remaining_movement == 0:
             return None
-        full_path = UnitUtils.A_star(self, destination, self.game_state, False, True)
-        current_player = self.game_state.players.get_player(self.owner_id)
-        revealed_tiles = current_player.revealed_tiles
-        visibile_tiles = current_player.visible_tiles
+        if self.combat_type == "melee":
+            full_path = UnitUtils.A_star(self, destination, self.game_state, False, True)
+            current_player = self.game_state.players.get_player(self.owner_id)
+            revealed_tiles = current_player.revealed_tiles
+            visibile_tiles = current_player.visible_tiles
 
-        for x in range(len(full_path)):
-            tile = self.game_state.map.get_tile_hex(*full_path[x])
-            if (tile.x, tile.y, tile.z) == destination:
-                tile.path = True
-                break
-            elif (tile.x, tile.y, tile.z) == self.coord:
-                tile.neighbor = self.game_state.map.get_tile_hex(*full_path[x + 1])
-                tile.path = True
-            else:
-                tile.neighbor = self.game_state.map.get_tile_hex(*full_path[x + 1])
-                tile.path = True
-            
-        self.hover_destination = destination
-        self.hover_path = full_path
+            for x in range(len(full_path)):
+                tile = self.game_state.map.get_tile_hex(*full_path[x])
+                if (tile.x, tile.y, tile.z) == destination:
+                    tile.path = True
+                    break
+                elif (tile.x, tile.y, tile.z) == self.coord:
+                    tile.neighbor = self.game_state.map.get_tile_hex(*full_path[x + 1])
+                    tile.path = True
+                else:
+                    tile.neighbor = self.game_state.map.get_tile_hex(*full_path[x + 1])
+                    tile.path = True
+                
+            self.hover_destination = destination
+            self.hover_path = full_path
         enemy_tile = self.game_state.map.get_tile_hex(*destination)
         current_tile = self.game_state.map.get_tile_hex(*self.coord)
         enemy_unit = self.game_state.units.get_unit(enemy_tile.unit_id)
