@@ -38,18 +38,19 @@ players.add_player()  # player 1
 players.add_player()  # player 2
 
 user_interface = ui.UserInterface(screen, generated_map, players, units)
-test_user_interface = test_ui.UserInterface(screen, generated_map, players, units)
-player_v_AI_interface = pvAI_ui.UserInterface(screen, generated_map, players, units)
+test_user_interface = test_ui.UserInterface(screen, generated_map, players, units, game_state)
+player_v_AI_interface = pvAI_ui.UserInterface(screen, generated_map, players, units, game_state)
 player_v_AI_test_interface = pvAI_test_ui.UserInterface(screen, game_state)
-all_interfaces = interfaces.Interfaces(user_interface, test_user_interface, player_v_AI_test_interface, player_v_AI_interface)
+game_control_interface = game_ui.GameControlsInterface(screen)
 
-tile_click_controls = controls.TileClickControls(screen, user_interface, generated_map, players, units)
+all_interfaces = interfaces.Interfaces(game_control_interface, user_interface, test_user_interface, player_v_AI_test_interface, player_v_AI_interface)
+
 game_manager = game.GameManager(screen, players, units, generated_map, test_user_interface, player_v_AI_interface, game_state, all_interfaces)
-test_user_interface.game_manager = game_manager
-player_v_AI_interface.game_manager = game_manager
-player_v_AI_test_interface.game_manager = game_manager
-game_control_interface = game_ui.GameControlsInterface(screen, game_manager)
-mouse_controls = controls.MouseControls(screen, user_interface, test_user_interface, player_v_AI_interface, generated_map, tile_click_controls, game_control_interface, game_manager, all_interfaces)
+test_user_interface.set_game_manager(game_manager)
+player_v_AI_interface.set_game_manager(game_manager)
+player_v_AI_test_interface.set_game_manager(game_manager)
+game_control_interface.set_game_manager(game_manager)
+mouse_controls = controls.MouseControls(screen, user_interface, test_user_interface, player_v_AI_interface, generated_map, game_control_interface, game_manager, all_interfaces)
 
 map = draw_map.Map(screen, generated_map, players, units, game_manager)
 

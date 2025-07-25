@@ -13,10 +13,10 @@ ROWS, COLUMNS = config.map_settings["tile_height"], config.map_settings["tile_wi
 ZOOM_SCALE = config.map_settings["zoom"]
 
 class GameControlsInterface:
-    def __init__(self, screen, game_manager):
+    def __init__(self, screen):
         self.screen = screen
-        self.game_manager = game_manager
-        self.start_manager = StartGameInterface(self, screen, game_manager)
+        self.game_manager = None
+        self.start_manager = None
         
         self.initX = 0
         self.initY = 0
@@ -42,6 +42,11 @@ class GameControlsInterface:
         self.button_menu["Start"] = pygame.Rect(x, y, self.button_width, self.button_height)
         self.button_menu["End"] = pygame.Rect(x, y, self.button_width, self.button_height)
 
+    def set_game_manager(self, game_manager):
+        self.game_manager = game_manager
+        self.start_manager = StartGameInterface(self, self.screen, game_manager)
+
+        
     def left_click(self, event):
         self.clicked = True
         if self.is_clicked():

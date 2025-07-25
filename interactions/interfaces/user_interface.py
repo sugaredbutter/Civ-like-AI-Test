@@ -36,10 +36,8 @@ class UserInterface:
         self.valid_hover = True
         self.active_button = None
         self.active_menu = self
-        
-        self.tile_controls = controls.TileClickControls(screen, self, generated_map, player_handler, unit_handler)
-                
-        self.Menus = [PainterMenu(screen, self, self, generated_map, self.tile_controls), TerrainMenu(screen, self, self, generated_map, self.tile_controls, self.unit_handler, self.player_handler), FeatureMenu(screen, self, self, generated_map, self.tile_controls), UnitMenu(screen, self, self, self.generated_map, self.player_handler, self.unit_handler, self.tile_controls)]
+                        
+        self.Menus = [PainterMenu(screen, self, self, generated_map), TerrainMenu(screen, self, self, generated_map, self.unit_handler, self.player_handler), FeatureMenu(screen, self, self, generated_map), UnitMenu(screen, self, self, self.generated_map, self.player_handler, self.unit_handler)]
         menus_list = ["Biomes", "Terrain", "Features", "Units"]
         self.button_menu = {}
 
@@ -149,12 +147,11 @@ class UserInterface:
                     
             
 class PainterMenu:
-    def __init__(self, screen, main_menu, parent_menu, generated_map, tile_controls):
+    def __init__(self, screen, main_menu, parent_menu, generated_map):
         self.screen = screen
         self.main_menu = main_menu
         self.parent_menu = parent_menu
         self.generated_map = generated_map
-        self.tile_controls = tile_controls
         
         self.initX = 0
         self.initY = 0
@@ -287,12 +284,11 @@ class PainterMenu:
         return
     
 class TerrainMenu:
-    def __init__(self, screen, main_menu, parent_menu, generated_map, tile_controls, unit_handler, player_handler):
+    def __init__(self, screen, main_menu, parent_menu, generated_map, unit_handler, player_handler):
         self.screen = screen
         self.main_menu = main_menu
         self.parent_menu = parent_menu
         self.generated_map = generated_map
-        self.tile_controls = tile_controls
         self.unit_handler = unit_handler
         self.player_handler = player_handler
         
@@ -432,12 +428,11 @@ class TerrainMenu:
         return
     
 class FeatureMenu:
-    def __init__(self, screen, main_menu, parent_menu, generated_map, tile_controls):
+    def __init__(self, screen, main_menu, parent_menu, generated_map):
         self.screen = screen
         self.main_menu = main_menu
         self.parent_menu = parent_menu
         self.generated_map = generated_map
-        self.tile_controls = tile_controls
         
         self.initX = 0
         self.initY = 0
@@ -616,14 +611,13 @@ class FeatureMenu:
         return
     
 class UnitMenu:
-    def __init__(self, screen, main_menu, parent_menu, generated_map, player_handler, unit_handler, tile_controls):
+    def __init__(self, screen, main_menu, parent_menu, generated_map, player_handler, unit_handler):
         self.screen = screen
         self.main_menu = main_menu
         self.parent_menu = parent_menu
         self.generated_map = generated_map
         self.player_handler = player_handler
         self.unit_handler = unit_handler
-        self.tile_controls = tile_controls
         
         self.initX = 0
         self.initY = 0
@@ -829,12 +823,13 @@ class UnitMenu:
     
 
 class UnitControlMenu:
-    def __init__(self, screen, parent_menu, generated_map, player_handler, unit_handler):
+    def __init__(self, screen, parent_menu, generated_map, player_handler, unit_handler, game_manager):
         self.screen = screen
         self.parent_menu = parent_menu
         self.generated_map = generated_map
         self.player_handler = player_handler
         self.unit_handler = unit_handler
+        self.game_manager = game_manager
         
         self.initX = 0
         self.initY = 0
@@ -1299,6 +1294,7 @@ class UnitControlMenu:
                 self.active_tile = self.generated_map.get_tile_hex(*unit.coord)
                 self.generated_map.selected_tile = self.active_tile
             self.display_combat_info = False
+            self.game_manager.check_win()
         if (self.active_button == "Fortify" or self.active_button == "Heal") and not self.dragging:
             self.reset()
             

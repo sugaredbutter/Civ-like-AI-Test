@@ -216,6 +216,8 @@ class Unit:
             self.action = False
         self.fortified = False
         self.turns_fortified = 0
+        self.fortify_and_heal = False
+
         current_player = self.game_state.players.get_player(self.owner_id)
         current_player.update_visibility()
         return self.remaining_movement
@@ -254,7 +256,10 @@ class Unit:
             self.action = False
             
     
-
+    def killed(self):
+        self.alive = False
+        player = self.game_state.players.get_player(self.owner_id)
+        player.elim_units.append(self.id)
             
 
 

@@ -8,7 +8,9 @@ class Player:
         self.generated_map = generated_map
         self.unit_handler = unit_handler
         self.units = []
+        self.elim_units = []
         self.AI = False
+        self.eliminated = False
         
         self.visible_tiles = set()
         self.revealed_tiles = set()
@@ -66,6 +68,9 @@ class PlayerHandler:
     def end_game_reset(self):
         for players in self.players:
             players.revealed_tiles = set()
+            players.visible_tiles = set()
+            players.eliminated = False
+            players.elim_units = []
 
     def start_game(self, type):
         print("hi")

@@ -21,9 +21,9 @@ class Actions:
             action = UnitAction("Move", unit, game_state, unit.coord)
             game_state.legal_moves_dict[unit.coord] = action
             unit_legal_actions = UnitLegalActions(unit, player, game_state)
-            if unit.AI_action == True and unit.ZOC_locked == False:
+            if unit.AI_action == True and unit.ZOC_locked == False and unit.alive == True:
                 legal_actions += unit_legal_actions.get_moves()
-            if unit.AI_action == True:
+            if unit.AI_action == True and unit.alive == True:
                 legal_actions += unit_legal_actions.get_attacks()
                 legal_actions += unit_legal_actions.get_secondary()
             

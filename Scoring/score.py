@@ -243,6 +243,7 @@ class UnitAttackScore:
                 visibile_tiles = current_player.visible_tiles
                 tile_before = None
                 #Find next tile for unit to move to
+                print(self.player.id, self.unit.coord, full_path)
                 if self.target_coord in full_path:
                     self.unit.path = full_path
                     movement_left = self.unit.remaining_movement
@@ -255,8 +256,6 @@ class UnitAttackScore:
                         tile_before = tile.get_coords()
                         current_player.update_visibility()
                         
-                        
-                        # Update visibility of unit at tile
                         next_tile = self.game_state.map.get_tile_hex(*full_path[x + 1])
                         
                         if next_tile.get_coords() == self.target_coord:

@@ -2,12 +2,14 @@ from Agents.actions import Actions
 from Agents.actions import CompleteUnitAction
 
 class ScoreAgent:
-    def choose_best_actions(player_id, game_state):
+    def choose_best_actions(player_id, game_state, game_manager):
         while True:
-            if ScoreAgent.choose_best_action(player_id, game_state) == False:
+            if ScoreAgent.choose_best_action(player_id, game_state, game_manager) == False:
                 return
 
-    def choose_best_action(player_id, game_state):
+    def choose_best_action(player_id, game_state, game_manager):
+        print("action", player_id)
+
         legal_actions = Actions.get_actions(player_id, game_state)
         if legal_actions == []:
             return False
@@ -20,6 +22,7 @@ class ScoreAgent:
             CompleteUnitAction.move_unit(best_action.unit, best_action.target)
         elif best_action.type == "Attack":
             CompleteUnitAction.attack(best_action.unit, best_action.target)
+            game_manager.check_win()
         elif best_action.type == "Fortify":
             CompleteUnitAction.fortify(best_action.unit)
 

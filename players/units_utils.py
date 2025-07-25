@@ -310,6 +310,7 @@ class UnitMove:
             return True
         unit.fortified = False
         unit.turns_fortified = 0
+        unit.fortify_and_heal = False
         unit.destination = destination
         full_path = UnitUtils.A_star(unit, destination, game_state)
 
@@ -423,6 +424,8 @@ class UnitMove:
         unit.remaining_movement = movement_left
         unit.fortified = False
         unit.turns_fortified = 0
+        unit.fortify_and_heal = False
+
 
     def swap_hover(unit, destination, destination_unit, game_state):
         unit_1_path = UnitUtils.A_star(unit, destination, game_state, True)
@@ -625,7 +628,7 @@ class UnitAttack:
         damage_inflicted, damage_taken = CombatManager.combat(unit, enemy_unit, current_tile, enemy_tile, "ranged")
         enemy_unit.health -= damage_inflicted
         if enemy_unit.health <= 0:
-            enemy_unit.alive = False
+            enemy_unit.killed()
             enemy_tile.unit_id = None
 
         
@@ -698,14 +701,14 @@ class UnitAttack:
         unit.health -= damage_taken
         enemy_unit.health -= damage_inflicted
         if enemy_unit.health <= 0:
-            enemy_unit.alive = False
+            enemy_unit.killed()
             enemy_tile.unit_id = unit.id
             current_tile.unit_id = None
             unit.coord = enemy_tile.get_coords()
             current_tile = game_state.map.get_tile_hex(*unit.coord)
 
         if unit.health <= 0:
-            unit.alive = False
+            unit.killed()
             current_tile.unit_id = None
         
         unit.remaining_movement = 0

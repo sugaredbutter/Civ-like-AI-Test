@@ -70,6 +70,7 @@ class GameManager:
         self.interfaces.player_v_AI_test_interface.end_game_reset()
         self.current_player = 0
         self.players.end_game_reset()
+        self.interfaces.game_control_interface.active_button = "Start"
         config.game_type = None
         
     def next_turn(self):
@@ -85,6 +86,12 @@ class GameManager:
                 self.current_player += 1
                 
             current_player = self.players.get_player(self.current_player)
+            while current_player.eliminated:
+                if self.current_player >= len(self.players.players) - 1:
+                    self.current_player = 0
+                else:
+                    self.current_player += 1
+                current_player = self.players.get_player(self.current_player)
             for unit in current_player.units:
                 self.units.get_unit(unit).turn_begin()
             current_player.update_visibility()
@@ -100,14 +107,19 @@ class GameManager:
                 self.current_player = 0
             else:
                 self.current_player += 1
-                
             current_player = self.players.get_player(self.current_player)
+            while current_player.eliminated:
+                if self.current_player >= len(self.players.players) - 1:
+                    self.current_player = 0
+                else:
+                    self.current_player += 1
+                current_player = self.players.get_player(self.current_player)
             for unit in current_player.units:
                 self.units.get_unit(unit).turn_begin()
             current_player.update_visibility()
 
             self.interfaces.player_v_AI_test_interface.update_UI(self.current_player)
-
+            print("game_man", self.current_player)
             #if current_player.AI:
             #    ScoreAgent.choose_best_actions(self.current_player, self.game_state)
             #    self.next_turn()
@@ -123,6 +135,23 @@ class GameManager:
                 utils.move_screen_to_tile(tile, self.screen)
                 return (tile, unit)
         return None
+    
+    def check_win(self):
+        num_players = len(self.game_state.players.players)
+        num_alive = 0
+        for player_id in range(num_players):
+            current_player = self.game_state.players.get_player(player_id)
+            if len(current_player.elim_units) >= len(current_player.units):
+                current_player.eliminated = True
+            if current_player.eliminated == False:
+                num_alive += 1
+        print(num_alive)
+        if num_alive <= 1:
+            self.end_game()
+
+
+
+
 
             
         

@@ -6,7 +6,7 @@ import interactions.interfaces.user_interface as ui
 ROWS, COLUMNS = config.map_settings["tile_height"], config.map_settings["tile_width"]
 ZOOM_SCALE = config.map_settings["zoom"]
 class MouseControls:
-    def __init__(self, screen, user_interface, test_user_interface, player_v_AI_interface, generated_map, tile_click_controls, game_control_interface, game_manager, interfaces):
+    def __init__(self, screen, user_interface, test_user_interface, player_v_AI_interface, generated_map, game_control_interface, game_manager, interfaces):
         self.screen = screen
         self.user_interface = user_interface
         self.test_user_interface = test_user_interface
@@ -18,7 +18,6 @@ class MouseControls:
         self.clicked = False
         self.dragging = False
         self.clicked_button = False
-        self.tile_click_controls = tile_click_controls
         self.game_control_interface = game_control_interface
         self.game_manager = game_manager
         
@@ -116,7 +115,7 @@ class MouseControls:
     def set_init(self, event):
         self.initX = event.pos[0]
         self.initY = event.pos[1]
-
+"""
 class TileClickControls:
     def __init__(self, screen, user_interface, generated_map, players, units):
         self.screen = screen
@@ -155,7 +154,7 @@ class TileClickControls:
             self.generated_map.selected_tile = None
             
             
-            
+            """
         
 class UnitControls:
     def __init__(self, screen, user_interface, generated_map, players, units):

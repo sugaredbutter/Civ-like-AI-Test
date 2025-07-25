@@ -14,13 +14,14 @@ ROWS, COLUMNS = config.map_settings["tile_height"], config.map_settings["tile_wi
 ZOOM_SCALE = config.map_settings["zoom"]
 
 class UserInterface:
-    def __init__(self, screen, generated_map, player_handler, unit_handler):
+    def __init__(self, screen, generated_map, player_handler, unit_handler, game_state):
         self.screen = screen
         self.generated_map = generated_map
         self.player_handler = player_handler
         self.unit_handler = unit_handler
+        self.game_state = game_state
         self.game_manager = None
-        self.unit_menu = ui.UnitControlMenu(screen, self, generated_map, player_handler, unit_handler)
+        self.unit_menu = None
 
         self.initX = 0
         self.initY = 0
@@ -55,6 +56,10 @@ class UserInterface:
             x = self.padding + (i + 1) * (self.button_width + self.padding)
             y = self.padding
             self.ui_menu[name] = (pygame.Rect(x, y, self.button_width, self.button_height), "Player 1")
+
+    def set_game_manager(self, game_manager):
+        self.game_manager = game_manager
+        self.unit_menu = ui.UnitControlMenu(self.screen, self, self.game_state.map, self.game_state.players, self.game_state.units, self.game_manager)
             
     def end_game_reset(self):
         self.initX = 0

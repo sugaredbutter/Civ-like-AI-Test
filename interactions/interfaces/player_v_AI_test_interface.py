@@ -20,7 +20,7 @@ class UserInterface:
         self.screen = screen
         self.game_state = game_state
         self.game_manager = None
-        self.unit_menu = ui.UnitControlMenu(screen, self, game_state.map, game_state.players, game_state.units)
+        self.unit_menu = None
 
         self.initX = 0
         self.initY = 0
@@ -65,6 +65,12 @@ class UserInterface:
             y = self.padding
             self.ui_menu[name] = (pygame.Rect(x, y, self.button_width, self.button_height), "Player 1")
             
+    def set_game_manager(self, game_manager):
+        self.game_manager = game_manager
+        self.unit_menu = ui.UnitControlMenu(self.screen, self, self.game_state.map, self.game_state.players, self.game_state.units, self.game_manager)
+
+
+
     def end_game_reset(self):
         self.initX = 0
         self.initY = 0
@@ -215,7 +221,7 @@ class UserInterface:
                         self.game_manager.next_turn()
                         self.unit_menu.reset()
                     elif key == "Next Action":
-                        ScoreAgent.choose_best_action(self.current_player, self.game_state)
+                        ScoreAgent.choose_best_action(self.current_player, self.game_state, self.game_manager)
                     
     def update_UI(self, player):
         self.current_player = player
