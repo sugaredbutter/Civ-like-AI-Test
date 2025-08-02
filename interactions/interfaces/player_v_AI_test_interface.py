@@ -67,7 +67,7 @@ class UserInterface:
             
     def set_game_manager(self, game_manager):
         self.game_manager = game_manager
-        self.unit_menu = ui.UnitControlMenu(self.screen, self, self.game_state.map, self.game_state.players, self.game_state.units, self.game_manager)
+        self.unit_menu = ui.UnitControlMenu(self.screen, self, self.game_state, self.game_manager)
 
 
 

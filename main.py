@@ -1,6 +1,6 @@
 import pygame
 import sys
-import map_generator.map_generator as generate_map
+import map_generator.map as generate_map
 import interactions.draw_map as draw_map
 import config as config
 import utils as utils
@@ -30,29 +30,30 @@ generated_map = generate_map.HexMap(ROWS, COLUMNS)
 
 visual_effects = visual_effects_manager.VisualEffectHandler(screen)
 units = unit_handler.UnitHandler(visual_effects)
-players = player_handler.PlayerHandler(generated_map, units)
+players = player_handler.PlayerHandler()
 game_state = gamestate.GameState(players, units, generated_map)
+players.game_state = game_state
 units.game_state = game_state
 
 players.add_player()  # player 1
 players.add_player()  # player 2
 
-user_interface = ui.UserInterface(screen, generated_map, players, units)
-test_user_interface = test_ui.UserInterface(screen, generated_map, players, units, game_state)
-player_v_AI_interface = pvAI_ui.UserInterface(screen, generated_map, players, units, game_state)
+user_interface = ui.UserInterface(screen, game_state)
+test_user_interface = test_ui.UserInterface(screen, game_state)
+player_v_AI_interface = pvAI_ui.UserInterface(screen, game_state)
 player_v_AI_test_interface = pvAI_test_ui.UserInterface(screen, game_state)
 game_control_interface = game_ui.GameControlsInterface(screen)
 
 all_interfaces = interfaces.Interfaces(game_control_interface, user_interface, test_user_interface, player_v_AI_test_interface, player_v_AI_interface)
 
-game_manager = game.GameManager(screen, players, units, generated_map, test_user_interface, player_v_AI_interface, game_state, all_interfaces)
+game_manager = game.GameManager(screen, game_state, all_interfaces)
 test_user_interface.set_game_manager(game_manager)
 player_v_AI_interface.set_game_manager(game_manager)
 player_v_AI_test_interface.set_game_manager(game_manager)
 game_control_interface.set_game_manager(game_manager)
-mouse_controls = controls.MouseControls(screen, user_interface, test_user_interface, player_v_AI_interface, generated_map, game_control_interface, game_manager, all_interfaces)
+mouse_controls = controls.MouseControls(screen, game_state, game_control_interface, game_manager, all_interfaces)
 
-map = draw_map.Map(screen, generated_map, players, units, game_manager)
+map = draw_map.Map(screen, game_state, game_manager)
 
 running = True
 clicked = False

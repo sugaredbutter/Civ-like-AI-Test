@@ -83,7 +83,8 @@ class Unit:
         self.fortify_and_heal = False
         self.turns_fortified = 0
         self.skip = False
-    
+        self.alive = True
+
         
     def move_to(self, destination):
         destination_tile = self.game_state.map.get_tile_hex(*destination)
@@ -260,6 +261,7 @@ class Unit:
         self.alive = False
         player = self.game_state.players.get_player(self.owner_id)
         player.elim_units.append(self.id)
+        player.update_visibility()
             
 
 

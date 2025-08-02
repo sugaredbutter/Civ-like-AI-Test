@@ -34,22 +34,32 @@ x Complete unit options (fortify, skip turn) excluding attacks
 
 
 
-Phase 5 (General Cleanup and Foundations)
-/ GameState
-/ Clean Unit code as it is not scalable and getting quite messy
-- Win Screen/Reset
-
-
-Phase 6 (AI):
-/ Implement Basic Rule/Score based AI
-/ AI movement
-/ AI attack
-/ Secondary Actions
+Phase 5 (Score-based setup and cleanup)
+x GameState
+x Clean Unit code as it is not scalable and getting quite messy
+x Win Screen/Reset
 - Multi-Threading
+
+
+
+Phase 5.5 (Score-Based AI):
+x Implement Basic Rule/Score based AI
+x AI movement
+x AI attack
+x Secondary Actions
+- AI v AI
+x Player v AI
+
+Phase 6 (AI Foundations and features needed/recommended prior to AI training)
+- Map Generation (So AI does not learn from a single map and can adapt)
+- Unit placement and loadouts
+- Scoring/Reward System
+
+
+Phase 6.5 (ML-Based AI):
 - Investigate and Implement ML techniques
 - AI v AI
-/ Player v AI
-- ML implementation vs Score based implementation
+- Player v AI
 
 Phase 7 (Improving Combat (Not priority)):
 - Implement visuals for combat to better display which unit is attacking what

@@ -3,169 +3,86 @@ import pygame
 import utils as utils
 import random
 import map_generator.tile_types_config as tile_types_config
+import map_generator.map_generator_config as map_generator_config
+import map_generator.map as current_map
 import config as config
+import noise
 
-class Tile:
-    def __init__(self, x, y, z, biome = "Plain", terrain = "Flat", feature = None):
-        self.x = x
-        self.y = y
-        self.z = z
-        self.biome = biome
-        self.terrain = terrain
-        self.feature = feature
-        
-        self.movement = 1
-        self.defense = 0
-        self.offense = 0
-        self.unit_id = None
-        
-        self.path = False
-        self.neighbor = None
-        self.turn_reached = -1
-        
-        self.attackable = False
-        
-        self.hills_list = []
-        self.init_hill()
-        self.mountains_list = []
-        self.init_mountains()
-        self.tree_list = []
-        self.init_trees()
-        
-        self.rivers = {
-            "W": False,
-            "NW": False,
-            "NE": False,
-            "E": False,
-            "SE": False,
-            "SW": False
-        }
-        
-        
-    def get_coords(self):
-        return (self.x, self.y, self.z)
-    
-    def set_biome(self, biome):
-        if biome == "Desert":
-            if self.feature == "Forest":
-                self.feature = None
-        self.biome = biome
-    
-    def set_terrain(self, terrain):
-        if terrain == "Mountain":
-            if self.feature == "Forest":
-                self.feature = None
-    
-        self.terrain = terrain
-        self.set_movement()
-                
-    def set_feature(self, feature, add):
-        if add:
-            if feature == "Forest":
-                if self.biome == "Plain":
-                    if self.terrain in ("Flat", "Hill"):
-                        self.feature = feature
-        elif add == False and self.feature == feature:
-            self.feature = None
-
-        self.set_movement()
+class MapGenerator:
+    def __init__(self):
         pass
-    
-    def set_movement(self):
-        self.movement = tile_types_config.biomes[self.biome]["Terrain"][self.terrain]["movement"]
-        if self.feature != None:
-            self.movement += tile_types_config.biomes[self.biome]["Feature"][self.feature]["movement"]
-        if self.movement == 0:
-            self.movement = 1
-    
-    def get_movement(self, direction = None):
-        movement = self.movement
-        if direction == None or movement == -1:
-            return movement
-        if self.rivers[direction] == True:
-            return movement + tile_types_config.features["River"]["movement"]
-        return movement
 
-    def init_hill(self, num_hills = -1):
-        rng = random.Random(f"{self.x},{self.y},{self.z}")
-        if num_hills == -1:
-            num_hills = rng.randint(4, 8)
-        self.hills_list = []
-
-        for i in range(num_hills - 1, -1, -1):
-            left_corner = (rng.uniform(0, 0.6), rng.uniform(i/num_hills, (i+1)/num_hills))
-            right_corner = (rng.uniform(left_corner[0] + .2, min(left_corner[0] + .6, 1)), left_corner[1])
-            top = ((right_corner[0] + left_corner[0]) / 2, rng.uniform(left_corner[1] + (right_corner[0] - left_corner[0]) / 5, left_corner[1] + (right_corner[0] - left_corner[0]) / 2.5))
-            self.hills_list.append((left_corner, right_corner, top))
-    
-    def init_mountains(self, num = -1):
-        rng = random.Random(f"{self.x},{self.y},{self.z}")
-        if num == -1:
-            num = rng.randint(2, 4)
-        self.mountains_list = []
-
-        for i in range(num - 1, -1, -1):
-            left_corner = (rng.uniform(0, 0.4), rng.uniform(i/num, (i+1)/num))
-            right_corner = (rng.uniform(left_corner[0] + .4, min(left_corner[0] + .8, 1)), left_corner[1])
-            top = ((right_corner[0] + left_corner[0]) / 2, rng.uniform(left_corner[1] + (right_corner[0] - left_corner[0]) / 1.1, left_corner[1] + (right_corner[0] - left_corner[0]) / .65))
-            self.mountains_list.append((left_corner, right_corner, top))
-    
-    def init_trees(self, num = -1):
-        rng = random.Random(f"{self.x},{self.y},{self.z}")
-        if num == -1:
-            num = rng.randint(12, 16)
-        self.tree_list = []
-
-        for i in range(num - 1, -1, -1):
-            tree_point = (rng.uniform(0, 1), rng.uniform(i/num, (i+1)/num))
-            self.tree_list.append(tree_point)
-            
-    def end_game_reset_tile(self):
-        self.unit_id = None
-        self.path = False
-        self.neighbor = None
-
-class HexMap:
-    def __init__(self, width, height):
-        self.tiles = {}
-        self.width = width
-        self.height = height
-        self.selected_tile = None
-        self.hovered_tile = None
-        self.selected_edge = None
+    def generate_map(self, width, height):
+        seed = map_generator_config.seed
+        self.rng = random.Random(seed)
+        q_elevation_offset = self.rng.randint(-10000, 10000)
+        r_elevation_offset = self.rng.randint(-10000, 10000)
+        q_temperature_offset = self.rng.randint(-10000, 10000)
+        r_temperature_offset = self.rng.randint(-10000, 10000)
+        q_moisture_offset = self.rng.randint(-10000, 10000)
+        r_moisture_offset = self.rng.randint(-10000, 10000)
+        tiles = {}
         for row in range(height): 
             for column in range(width):     
                 x, y, z = utils.coord_to_hex_coord(row, column)
-                self.tiles[(x, y, z)] = Tile(x, y, z)
+                tiles[(x, y, z)] = current_map.Tile(x, y, z)
+                tiles[(x, y, z)].elevation = self.hex_elevation(column, row, q_elevation_offset, r_elevation_offset)
+                tiles[(x, y, z)].temperature = self.hex_temperature(column, row, q_temperature_offset, r_temperature_offset)
+                tiles[(x, y, z)].moisture = self.hex_moisture(column, row, q_moisture_offset, r_moisture_offset)
+                self.calc_tile_attributes(tiles[(x, y, z)])
+        return tiles
 
-    def place_river(self, x, y, z, edge, adding):
-        tile = self.get_tile_hex(x, y, z)
-        neighbor_coord = utils.get_tile_via_edge(x, y, z, edge)
-        neighbor_tile = self.get_tile_hex(*neighbor_coord)
-        tile.rivers[edge] = adding        
-        if neighbor_tile == None:
-            return
-        neighbor_edge = utils.OPPOSITE_EDGES[edge]
-        neighbor_tile.rivers[neighbor_edge] = adding
+    def calc_tile_attributes(self, tile):
+        if tile.elevation > 0:
+            tile.terrain = "Hill"
 
-    def get_tile(self, row, column):
-        x = column - int(row / 2)
-        y = -x - row
-        z = row
-        return self.tiles.get((x, y, z), None)
+
+
+    def hex_elevation(self, q, r, q_offset, r_offset):
+        scale = map_generator_config.scale
+        octaves = map_generator_config.octaves
+        persistence = map_generator_config.persistence
+        lacunarity = map_generator_config.lacunarity
+
+        return noise.pnoise2(
+            q * scale + q_offset, r * scale + r_offset,   
+            octaves = octaves,
+            persistence = persistence,
+            lacunarity = lacunarity,
+        )
     
-    def get_tile_hex(self, x, y, z):
-        return self.tiles.get((x, y, z), None)
+    def hex_temperature(self, q, r, q_offset, r_offset):
+        scale = map_generator_config.scale
+        octaves = map_generator_config.octaves
+        persistence = map_generator_config.persistence
+        lacunarity = map_generator_config.lacunarity
+
+        return noise.pnoise2(
+            q * scale + q_offset, r * scale + r_offset,   
+            octaves = octaves,
+            persistence = persistence,
+            lacunarity = lacunarity,
+        )
     
-    def end_game_reset(self):
-        for tile in self.tiles.values():
-            tile.end_game_reset_tile()
-        self.selected_tile = None
+    def hex_moisture(self, q, r, q_offset, r_offset):
+        scale = map_generator_config.scale
+        octaves = map_generator_config.octaves
+        persistence = map_generator_config.persistence
+        lacunarity = map_generator_config.lacunarity
 
-    def start_game(self):
-        self.selected_tile = None
-        self.hovered_tile = None
-        self.selected_edge = None
+        return noise.pnoise2(
+            q * scale + q_offset, r * scale + r_offset,   
+            octaves = octaves,
+            persistence = persistence,
+            lacunarity = lacunarity,
+        )
 
 
-    
+
+# Perlin Noise
+# Terrain: Separate Perlin Noise
+# Feature: Separate Perlin Noise
+# River: Pathfinding from edge to edge with random branches? Perhaps take into account terrain or lowest terrain?
+# Biome: Separate Perlin Noise
+# Ensure all traversible tiles are reachable to one another
+    # If tile is not reachable

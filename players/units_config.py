@@ -27,10 +27,10 @@ units = {
     "Cavalry": {
         "health": 100,
         "attack": 30,
-        "defense": 17,
+        "defense": 20,
         "movement": 4,
         "visibility": 2,
-        "fortified": 3,
+        "fortified": 2,
         "defense_zoc": True,
         "attack_zoc": False,
         "combat_type": "melee"

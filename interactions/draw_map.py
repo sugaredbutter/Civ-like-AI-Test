@@ -6,16 +6,14 @@ import utils as utils
 import map_generator.tile_types_config as tile_types_config
 import Assets.asset_manager as asset_manager
 class Map:
-    def __init__(self, screen, map, players, units, game_manager):
+    def __init__(self, screen, game_state, game_manager):
         self.screen = screen
-        self.map = map
-        self.players = players
-        self.units = units
+        self.game_state = game_state
         self.game_manager = game_manager
         self.asset_manager = asset_manager.AssetManager()
 
         self.hex_radius = config.hex["radius"]
-        self.current_player = self.players.get_player(self.game_manager.current_player)
+        self.current_player = self.game_state.players.get_player(self.game_manager.current_player)
         self.width, self.height = config.map_settings["pixel_width"], config.map_settings["pixel_height"]
 
         self.saved_info = {}
@@ -53,8 +51,8 @@ class Map:
         width, height = config.map_settings["pixel_width"], config.map_settings["pixel_height"]
 
 
-        for column in range(self.map.width):
-            for row in range(self.map.height):
+        for column in range(self.game_state.map.width):
+            for row in range(self.game_state.map.height):
                 x, y = self.axial_to_pixel(column, row, hex_radius, height)
                 corners = self.calc_hex_corners(x, y, hex_radius)
                 self.saved_info[(row, column)] = (corners, (x,y))
@@ -66,7 +64,7 @@ class Map:
         self.border_surface = pygame.Surface(self.screen.get_size(), pygame.SRCALPHA)
         self.width, self.height = config.map_settings["pixel_width"], config.map_settings["pixel_height"]
         self.hex_radius = config.hex["radius"]
-        self.current_player = self.players.get_player(self.game_manager.current_player)
+        self.current_player = self.game_state.players.get_player(self.game_manager.current_player)
         self.border_surface.fill((0, 0, 0, 0))  # fully transparent
 
         self.fog_surface = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
@@ -106,12 +104,12 @@ class Map:
         #self.screen.blit(self.plains_hex, (0, 0))
     def draw_hexes(self):
         # Draw hexagons
-        for column in range(self.map.width):
-            for row in range(self.map.height):
+        for column in range(self.game_state.map.width):
+            for row in range(self.game_state.map.height):
                 info = self.saved_info[(row, column)]
                 corners = info[0]
                 x, y = info[1]
-                tile = self.map.get_tile(row, column)
+                tile = self.game_state.map.get_tile(row, column)
                 if config.game_type != None and tile.get_coords() not in self.current_player.revealed_tiles:
                     continue
                 elif tile.get_coords() == self.current_mouse_pos:
@@ -121,24 +119,24 @@ class Map:
 
     def draw_rivers(self):
         # Draw Rivers
-        for column in range(self.map.width):
-            for row in range(self.map.height):
+        for column in range(self.game_state.map.width):
+            for row in range(self.game_state.map.height):
                 
                 info = self.saved_info[(row, column)]
                 corners = info[0]
                 x, y = info[1]
-                tile = self.map.get_tile(row, column)
+                tile = self.game_state.map.get_tile(row, column)
                 if config.game_type != None and tile.get_coords() not in self.current_player.revealed_tiles:
                     continue
                 self.draw_rivers_helper(corners, tile)
     
     def draw_terrain(self):
-        for row in range(self.map.height - 1, -1, -1):
-            for column in range(self.map.width):
+        for row in range(self.game_state.map.height - 1, -1, -1):
+            for column in range(self.game_state.map.width):
                 info = self.saved_info[(row, column)]
                 corners = info[0]
                 x, y = info[1]
-                tile = self.map.get_tile(row, column)
+                tile = self.game_state.map.get_tile(row, column)
                 if config.game_type != None and tile.get_coords() not in self.current_player.revealed_tiles:
                     continue
                 if tile.terrain == "Hill":
@@ -155,12 +153,12 @@ class Map:
                     self.draw_forest(corners, tile)
 
     def draw_movement(self):
-        for column in range(self.map.width):
-            for row in range(self.map.height):
+        for column in range(self.game_state.map.width):
+            for row in range(self.game_state.map.height):
                 info = self.saved_info[(row, column)]
                 corners = info[0]
                 x, y = info[1]
-                tile = self.map.get_tile(row, column)
+                tile = self.game_state.map.get_tile(row, column)
                 if tile.path:
                     self.draw_movement_helper(tile)
 
@@ -171,18 +169,18 @@ class Map:
         bar_width = config.health_bar["width_ratio"] * self.hex_radius
         bar_height = config.health_bar["height_ratio"] * self.hex_radius
         
-        for column in range(self.map.width):
-            for row in range(self.map.height):
-                tile = self.map.get_tile(row, column)
+        for column in range(self.game_state.map.width):
+            for row in range(self.game_state.map.height):
+                tile = self.game_state.map.get_tile(row, column)
                 if config.game_type != None and tile.get_coords() not in self.current_player.visible_tiles:
                     continue
                 if tile.unit_id != None:
                     x, y = self.axial_to_pixel(column, row, self.hex_radius, self.height)
                     bar_x = x - bar_width / 2
                     bar_y = y + bar_height / 2 + self.hex_radius * .25
-                    unit = self.units.get_unit(tile.unit_id)
-                    #pygame.draw.circle(self.screen, self.players.get_player(unit.owner_id).color, (int(x), int(y)), hex_radius/10)
-                    unit_color = self.players.get_player(unit.owner_id).color
+                    unit = self.game_state.units.get_unit(tile.unit_id)
+                    #pygame.draw.circle(self.screen, self.game_state.players.get_player(unit.owner_id).color, (int(x), int(y)), hex_radius/10)
+                    unit_color = self.game_state.players.get_player(unit.owner_id).color
                     melee = self.asset_manager.get_icon(unit_color, "Melee")
                     ranged = self.asset_manager.get_icon(unit_color, "Ranged")
                     cavalry = self.asset_manager.get_icon(unit_color, "Cavalry")
@@ -214,38 +212,38 @@ class Map:
         pygame.draw.polygon(self.border_surface, (0, 0, 0, 100), corners, width=2)
         
     def draw_selected_edge(self):
-        if self.map.selected_edge is not None and self.map.hovered_tile is not None:
-            column, row = utils.hex_coord_to_coord(self.map.hovered_tile.x, self.map.hovered_tile.y, self.map.hovered_tile.z)
+        if self.game_state.map.selected_edge is not None and self.game_state.map.hovered_tile is not None:
+            column, row = utils.hex_coord_to_coord(self.game_state.map.hovered_tile.x, self.game_state.map.hovered_tile.y, self.game_state.map.hovered_tile.z)
             info = self.saved_info[(row, column)]
             corners = info[0]
             edge_color = (245, 66, 212)
-            if self.map.selected_edge == "E":
+            if self.game_state.map.selected_edge == "E":
                 pygame.draw.line(self.screen, edge_color, corners[0], corners[1], width=10)
-            if self.map.selected_edge == "SE":
+            if self.game_state.map.selected_edge == "SE":
                 pygame.draw.line(self.screen, edge_color, corners[1], corners[2], width=10)
-            if self.map.selected_edge == "SW":
+            if self.game_state.map.selected_edge == "SW":
                 pygame.draw.line(self.screen, edge_color, corners[2], corners[3], width=10)
-            if self.map.selected_edge == "W":
+            if self.game_state.map.selected_edge == "W":
                 pygame.draw.line(self.screen, edge_color, corners[3], corners[4], width=10)
-            if self.map.selected_edge == "NW":
+            if self.game_state.map.selected_edge == "NW":
                 pygame.draw.line(self.screen, edge_color, corners[4], corners[5], width=10)
-            if self.map.selected_edge == "NE":
+            if self.game_state.map.selected_edge == "NE":
                 pygame.draw.line(self.screen, edge_color, corners[5], corners[0], width=10)
 
     def draw_selected_tile(self):
-        hovered_tile = self.map.selected_tile
+        hovered_tile = self.game_state.map.selected_tile
         if hovered_tile is not None:
             r, q = utils.hex_coord_to_coord(hovered_tile.x, hovered_tile.y, hovered_tile.z)
             x, y = self.axial_to_pixel(r, q, self.hex_radius, self.height)
             pygame.draw.circle(self.screen, (255, 0, 0), (int(x), int(y)), self.hex_radius/1.2, width=2)
 
     def draw_fog_of_war(self):
-        for column in range(self.map.width - 1, -1, -1):
-            for row in range(self.map.height - 1, -1, -1):
+        for column in range(self.game_state.map.width - 1, -1, -1):
+            for row in range(self.game_state.map.height - 1, -1, -1):
                 info = self.saved_info[(row, column)]
                 corners = info[0]
                 x, y = info[1]
-                tile = self.map.get_tile(row, column)
+                tile = self.game_state.map.get_tile(row, column)
                 if config.game_type != None and tile.get_coords() not in self.current_player.revealed_tiles:
                     continue
                 if config.game_type != None and tile.get_coords() not in self.current_player.visible_tiles:
@@ -350,13 +348,13 @@ class Map:
         return
 
     def place_coords(self):
-        for column in range(self.map.width):
-            for row in range(self.map.height):
+        for column in range(self.game_state.map.width):
+            for row in range(self.game_state.map.height):
                 info = self.saved_info[(row, column)]
                 corners = info[0]
                 x, y = info[1]
                 center = (x, y + self.hex_radius/2)
-                tile = self.map.get_tile(row, column)
+                tile = self.game_state.map.get_tile(row, column)
                 #if config.game_type != None and tile.get_coords() in current_player.visible_tiles:
                 font = pygame.font.SysFont(None, 24)  
                 label = font.render(f"{tile.x},{tile.y},{tile.z}", True, (0, 0, 0))  

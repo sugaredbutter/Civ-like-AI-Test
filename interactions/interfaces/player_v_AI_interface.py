@@ -14,11 +14,8 @@ ROWS, COLUMNS = config.map_settings["tile_height"], config.map_settings["tile_wi
 ZOOM_SCALE = config.map_settings["zoom"]
 
 class UserInterface:
-    def __init__(self, screen, generated_map, player_handler, unit_handler, game_state):
+    def __init__(self, screen, game_state):
         self.screen = screen
-        self.generated_map = generated_map
-        self.player_handler = player_handler
-        self.unit_handler = unit_handler
         self.game_state = game_state
         self.game_manager = None
         self.unit_menu = None
@@ -59,7 +56,7 @@ class UserInterface:
     
     def set_game_manager(self, game_manager):
         self.game_manager = game_manager
-        self.unit_menu = ui.UnitControlMenu(self.screen, self, self.game_state.map, self.game_state.players, self.game_state.units, self.game_manager)
+        self.unit_menu = ui.UnitControlMenu(self.screen, self, self.game_state, self.game_manager)
             
     def end_game_reset(self):
         self.initX = 0
@@ -85,8 +82,8 @@ class UserInterface:
     
     def left_click_up(self):
         mouse_x, mouse_y = pygame.mouse.get_pos()
-        tile = self.generated_map.get_tile_hex(*utils.click_to_hex(mouse_x, mouse_y))
-        unit = self.unit_handler.get_unit(tile.unit_id) if tile != None else None
+        tile = self.game_state.map.get_tile_hex(*utils.click_to_hex(mouse_x, mouse_y))
+        unit = self.game_state.units.get_unit(tile.unit_id) if tile != None else None
         if self.clicked_button and self.is_clicked():
             self.button_clicked()   
         elif self.current_player == 0:
