@@ -83,6 +83,8 @@ while running:
             mouse_controls.mouse_move(event)
         elif event.type == pygame.MOUSEWHEEL:
             mouse_controls.zoom(event)
+        elif event.type == pygame.KEYDOWN:
+            mouse_controls.key_down(event)
         elif event.type == pygame.QUIT:
             pygame.quit()
             sys.exit()

@@ -70,6 +70,15 @@ class MouseControls:
     def right_click_up(self, event):
         return
     
+    def key_down(self, event):
+        if not self.game_control_interface.clicked_button:
+            if self.game_manager.type == None:
+                self.interfaces.user_interface.active_menu.key_down(event)
+            elif self.game_manager.type == "Test":
+                self.interfaces.test_user_interface.active_menu.key_down(event)
+            elif self.game_manager.type == "PvAITest":
+                self.interfaces.player_v_AI_test_interface.active_menu.key_down(event)
+    
     def mouse_move(self, event):
         if self.game_manager.type == None:
             self.interfaces.user_interface.active_menu.mouse_move(event)

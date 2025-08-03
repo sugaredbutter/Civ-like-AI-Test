@@ -51,7 +51,9 @@ x Secondary Actions
 x Player v AI
 
 Phase 6 (AI Foundations and features needed/recommended prior to AI training)
-- Map Generation (So AI does not learn from a single map and can adapt)
+/ Map Generation (So AI does not learn from a single map and can adapt)
+/ UI for Map Generation
+- River Generation
 - Unit placement and loadouts
 - Scoring/Reward System
 

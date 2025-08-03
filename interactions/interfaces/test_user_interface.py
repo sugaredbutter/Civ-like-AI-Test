@@ -101,6 +101,9 @@ class UserInterface:
     def right_click_up(self, event):
         return
     
+    def key_down(self, event):
+        return
+    
     def mouse_move(self, event):
         if self.display_unit_ui:
             self.unit_menu.mouse_move(event)

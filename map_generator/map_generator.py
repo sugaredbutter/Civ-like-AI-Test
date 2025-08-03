@@ -13,8 +13,9 @@ class MapGenerator:
         pass
 
     def generate_map(self, width, height):
-        seed = map_generator_config.seed
-        self.rng = random.Random(seed)
+        seed = map_generator_config.MapConfig["seed"]
+        print("Seed", seed)
+        self.rng = random.Random(seed) if seed != '' else random.Random()
         q_elevation_offset = self.rng.randint(-10000, 10000)
         r_elevation_offset = self.rng.randint(-10000, 10000)
         q_temperature_offset = self.rng.randint(-10000, 10000)

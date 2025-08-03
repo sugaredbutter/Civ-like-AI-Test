@@ -173,5 +173,13 @@ class HexMap:
         self.hovered_tile = None
         self.selected_edge = None
 
+    def randomize_map(self, save = False):
+        if save:
+            pass
+        else:
+            print("hi")
+            map_generator = MapGenerator()
+            self.tiles = map_generator.generate_map(self.width, self.height)
+
 
     

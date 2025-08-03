@@ -3,6 +3,7 @@ import config as config
 import utils as utils
 import interactions.controls as controls
 import math
+import interactions.interactables as Interact
 from map_generator.map_generator_config import MapConfig
 from players.units_utils import UnitUtils
 from players.units_utils import UnitMove
@@ -66,6 +67,9 @@ class UserInterface:
         return
     
     def right_click_up(self, event):
+        return
+    
+    def key_down(self, event):
         return
     
     def mouse_move(self, event):
@@ -196,6 +200,9 @@ class PainterMenu:
     def right_click_up(self, event):
         return
     
+    def key_down(self, event):
+        return
+
     def mouse_move(self, event):
         if self.clicked and not self.clicked_button:
             self.valid_hover = False
@@ -331,6 +338,9 @@ class TerrainMenu:
         return
     
     def right_click_up(self, event):
+        return
+    
+    def key_down(self, event):
         return
     
     def mouse_move(self, event):
@@ -482,6 +492,9 @@ class FeatureMenu:
     def right_click_up(self, event):
         return
     
+    def key_down(self, event):
+        return
+
     def mouse_move(self, event):
         if self.clicked and not self.clicked_button:
             self.valid_hover = False
@@ -672,6 +685,9 @@ class UnitMenu:
     def right_click_up(self, event):
         return
     
+    def key_down(self, event):
+        return
+    
     def mouse_move(self, event):
         if self.clicked and not self.clicked_button:
             if self.active_button:
@@ -830,15 +846,16 @@ class MapGenerationMenu:
         self.initY = 0
         self.clicked = False
         self.dragging = False
-        self.clicked_button = False
-        self.clicked_slider = False
-        self.active_slider = None
-        self.slider_curr_value = -1
 
+        self.clicked_button = False
+        self.active_button = None
         self.button_width = 100
         self.button_height = 40
         self.padding = 10
 
+        self.clicked_slider = False
+        self.active_slider = None
+        self.slider_curr_value = -1
         self.slider_text_height = 25
         self.slider_length = self.button_width
         self.slider_height = 5
@@ -846,15 +863,22 @@ class MapGenerationMenu:
         self.min_val = 0
         self.max_val = 5
 
+        self.clicked_text = False
+        self.active_text = None
+        self.text_width = self.button_width
+        self.text_height = 40
+
+
         self.valid_hover = True
-        self.active_button = None
-        interactables = ["Back", "Variability", "Temperature", "Moisture", "Generate"]
-        interactables_config = [None, MapConfig.variability, MapConfig.temperature, MapConfig.moisture, None]
+
+        interactables = ["Back", "Variability", "Temperature", "Moisture", "Seed", "Generate"]
+        interactables_config = [None, "variability", "temperature", "moisture", "seed", None]
         buttons = ["Back", "Generate"]
         sliders = ["Variability", "Temperature", "Moisture"]
+        text_boxes = ["Seed"]
         self.button_menu = {}
         self.slider_menu = {}
-
+        self.text_box_menu = {}
         current_y = self.padding
         for i, name in enumerate(interactables):
             if name in buttons:
@@ -862,18 +886,30 @@ class MapGenerationMenu:
                 y = current_y
                 current_y += self.button_height + self.padding
                 self.button_menu[name] = pygame.Rect(x, y, self.button_width, self.button_height)
-            else:
+            elif name in sliders:
                 x = WIDTH - self.slider_length - self.padding
                 y = current_y
                 current_y += self.slider_text_height + self.slider_height + 2 * self.padding
                 self.slider_menu[name] = [x, y, interactables_config[i]]
+            else:
+                x = WIDTH - self.slider_length - self.padding
+                y = current_y
+                current_y += self.slider_text_height + self.slider_height + 2 * self.padding
+                self.text_box_menu[name] = [Interact.TextBox(self.screen, x, y, self.text_width, self.text_height, name), interactables_config[i]]
+
     
     def left_click(self, event):
+        if self.active_text != None:
+            MapConfig[self.text_box_menu[self.active_text][1]] = self.text_box_menu[self.active_text][0].text
+            self.text_box_menu[self.active_text][0].deactivate()
+            self.active_text = None
         self.clicked = True
         if self.is_clicked():
             self.clicked_button = True
         elif self.is_clicked_slider():
             self.clicked_slider = True
+        elif self.is_clicked_text():
+            self.clicked_text = True
         self.set_init(event)
     
     def left_click_up(self):
@@ -883,6 +919,8 @@ class MapGenerationMenu:
             self.button_clicked()
         elif self.clicked_slider:
             self.slider_clicked()   
+        elif self.clicked_text:
+            self.text_clicked()
         elif self.active_button != None:
             self.interaction()
 
@@ -898,6 +936,15 @@ class MapGenerationMenu:
         return
     
     def right_click_up(self, event):
+        return
+    
+    def key_down(self, event):
+        if self.active_text:
+            text_box = self.text_box_menu[self.active_text][0]
+            if text_box.edit(event) == False:
+                MapConfig[self.text_box_menu[self.active_text][1]] = text_box.text
+                self.active_text = None
+                return
         return
     
     def mouse_move(self, event):
@@ -943,7 +990,9 @@ class MapGenerationMenu:
             self.draw_button(key, self.button_menu[key], self.active_button == key)
         for key in self.slider_menu.keys():
             slider = self.slider_menu[key]
-            self.draw_slider(slider[0], slider[1], slider[2], key, self.active_slider == key)
+            self.draw_slider(slider[0], slider[1], MapConfig[slider[2]], key, self.active_slider == key)
+        for key in self.text_box_menu.keys():
+            self.text_box_menu[key][0].draw(self.text_box_menu[key][0].is_over())
 
     def draw_button(self, text, rect, is_hovered):
         font = pygame.font.SysFont(None, 24)
@@ -999,6 +1048,13 @@ class MapGenerationMenu:
         distance_squared = dx * dx + dy * dy
         return distance_squared <= self.knob_radius ** 2
     
+    def is_hovered_text(self):
+        if not self.valid_hover:
+            return False
+        for key in self.text_box_menu.keys():
+            text_box = self.text_box_menu[key][0]
+            return text_box.is_hovered()
+    
     def is_clicked(self):
         mouse_x, mouse_y = pygame.mouse.get_pos()
         for key in self.button_menu.keys():
@@ -1011,7 +1067,7 @@ class MapGenerationMenu:
         for key in self.slider_menu.keys():
             x = self.slider_menu[key][0]
             y = self.slider_menu[key][1]
-            value = self.slider_menu[key][2]
+            value = MapConfig[self.slider_menu[key][2]]
             slider_x = x + self.slider_length / self.max_val * value
             slider_y = y + self.slider_text_height + self.padding
 
@@ -1022,6 +1078,12 @@ class MapGenerationMenu:
                 self.active_slider = key
                 self.slider_curr_value = value
                 return True
+
+    def is_clicked_text(self):
+        for key in self.text_box_menu.keys():
+            text_box = self.text_box_menu[key][0]
+            return text_box.is_over()
+    
     def update_slider(self):
         mouse_x, mouse_y = pygame.mouse.get_pos()
         x = self.slider_menu[self.active_slider][0]
@@ -1041,22 +1103,37 @@ class MapGenerationMenu:
                 if key == "Back":
                     self.main_menu.active_menu = self.parent_menu
                     self.active_button = None
+                    self.active_slider = None
+                    self.active_text = None
+                    break
+                elif key == "Generate":
+                    self.game_state.map.randomize_map()
+                    break
                 elif self.active_button == key:
                     self.active_button = None
+                    break
                 else:
                     self.active_button = key
+                    break
+
 
     def slider_clicked(self):
-        print(self.slider_menu[self.active_slider][2])
-        self.slider_menu[self.active_slider][2] = self.slider_curr_value
+        MapConfig[self.slider_menu[self.active_slider][2]] = self.slider_curr_value
+
+    def text_clicked(self):
+        for key in self.text_box_menu.keys():
+            text_box = self.text_box_menu[key][0]
+            if text_box.is_over():
+                self.active_text = key
+                text_box.activate()
+                return
 
     def interaction(self):
         mouse_x, mouse_y = pygame.mouse.get_pos()
         x, y, z = utils.click_to_hex(mouse_x, mouse_y)
         column, row = utils.hex_coord_to_coord(x, y, z)
         tile = self.game_state.map.get_tile(row, column)
-        if tile != None:
-            tile.set_biome(self.active_button)
+        
         return
 
 class UnitControlMenu:
@@ -1133,6 +1210,9 @@ class UnitControlMenu:
         return
     
     def right_click_up(self, event):
+        return
+    
+    def key_down(self, event):
         return
     
     def mouse_move(self, event):
