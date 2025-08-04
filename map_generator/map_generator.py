@@ -34,8 +34,34 @@ class MapGenerator:
         return tiles
 
     def calc_tile_attributes(self, tile):
-        if tile.elevation > 0:
+        elevation = (map_generator_config.MapConfig["elevation"]["current"] - map_generator_config.MapConfig["elevation"]["default"]) * map_generator_config.Terrain["elevation"]["change"]
+        hill_elevation = map_generator_config.Terrain["hill"]["level"]
+        hill_elevation += (map_generator_config.MapConfig["hilliness"]["current"] - map_generator_config.MapConfig["hilliness"]["default"]) * map_generator_config.Terrain["hill"]["change"]
+        hill_elevation -= elevation
+        mountain_elevation = map_generator_config.Terrain["mountain"]["level"]
+        mountain_elevation += (map_generator_config.MapConfig["mountainous"]["current"] - map_generator_config.MapConfig["mountainous"]["default"]) * map_generator_config.Terrain["mountain"]["change"]
+        mountain_elevation -= elevation
+
+        if tile.elevation >= hill_elevation:
             tile.terrain = "Hill"
+        if tile.elevation >= mountain_elevation:
+            tile.terrain = "Mountain"
+
+        temperature = (map_generator_config.MapConfig["temperature"]["current"] - map_generator_config.MapConfig["temperature"]["default"]) * map_generator_config.Biome["temperature"]["change"]
+        plain_temperature = map_generator_config.Biome["plain"]["level"]
+        plain_temperature -= temperature
+        if tile.temperature >= temperature:
+            tile.biome = "Plain"
+        else:
+            tile.biome = "Desert"
+
+        moisture = (map_generator_config.MapConfig["moisture"]["current"] - map_generator_config.MapConfig["moisture"]["default"]) * map_generator_config.Feature["moisture"]["change"]
+        print(moisture)
+        tree_moisture = map_generator_config.Feature["forest"]["level"]
+        tree_moisture -= moisture
+        if tile.moisture > tree_moisture and tile.biome != "Desert" and tile.terrain != "Mountain":
+            tile.feature = "Forest"
+
 
 
 
@@ -46,23 +72,20 @@ class MapGenerator:
         lacunarity = map_generator_config.lacunarity
 
         return noise.pnoise2(
-            q * scale + q_offset, r * scale + r_offset,   
-            octaves = octaves,
-            persistence = persistence,
-            lacunarity = lacunarity,
+            q * scale + q_offset, r * scale + r_offset,
+            octaves = map_generator_config.MapConfig["variability"]["current"],
+
         )
     
     def hex_temperature(self, q, r, q_offset, r_offset):
-        scale = map_generator_config.scale
+        scale = map_generator_config.Biome["scale"]["level"]
+        scale += (map_generator_config.MapConfig["biome_scale"]["default"] - map_generator_config.MapConfig["biome_scale"]["current"]) * map_generator_config.Biome["scale"]["change"]
         octaves = map_generator_config.octaves
         persistence = map_generator_config.persistence
         lacunarity = map_generator_config.lacunarity
 
         return noise.pnoise2(
             q * scale + q_offset, r * scale + r_offset,   
-            octaves = octaves,
-            persistence = persistence,
-            lacunarity = lacunarity,
         )
     
     def hex_moisture(self, q, r, q_offset, r_offset):

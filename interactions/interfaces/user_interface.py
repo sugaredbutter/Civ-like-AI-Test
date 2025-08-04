@@ -860,7 +860,7 @@ class MapGenerationMenu:
         self.slider_length = self.button_width
         self.slider_height = 5
         self.knob_radius = 10
-        self.min_val = 0
+        self.min_val = 1
         self.max_val = 5
 
         self.clicked_text = False
@@ -871,11 +871,13 @@ class MapGenerationMenu:
 
         self.valid_hover = True
 
-        interactables = ["Back", "Variability", "Temperature", "Moisture", "Seed", "Generate"]
-        interactables_config = [None, "variability", "temperature", "moisture", "seed", None]
+        interactables = ["Back", "Elevation", "Mountainous", "Hilliness", "Variability", "Temperature", "Biome Size", "Moisture", "Seed", "Generate"]
+        interactables_config = [None, "elevation", "mountainous", "hilliness", "variability", "temperature", "biome_scale", "moisture", "seed", None]
+
         buttons = ["Back", "Generate"]
-        sliders = ["Variability", "Temperature", "Moisture"]
+        sliders = ["Elevation", "Mountainous", "Hilliness", "Variability", "Temperature", "Biome Size", "Moisture"]
         text_boxes = ["Seed"]
+        
         self.button_menu = {}
         self.slider_menu = {}
         self.text_box_menu = {}
@@ -990,7 +992,7 @@ class MapGenerationMenu:
             self.draw_button(key, self.button_menu[key], self.active_button == key)
         for key in self.slider_menu.keys():
             slider = self.slider_menu[key]
-            self.draw_slider(slider[0], slider[1], MapConfig[slider[2]], key, self.active_slider == key)
+            self.draw_slider(slider, key, self.active_slider == key)
         for key in self.text_box_menu.keys():
             self.text_box_menu[key][0].draw(self.text_box_menu[key][0].is_over())
 
@@ -1002,7 +1004,12 @@ class MapGenerationMenu:
         text_rect = text_surf.get_rect(center=rect.center)
         self.screen.blit(text_surf, text_rect)
 
-    def draw_slider(self, x, y, value, text, is_hovered):
+    def draw_slider(self, slider, text, is_hovered):
+        x = slider[0]
+        y = slider[1]
+        value = MapConfig[slider[2]]["current"]
+        min_val = MapConfig[slider[2]]["min_val"]
+        max_val = MapConfig[slider[2]]["max_val"]
         font = pygame.font.SysFont(None, 24)
         text_surf = font.render(text, True, BLACK)
         self.screen.blit(text_surf, (x, y))
@@ -1017,11 +1024,11 @@ class MapGenerationMenu:
             4
         )
         if text == self.active_slider:
-            slider_x = x + self.slider_length / self.max_val * self.slider_curr_value
+            slider_x = x + self.slider_length / (max_val - min_val) * (self.slider_curr_value - min_val)
             text_surf = font.render(str(self.slider_curr_value), True, BLACK)
             self.screen.blit(text_surf, (x - self.padding * 2, slider_y - text_surf.get_size()[1]/2))
         else:
-            slider_x = x + self.slider_length / self.max_val * value
+            slider_x = x + self.slider_length / (max_val - min_val) * (value - min_val)
             text_surf = font.render(str(value), True, BLACK)
             self.screen.blit(text_surf, (x - self.padding * 2, slider_y - text_surf.get_size()[1]/2))
         pygame.draw.circle(self.screen, DARK_GRAY if self.is_hovered_slider(slider_x, slider_y) or is_hovered else GRAY, (slider_x, slider_y), self.knob_radius)
@@ -1065,10 +1072,13 @@ class MapGenerationMenu:
     def is_clicked_slider(self):
         mouse_x, mouse_y = pygame.mouse.get_pos()
         for key in self.slider_menu.keys():
-            x = self.slider_menu[key][0]
-            y = self.slider_menu[key][1]
-            value = MapConfig[self.slider_menu[key][2]]
-            slider_x = x + self.slider_length / self.max_val * value
+            slider = self.slider_menu[key]
+            x = slider[0]
+            y = slider[1]
+            value = MapConfig[slider[2]]["current"]
+            min_val = MapConfig[slider[2]]["min_val"]
+            max_val = MapConfig[slider[2]]["max_val"]
+            slider_x = x + self.slider_length / (max_val - min_val) * (value - min_val)
             slider_y = y + self.slider_text_height + self.padding
 
             dx = mouse_x - slider_x
@@ -1086,10 +1096,15 @@ class MapGenerationMenu:
     
     def update_slider(self):
         mouse_x, mouse_y = pygame.mouse.get_pos()
-        x = self.slider_menu[self.active_slider][0]
-        multiple = self.slider_length / self.max_val
-        closest_value = round((multiple * round((mouse_x - x) / multiple)) / multiple)
-        self.slider_curr_value = max(self.min_val, min(closest_value, self.max_val))
+        slider = self.slider_menu[self.active_slider]
+        x = slider[0]
+        min_val = MapConfig[slider[2]]["min_val"]
+        max_val = MapConfig[slider[2]]["max_val"]
+        relative_pos = mouse_x - x
+        multiple = self.slider_length / (max_val - min_val)
+        closest_value = round(relative_pos / multiple) + min_val
+        print(closest_value)
+        self.slider_curr_value = max(min_val, min(closest_value, max_val))
 
 
 
@@ -1118,7 +1133,7 @@ class MapGenerationMenu:
 
 
     def slider_clicked(self):
-        MapConfig[self.slider_menu[self.active_slider][2]] = self.slider_curr_value
+        MapConfig[self.slider_menu[self.active_slider][2]]["current"] = self.slider_curr_value
 
     def text_clicked(self):
         for key in self.text_box_menu.keys():
