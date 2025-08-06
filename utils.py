@@ -121,6 +121,8 @@ CUBE_DIRECTIONS = [
     (0, -1, +1)    # direction 5
 ]
 
+DIRECTIONS = ["E", "SE", "SW", "W", "NW", "NE"]
+
 CUBE_DIRECTIONS_DICT = {
     "E":  CUBE_DIRECTIONS[0],  # 0°
     "SE": CUBE_DIRECTIONS[1],  # 60°
@@ -140,6 +142,21 @@ OPPOSITE_EDGES = {
     "SE": "NW"
 }
 
+# (TILE_DIRECTION, RIVER_DIRECTION (ORIGIN))
+RIVER_TILE_MAPPINGS = {
+    ("E", "NE"): ["NW", "W"],
+    ("E", "SE"): ["SW", "W"],
+    ("NE", "NW"): ["W", "SW"],
+    ("NE", "E"): ["SE", "SW"],
+    ("NW", "W"): ["SW", "SE"],
+    ("NW", "NE"): ["E", "SE"],
+    ("W", "NW"): ["NE", "E"],
+    ("W", "SW"): ["SE", "E"],
+    ("SW", "W"): ["NW", "NE"],
+    ("SW", "SE"): ["E", "NE"],
+    ("SE", "SW"): ["W", "NW"],
+    ("SE", "E"): ["NE", "NW"],
+}
 
 def get_health_color(health):
     if health > 90:

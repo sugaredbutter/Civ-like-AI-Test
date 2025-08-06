@@ -22,16 +22,17 @@ class MapGenerator:
         r_temperature_offset = self.rng.randint(-10000, 10000)
         q_moisture_offset = self.rng.randint(-10000, 10000)
         r_moisture_offset = self.rng.randint(-10000, 10000)
-        tiles = {}
+        self.tiles = {}
         for row in range(height): 
             for column in range(width):     
                 x, y, z = utils.coord_to_hex_coord(row, column)
-                tiles[(x, y, z)] = current_map.Tile(x, y, z)
-                tiles[(x, y, z)].elevation = self.hex_elevation(column, row, q_elevation_offset, r_elevation_offset)
-                tiles[(x, y, z)].temperature = self.hex_temperature(column, row, q_temperature_offset, r_temperature_offset)
-                tiles[(x, y, z)].moisture = self.hex_moisture(column, row, q_moisture_offset, r_moisture_offset)
-                self.calc_tile_attributes(tiles[(x, y, z)])
-        return tiles
+                self.tiles[(x, y, z)] = current_map.Tile(x, y, z)
+                self.tiles[(x, y, z)].elevation = self.hex_elevation(column, row, q_elevation_offset, r_elevation_offset)
+                self.tiles[(x, y, z)].temperature = self.hex_temperature(column, row, q_temperature_offset, r_temperature_offset)
+                self.tiles[(x, y, z)].moisture = self.hex_moisture(column, row, q_moisture_offset, r_moisture_offset)
+                self.calc_tile_attributes(self.tiles[(x, y, z)])
+        self.create_rivers()
+        return self.tiles
 
     def calc_tile_attributes(self, tile):
         elevation = (map_generator_config.MapConfig["elevation"]["current"] - map_generator_config.MapConfig["elevation"]["default"]) * map_generator_config.Terrain["elevation"]["change"]
@@ -50,23 +51,87 @@ class MapGenerator:
         temperature = (map_generator_config.MapConfig["temperature"]["current"] - map_generator_config.MapConfig["temperature"]["default"]) * map_generator_config.Biome["temperature"]["change"]
         plain_temperature = map_generator_config.Biome["plain"]["level"]
         plain_temperature -= temperature
-        if tile.temperature >= temperature:
+        if tile.temperature <= plain_temperature:
             tile.biome = "Plain"
         else:
             tile.biome = "Desert"
 
         moisture = (map_generator_config.MapConfig["moisture"]["current"] - map_generator_config.MapConfig["moisture"]["default"]) * map_generator_config.Feature["moisture"]["change"]
-        print(moisture)
         tree_moisture = map_generator_config.Feature["forest"]["level"]
         tree_moisture -= moisture
         if tile.moisture > tree_moisture and tile.biome != "Desert" and tile.terrain != "Mountain":
             tile.feature = "Forest"
 
 
+    def create_rivers(self):
+        river_budget = map_generator_config.Feature["river"]["level"]
+        river_budget += (map_generator_config.MapConfig["rivers"]["current"] - map_generator_config.MapConfig["rivers"]["default"]) * map_generator_config.Feature["river"]["change"]
+        river_sources = []
+        for key in self.tiles:
+            if self.tiles[key].terrain == "Mountain":
+                river_sources.append(key)
 
+        random_start = random.choice(river_sources)
+        river_tiles = []
+        start_tile_coord = random_start
+        path = self.create_river_path(start_tile_coord, [], set(), river_tiles)
+        river_tiles += path
+        print(path)
+    
+    def create_river_path(self, current_tile_coord, current_path, invalid_tiles, river_tiles):
+
+        current_path.append(current_tile_coord)
+        if current_tile_coord in river_tiles:
+            return current_path
+        next_tiles_sorted = []
+        for neighbor_direction in utils.CUBE_DIRECTIONS_DICT.keys():
+            neighbor = utils.CUBE_DIRECTIONS_DICT[neighbor_direction]
+            neighbor_coord = tuple(x + y for x, y in zip(current_tile_coord, neighbor))
+            neighbor_tile = self.tiles.get(neighbor_coord, None)
+            if neighbor_tile == None:
+                return current_path
+            if neighbor_coord not in invalid_tiles:
+                next_tiles_sorted.append((neighbor_tile.elevation, neighbor_coord))
+        next_tiles_sorted.sort(key = lambda x: x[0])
+
+        for neighbor_direction in utils.CUBE_DIRECTIONS_DICT.keys():
+            neighbor = utils.CUBE_DIRECTIONS_DICT[neighbor_direction]
+            neighbor_coord = tuple(x + y for x, y in zip(current_tile_coord, neighbor))
+            invalid_tiles.add(neighbor_coord)
+        for elevation, coord in next_tiles_sorted:
+            response = self.create_river_path(coord, current_path, invalid_tiles, river_tiles)
+            if response != False:
+                return response
+        
+        return False
+    
+    # River Goal:
+        # Get to edge of map from start
+        # Follow elevation as best as possible
+        # If at local minimum, go to tile with least elevation gain given it follows other tile rules
+        # If intersecting with existing river, then join it
+
+    def set_rivers(self, path):
+        current_direction = None
+
+        for i, tile in enumerate(path):
+            if current_direction == None:
+                current_direction = random.choice(utils.DIRECTIONS)
+
+            if i + 1 < len(path):
+                next_tile = path[i + 1]
+                next_tile_direction = utils.get_relative_position(tile, next_tile)
+            utils.RIVER_TILE_MAPPINGS
+
+
+        pass
+
+        
 
     def hex_elevation(self, q, r, q_offset, r_offset):
-        scale = map_generator_config.scale
+        scale = map_generator_config.Terrain["scale"]["level"]
+        scale += (map_generator_config.MapConfig["elevation_scale"]["default"] - map_generator_config.MapConfig["elevation_scale"]["current"]) * map_generator_config.Terrain["scale"]["change"]
+
         octaves = map_generator_config.octaves
         persistence = map_generator_config.persistence
         lacunarity = map_generator_config.lacunarity
@@ -80,6 +145,7 @@ class MapGenerator:
     def hex_temperature(self, q, r, q_offset, r_offset):
         scale = map_generator_config.Biome["scale"]["level"]
         scale += (map_generator_config.MapConfig["biome_scale"]["default"] - map_generator_config.MapConfig["biome_scale"]["current"]) * map_generator_config.Biome["scale"]["change"]
+        print(scale)
         octaves = map_generator_config.octaves
         persistence = map_generator_config.persistence
         lacunarity = map_generator_config.lacunarity
@@ -89,7 +155,8 @@ class MapGenerator:
         )
     
     def hex_moisture(self, q, r, q_offset, r_offset):
-        scale = map_generator_config.scale
+        scale = map_generator_config.Feature["scale"]["level"]
+        scale += (map_generator_config.MapConfig["clumpiness"]["default"] - map_generator_config.MapConfig["clumpiness"]["current"]) * map_generator_config.Feature["scale"]["change"]
         octaves = map_generator_config.octaves
         persistence = map_generator_config.persistence
         lacunarity = map_generator_config.lacunarity

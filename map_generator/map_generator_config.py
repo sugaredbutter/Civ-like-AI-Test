@@ -5,6 +5,14 @@ lacunarity = 2.0
 seed = 1
 MapConfig = dict(
     #Terrain/elevation
+    elevation_scale = dict(
+        default = 5,
+        current = 5,
+        min_val = 1,
+        max_val = 10,
+
+    ), 
+
     elevation = dict(
         default = 3,
         current = 3,
@@ -74,48 +82,64 @@ MapConfig = dict(
         max_val = 5,
 
     ),         #How clumped are forests
+
+    rivers = dict(
+        default = 3,
+        current = 3,
+        min_val = 1,
+        max_val = 5,
+
+    ),
     seed = ''
 )
 Terrain = dict(
+    scale = dict(
+        level = .3,
+        change = .05
+    ),
     elevation = dict(
         level = 0,
-        change = .1,
+        change = .05,
     ),
     hill = dict(
         level = 0,
-        change = -.1,
+        change = -.05,
     ),
     mountain = dict(
         level = .2,
-        change = -.1,
+        change = -.05,
     ),
 )
 Biome = dict(
     scale = dict(
-        level = .5,
-        change = .1
+        level = .3,
+        change = .05
     ),
     temperature = dict(
         level = 0,
         change = .1,
     ),
     plain = dict(
-        level = 0,
-        change = -.1,
+        level = .1,
+        change = .1,
     ),
 )
 Feature = dict(
     scale = dict(
         level = .5,
-        change = -.1
+        change = .2
     ),
     moisture = dict(
         level = 0,
         change = .1,
     ),
     forest = dict(
-        level = .2,
+        level = .1,
         change = -.1,
+    ),
+    river = dict(
+        level = 20,
+        change = 10,
     )
 )
 

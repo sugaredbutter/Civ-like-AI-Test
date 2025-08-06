@@ -871,11 +871,11 @@ class MapGenerationMenu:
 
         self.valid_hover = True
 
-        interactables = ["Back", "Elevation", "Mountainous", "Hilliness", "Variability", "Temperature", "Biome Size", "Moisture", "Seed", "Generate"]
-        interactables_config = [None, "elevation", "mountainous", "hilliness", "variability", "temperature", "biome_scale", "moisture", "seed", None]
+        interactables = ["Back", "Elevation", "Mountainous", "Hilliness", "Variability", "Terrain Scale", "Temperature", "Biome Scale", "Moisture", "Feature Scale", "Rivers", "Seed", "Generate"]
+        interactables_config = [None, "elevation", "mountainous", "hilliness", "variability", "elevation_scale", "temperature", "biome_scale", "moisture", "clumpiness", "rivers", "seed", None]
 
         buttons = ["Back", "Generate"]
-        sliders = ["Elevation", "Mountainous", "Hilliness", "Variability", "Temperature", "Biome Size", "Moisture"]
+        sliders = ["Elevation", "Mountainous", "Hilliness", "Variability", "Terrain Scale", "Temperature", "Biome Scale", "Moisture", "Feature Scale", "Rivers"]
         text_boxes = ["Seed"]
         
         self.button_menu = {}
