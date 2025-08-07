@@ -144,18 +144,27 @@ OPPOSITE_EDGES = {
 
 # (TILE_DIRECTION, RIVER_DIRECTION (ORIGIN))
 RIVER_TILE_MAPPINGS = {
-    ("E", "NE"): ["NW", "W"],
+    ("E", "NE"): ["W", "NW"],
     ("E", "SE"): ["SW", "W"],
-    ("NE", "NW"): ["W", "SW"],
+    ("NE", "NW"): ["SW", "W"],
     ("NE", "E"): ["SE", "SW"],
-    ("NW", "W"): ["SW", "SE"],
+    ("NW", "W"): ["SE", "SW"],
     ("NW", "NE"): ["E", "SE"],
     ("W", "NW"): ["NE", "E"],
-    ("W", "SW"): ["SE", "E"],
+    ("W", "SW"): ["E", "SE"],
     ("SW", "W"): ["NW", "NE"],
-    ("SW", "SE"): ["E", "NE"],
+    ("SW", "SE"): ["NE", "E"],
     ("SE", "SW"): ["W", "NW"],
-    ("SE", "E"): ["NE", "NW"],
+    ("SE", "E"): ["NW", "NE"],
+    
+    ("E", "E"): ["SW", "NW"],
+    ("NE", "NE"): ["SE", "W"],
+    ("NW", "NW"): ["E", "SE"],
+    ("W", "W"): ["NE", "SE"],
+    ("SW", "SW"): ["NW", "E"],
+    ("SE", "SE"): ["W", "NE"],
+
+
 }
 
 def get_health_color(health):

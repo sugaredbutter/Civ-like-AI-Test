@@ -77,6 +77,7 @@ class MapGenerator:
         path = self.create_river_path(start_tile_coord, [], set(), river_tiles)
         river_tiles += path
         print(path)
+        self.set_rivers(path)
     
     def create_river_path(self, current_tile_coord, current_path, invalid_tiles, river_tiles):
 
@@ -112,20 +113,144 @@ class MapGenerator:
         # If intersecting with existing river, then join it
 
     def set_rivers(self, path):
-        current_direction = None
-
-        for i, tile in enumerate(path):
-            if current_direction == None:
-                current_direction = random.choice(utils.DIRECTIONS)
-
+        next_directions = None
+        for i, tile_coord in enumerate(path):
+            tile = self.tiles[tile_coord]
             if i + 1 < len(path):
-                next_tile = path[i + 1]
-                next_tile_direction = utils.get_relative_position(tile, next_tile)
-            utils.RIVER_TILE_MAPPINGS
+                next_tile = self.tiles[path[i + 1]]
+                next_tile_direction = utils.get_relative_position(tile_coord, next_tile.get_coords())
+            else:
+                if next_directions == None:
+                    branch = [0, 1, 2, 3, 4, 5] # River entering new tile will have 2 options to branch to
+                    best_hex_river_edges = []
+                    reached_edge = False
+                    while(len(branch) > 0) and not reached_edge:
+                        print("1")
+                        direction_index = random.choice(branch)
+                        branch.remove(direction_index)
+                        increment_list = [-1, 1]
+                        for increment in increment_list:
+                            reached_edge, best_hex_river_edges = self.calc_hex_river(tile, direction_index, increment)
+                            if reached_edge:
+                                break
+                    self.set_hex_river(tile, best_hex_river_edges)
+                    return i
 
+                else:
+                    branch = [0, 1] # River entering new tile will have 2 options to branch to
+                    best_hex_river_edges = []
+                    reached_edge = False
+                    while(len(branch) > 0) and not reached_edge:
+                        print("2")
+                        random_choice = random.choice(branch)
+                        branch.remove(random_choice)
+                        direction_index = utils.DIRECTIONS.index(next_directions[random_choice])
+                        increment = -1 if random_choice == 0 else 1
+                        reached_edge, best_hex_river_edges = self.calc_hex_river(tile, direction_index, increment)
+                    self.set_hex_river(tile, best_hex_river_edges)
+                    return i
+            if next_directions == None:
+                branch = [0, 1, 2, 3, 4, 5] # River entering new tile will have 2 options to branch to
+                best_hex_river_edges = []
+                continue_next_tile = False
+                while(len(branch) > 0) and not continue_next_tile:
+                    print("3")
+                    direction_index = random.choice(branch)
+                    branch.remove(direction_index)
+                    increment_list = [-1, 1]
+                    for increment in increment_list:
+                        continue_next_tile, best_hex_river_edges = self.calc_hex_river(tile, direction_index, increment, next_tile_direction)
+                        if continue_next_tile:
+                            break
+                self.set_hex_river(tile, best_hex_river_edges)
+                print(best_hex_river_edges)
+                if continue_next_tile:
+                    next_directions = utils.RIVER_TILE_MAPPINGS[(next_tile_direction, best_hex_river_edges[-1])]
+                else:
+                    return i
 
-        pass
+            else:
+                branch = [0, 1] # River entering new tile will have 2 options to branch to
+                best_hex_river_edges = []
+                continue_next_tile = False
+                while(len(branch) > 0) and not continue_next_tile:
+                    print("4")
+                    random_choice = random.choice(branch)
+                    branch.remove(random_choice)
+                    direction_index = utils.DIRECTIONS.index(next_directions[random_choice])
+                    increment = -1 if random_choice == 0 else 1
+                    continue_next_tile, best_hex_river_edges = self.calc_hex_river(tile, direction_index, increment, next_tile_direction)
+                self.set_hex_river(tile, best_hex_river_edges)
+                if continue_next_tile:
+                    next_directions = utils.RIVER_TILE_MAPPINGS[(next_tile_direction, best_hex_river_edges[-1])]
+                else:
+                    return i
+                
+                
 
+            
+            
+
+            
+
+        
+    def calc_hex_river(self, tile, direction_index, increment, next_tile_direction = None):
+        if next_tile_direction != None:
+            hex_river_edges = []
+            reached_next_tile = True
+            hex_river_edges.append(utils.DIRECTIONS[direction_index])
+
+            # Loop around hex until river can reach next tile
+            while utils.RIVER_TILE_MAPPINGS.get((next_tile_direction, utils.DIRECTIONS[direction_index]), None) == None:
+                if tile.rivers[utils.DIRECTIONS[direction_index]] == True:
+                    reached_next_tile = False
+                    break
+                direction_index += increment
+                if direction_index == -1:
+                    direction_index = 5
+                elif direction_index == 6:
+                    direction_index = 0
+                hex_river_edges.append(utils.DIRECTIONS[direction_index])
+            
+            return (reached_next_tile, hex_river_edges)
+        else:
+            out_of_bound_tile_directions = []
+            for neighbor_direction in utils.CUBE_DIRECTIONS_DICT.keys():
+                neighbor = utils.CUBE_DIRECTIONS_DICT[neighbor_direction]
+                neighbor_coord = tuple(x + y for x, y in zip(tile.get_coords(), neighbor))
+                if self.tiles.get(neighbor_coord, None) == None:
+                    out_of_bound_tile_directions.append(utils.get_relative_position(tile.get_coords(), neighbor_coord))
+            
+            hex_river_edges = []
+            hex_river_edges.append(utils.DIRECTIONS[direction_index])
+            reached_edge = False
+            # Loop around hex until river can reach next tile
+            print(out_of_bound_tile_directions)
+            while reached_edge == False:
+                if tile.rivers[utils.DIRECTIONS[direction_index]] == True:
+                    break
+                for directions in out_of_bound_tile_directions:
+                    if utils.RIVER_TILE_MAPPINGS.get((directions, utils.DIRECTIONS[direction_index]), None) != None:
+                        reached_edge = True
+                        break
+                direction_index += increment
+                if direction_index == -1:
+                    direction_index = 5
+                elif direction_index == 6:
+                    direction_index = 0
+                hex_river_edges.append(utils.DIRECTIONS[direction_index])
+
+            return (reached_edge, hex_river_edges)
+
+    def set_hex_river(self, tile, edges):
+        for edge in edges:
+            neighbor_coord = utils.get_tile_via_edge(*tile.get_coords(), edge)
+            neighbor_tile = self.tiles.get(neighbor_coord, None)
+            tile.rivers[edge] = True        
+            if neighbor_tile == None:
+                return
+            neighbor_edge = utils.OPPOSITE_EDGES[edge]
+            neighbor_tile.rivers[neighbor_edge] = True
         
 
     def hex_elevation(self, q, r, q_offset, r_offset):
