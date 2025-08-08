@@ -1,8 +1,8 @@
 import utils as utils
-import players.units_config as units_config
+import units.units_config as units_config
 import heapq
 from collections import deque
-import map_generator.tile_types_config as tile_config
+import map.tile_types_config as tile_config
 import random
 from combat_manager.combat_manager import CombatManager
 

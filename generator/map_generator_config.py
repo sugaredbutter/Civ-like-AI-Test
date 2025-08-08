@@ -6,10 +6,10 @@ seed = 1
 MapConfig = dict(
     #Terrain/elevation
     elevation_scale = dict(
-        default = 5,
-        current = 5,
+        default = 3,
+        current = 3,
         min_val = 1,
-        max_val = 10,
+        max_val = 5,
 
     ), 
 
@@ -48,7 +48,7 @@ MapConfig = dict(
         default = 3,
         current = 3,
         min_val = 1,
-        max_val = 10,
+        max_val = 5,
 
     ), #Octaves, basically clumpiness?             
     #Biomes
@@ -60,10 +60,10 @@ MapConfig = dict(
 
     ),        #Mix between desert and grassland   
     biome_scale = dict(
-        default = 4,
-        current = 4,
+        default = 3,
+        current = 3,
         min_val = 1,
-        max_val = 7,
+        max_val = 5,
 
     ),        #How large each biome is
 
@@ -99,7 +99,7 @@ Terrain = dict(
     ),
     elevation = dict(
         level = 0,
-        change = .05,
+        change = .02,
     ),
     hill = dict(
         level = 0,
@@ -112,11 +112,11 @@ Terrain = dict(
 )
 Biome = dict(
     scale = dict(
-        level = .3,
+        level = .2,
         change = .05
     ),
     temperature = dict(
-        level = 0,
+        level = -.1,
         change = .1,
     ),
     plain = dict(
@@ -139,7 +139,7 @@ Feature = dict(
     ),
     river = dict(
         level = 20,
-        change = 10,
+        change = 5,
     )
 )
 

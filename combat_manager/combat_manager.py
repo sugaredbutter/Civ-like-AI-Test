@@ -2,7 +2,7 @@ import math
 import random
 import utils as utils
 import combat_manager.combat_bonus_config as combat_bonus
-import players.units_config as unit_config
+import units.units_config as unit_config
 class CombatManager:
     def combat(unit_1, unit_2, tile_1, tile_2, type):
         unit_1_combat_strength = unit_1.attack - round((10 * (100 - unit_1.health)) / 100)

@@ -51,11 +51,11 @@ x Secondary Actions
 x Player v AI
 
 Phase 6 (AI Foundations and features needed/recommended prior to AI training)
-/ Map Generation (So AI does not learn from a single map and can adapt)
-/ UI for Map Generation
-- River Generation
-- Unit placement and loadouts
-- Scoring/Reward System
+x Map Generation (So AI does not learn from a single map and can adapt)
+x UI for Map Generation
+x River Generation
+/ Unit placement and loadouts
+/ Clustering approach for unit spawn locations
 
 
 Phase 6.5 (ML-Based AI):
@@ -69,7 +69,7 @@ Phase 7 (Improving Combat (Not priority)):
 - Visuals for units that are fortified
 
 Phase 7.5 (Flesh out):
-- Randomize terrain/map
+/ Randomize terrain/map
 - Difficulty modifiers?
 - Clean up code (particularly draw_map)
 - Right click support

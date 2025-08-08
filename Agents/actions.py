@@ -1,9 +1,9 @@
-from players.units_utils import UnitUtils
-from players.units_utils import UnitMove
-from players.units_utils import UnitVisibility
-from players.units_utils import UnitAttack
-from players.units_utils import UnitScoringUtils
-from players.units_utils import UnitMoveScoring
+from units.units_utils import UnitUtils
+from units.units_utils import UnitMove
+from units.units_utils import UnitVisibility
+from units.units_utils import UnitAttack
+from units.units_utils import UnitScoringUtils
+from units.units_utils import UnitMoveScoring
 import utils as utils
 import Scoring.score as scoring
 import math

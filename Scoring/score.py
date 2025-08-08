@@ -1,12 +1,12 @@
 import Scoring.score_config as score_config
 import utils as utils
 import math
-from players.units_utils import UnitUtils
-from players.units_utils import UnitMove
-from players.units_utils import UnitVisibility
-from players.units_utils import UnitAttack
-from players.units_utils import UnitScoringUtils
-from players.units_utils import UnitMoveScoring
+from units.units_utils import UnitUtils
+from units.units_utils import UnitMove
+from units.units_utils import UnitVisibility
+from units.units_utils import UnitAttack
+from units.units_utils import UnitScoringUtils
+from units.units_utils import UnitMoveScoring
 from combat_manager.combat_manager import CombatManager
 
 

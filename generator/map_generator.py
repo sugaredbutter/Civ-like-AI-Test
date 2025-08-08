@@ -2,11 +2,14 @@ import math
 import pygame
 import utils as utils
 import random
-import map_generator.tile_types_config as tile_types_config
-import map_generator.map_generator_config as map_generator_config
-import map_generator.map as current_map
+import map.tile_types_config as tile_types_config
+import generator.map_generator_config as map_generator_config
+import map.map as current_map
 import config as config
 import noise
+from collections import deque
+import heapq
+
 
 class MapGenerator:
     def __init__(self):
@@ -32,9 +35,15 @@ class MapGenerator:
                 self.tiles[(x, y, z)].moisture = self.hex_moisture(column, row, q_moisture_offset, r_moisture_offset)
                 self.calc_tile_attributes(self.tiles[(x, y, z)])
         self.create_rivers()
+        self.connect_traversable()
         return self.tiles
 
     def calc_tile_attributes(self, tile):
+        self.set_tile_terrain(tile)
+        self.set_tile_biome(tile)
+        self.set_tile_feature(tile)
+
+    def set_tile_terrain(self, tile):
         elevation = (map_generator_config.MapConfig["elevation"]["current"] - map_generator_config.MapConfig["elevation"]["default"]) * map_generator_config.Terrain["elevation"]["change"]
         hill_elevation = map_generator_config.Terrain["hill"]["level"]
         hill_elevation += (map_generator_config.MapConfig["hilliness"]["current"] - map_generator_config.MapConfig["hilliness"]["default"]) * map_generator_config.Terrain["hill"]["change"]
@@ -47,7 +56,8 @@ class MapGenerator:
             tile.terrain = "Hill"
         if tile.elevation >= mountain_elevation:
             tile.terrain = "Mountain"
-
+    
+    def set_tile_biome(self, tile):
         temperature = (map_generator_config.MapConfig["temperature"]["current"] - map_generator_config.MapConfig["temperature"]["default"]) * map_generator_config.Biome["temperature"]["change"]
         plain_temperature = map_generator_config.Biome["plain"]["level"]
         plain_temperature -= temperature
@@ -56,28 +66,74 @@ class MapGenerator:
         else:
             tile.biome = "Desert"
 
+    def set_tile_feature(self, tile):
         moisture = (map_generator_config.MapConfig["moisture"]["current"] - map_generator_config.MapConfig["moisture"]["default"]) * map_generator_config.Feature["moisture"]["change"]
         tree_moisture = map_generator_config.Feature["forest"]["level"]
         tree_moisture -= moisture
         if tile.moisture > tree_moisture and tile.biome != "Desert" and tile.terrain != "Mountain":
             tile.feature = "Forest"
+        self.set_movement(tile)
+
+    def set_movement(self, tile):
+        tile.movement = tile_types_config.biomes[tile.biome]["Terrain"][tile.terrain]["movement"]
+        if tile.feature != None:
+            tile.movement += tile_types_config.biomes[tile.biome]["Feature"][tile.feature]["movement"]
+        if tile.movement == 0:
+            tile.movement = 1
+
 
 
     def create_rivers(self):
         river_budget = map_generator_config.Feature["river"]["level"]
         river_budget += (map_generator_config.MapConfig["rivers"]["current"] - map_generator_config.MapConfig["rivers"]["default"]) * map_generator_config.Feature["river"]["change"]
         river_sources = []
-        for key in self.tiles:
-            if self.tiles[key].terrain == "Mountain":
-                river_sources.append(key)
-
-        random_start = random.choice(river_sources)
         river_tiles = []
-        start_tile_coord = random_start
-        path = self.create_river_path(start_tile_coord, [], set(), river_tiles)
-        river_tiles += path
-        print(path)
-        self.set_rivers(path)
+        river_source_scoring = self.score_river_source(river_sources, river_tiles)
+
+        while len(river_source_scoring) > 0 and river_budget - len(river_tiles) > 5:
+            start_tile_coord = river_source_scoring[0][1]
+            path = self.create_river_path(start_tile_coord, [], set(), river_tiles)
+            
+            distance = self.set_rivers(path)
+            river_tiles += path[0:distance]
+            river_sources.append(path[0])
+            river_source_scoring = self.score_river_source(river_sources, river_tiles)
+
+
+    def score_river_source(self, river_source_nodes, invalid_sources):
+        ROWS, COLUMNS = config.map_settings["tile_height"], config.map_settings["tile_width"]
+
+        river_source_scoring = []
+        for tile in self.tiles.keys():
+            if tile in invalid_sources:
+                continue
+            for river in self.tiles[tile].rivers.keys():
+                if self.tiles[tile].rivers[river] == True:
+                    continue
+            score = 0
+
+            #Elevation
+            score += self.tiles[tile].elevation
+
+            #Promote Mountains
+            if self.tiles[tile].terrain == "Mountain":
+                score *= 2
+
+            #Discourage tiles nearer to edge of map
+            x, y = utils.hex_coord_to_coord(*tile)
+            distance_from_edge = min(min(x - 0, COLUMNS - 1 - x), min(y - 0, ROWS - 1 - y)) + 1
+            score *= (distance_from_edge / (distance_from_edge + 1))
+    
+            #Discourage tiles near existing source node
+            for node in river_source_nodes:
+                distance = self.hex_heuristic(tile, node)
+                score *= (distance / (distance + 1))
+            river_source_scoring.append((score, tile))
+        river_source_scoring.sort(reverse=True)
+        return river_source_scoring
+            
+    def hex_heuristic(self, a, b):
+        return max(abs(a[0] - b[0]), abs(a[1] - b[1]), abs(a[2] - b[2]))
     
     def create_river_path(self, current_tile_coord, current_path, invalid_tiles, river_tiles):
 
@@ -125,8 +181,7 @@ class MapGenerator:
                     best_hex_river_edges = []
                     reached_edge = False
                     while(len(branch) > 0) and not reached_edge:
-                        print("1")
-                        direction_index = random.choice(branch)
+                        direction_index = self.rng.choice(branch)
                         branch.remove(direction_index)
                         increment_list = [-1, 1]
                         for increment in increment_list:
@@ -134,28 +189,26 @@ class MapGenerator:
                             if reached_edge:
                                 break
                     self.set_hex_river(tile, best_hex_river_edges)
-                    return i
+                    return i + 1
 
                 else:
                     branch = [0, 1] # River entering new tile will have 2 options to branch to
                     best_hex_river_edges = []
                     reached_edge = False
                     while(len(branch) > 0) and not reached_edge:
-                        print("2")
-                        random_choice = random.choice(branch)
+                        random_choice = self.rng.choice(branch)
                         branch.remove(random_choice)
                         direction_index = utils.DIRECTIONS.index(next_directions[random_choice])
                         increment = -1 if random_choice == 0 else 1
                         reached_edge, best_hex_river_edges = self.calc_hex_river(tile, direction_index, increment)
                     self.set_hex_river(tile, best_hex_river_edges)
-                    return i
+                    return i + 1
             if next_directions == None:
                 branch = [0, 1, 2, 3, 4, 5] # River entering new tile will have 2 options to branch to
                 best_hex_river_edges = []
                 continue_next_tile = False
                 while(len(branch) > 0) and not continue_next_tile:
-                    print("3")
-                    direction_index = random.choice(branch)
+                    direction_index = self.rng.choice(branch)
                     branch.remove(direction_index)
                     increment_list = [-1, 1]
                     for increment in increment_list:
@@ -163,19 +216,17 @@ class MapGenerator:
                         if continue_next_tile:
                             break
                 self.set_hex_river(tile, best_hex_river_edges)
-                print(best_hex_river_edges)
                 if continue_next_tile:
                     next_directions = utils.RIVER_TILE_MAPPINGS[(next_tile_direction, best_hex_river_edges[-1])]
                 else:
-                    return i
+                    return i + 1
 
             else:
                 branch = [0, 1] # River entering new tile will have 2 options to branch to
                 best_hex_river_edges = []
                 continue_next_tile = False
                 while(len(branch) > 0) and not continue_next_tile:
-                    print("4")
-                    random_choice = random.choice(branch)
+                    random_choice = self.rng.choice(branch)
                     branch.remove(random_choice)
                     direction_index = utils.DIRECTIONS.index(next_directions[random_choice])
                     increment = -1 if random_choice == 0 else 1
@@ -184,15 +235,8 @@ class MapGenerator:
                 if continue_next_tile:
                     next_directions = utils.RIVER_TILE_MAPPINGS[(next_tile_direction, best_hex_river_edges[-1])]
                 else:
-                    return i
+                    return i + 1
                 
-                
-
-            
-            
-
-            
-
         
     def calc_hex_river(self, tile, direction_index, increment, next_tile_direction = None):
         if next_tile_direction != None:
@@ -225,7 +269,6 @@ class MapGenerator:
             hex_river_edges.append(utils.DIRECTIONS[direction_index])
             reached_edge = False
             # Loop around hex until river can reach next tile
-            print(out_of_bound_tile_directions)
             while reached_edge == False:
                 if tile.rivers[utils.DIRECTIONS[direction_index]] == True:
                     break
@@ -270,7 +313,6 @@ class MapGenerator:
     def hex_temperature(self, q, r, q_offset, r_offset):
         scale = map_generator_config.Biome["scale"]["level"]
         scale += (map_generator_config.MapConfig["biome_scale"]["default"] - map_generator_config.MapConfig["biome_scale"]["current"]) * map_generator_config.Biome["scale"]["change"]
-        print(scale)
         octaves = map_generator_config.octaves
         persistence = map_generator_config.persistence
         lacunarity = map_generator_config.lacunarity
@@ -292,6 +334,100 @@ class MapGenerator:
             persistence = persistence,
             lacunarity = lacunarity,
         )
+
+    def connect_traversable(self):
+        #Find all pockets of traversable
+        localized_areas = [] #Set of of lists
+        visited_tiles = set()
+        for tile_coord in self.tiles.keys():
+            if tile_coord not in visited_tiles and self.tiles[tile_coord].movement != -1:
+                new_area = self.BFS_area(tile_coord)
+                visited_tiles.update(new_area)
+                localized_areas.append(list(new_area))
+        start_coord = localized_areas[0][0]
+        if len(localized_areas) > 1:
+            for index in range(1, len(localized_areas)):
+                path = self.A_star_connect_areas(start_coord, localized_areas[index][0])
+                print(path)
+                for path_tile_coord in path:
+                    tile = self.tiles[path_tile_coord]
+                    if tile.movement == -1:
+                        tile.terrain = "Hill"
+                        self.set_tile_feature(tile)
+                        self.set_movement(tile)
+    def BFS_area(self, tile_coord):
+        reachable = set()
+        queue = deque()
+        queue.append(tile_coord)
+        while queue:
+            current_coord = queue.popleft()
+            if current_coord in reachable:
+                continue
+            reachable.add(current_coord)
+            
+            
+            
+            for neighbor_direction in utils.CUBE_DIRECTIONS_DICT.keys():
+                neighbor = utils.CUBE_DIRECTIONS_DICT[neighbor_direction]
+                neighbor_coord = tuple(x + y for x, y in zip(current_coord, neighbor))
+                if self.tiles.get(neighbor_coord, None) is None or self.tiles[neighbor_coord].movement == -1:
+                    continue
+                
+                queue.append(neighbor_coord)
+        return reachable
+    
+    def A_star_connect_areas(self, tile_coord, target_coord):
+        to_visit = []
+        heapq.heappush(to_visit, (0, 0, tile_coord, None))
+        visited = {}
+        path = {}
+        while to_visit:
+            # Predicted Score, Distance to tile, Current Coord, Parent's Coord
+            current_score, current_distance, current_coord, parent_coord = heapq.heappop(to_visit)
+
+            # If tile has been reached in a more efficient manner already, then ignore and continue
+            if current_coord in visited and current_distance >= visited[current_coord]:
+                continue
+
+            path[current_coord] = parent_coord
+            visited[current_coord] = current_distance
+
+            # Destination reached
+            if current_coord == target_coord:
+                break
+            # Neighboring tiles
+            for neighbor_direction in utils.CUBE_DIRECTIONS_DICT.keys():
+                neighbor = utils.CUBE_DIRECTIONS_DICT[neighbor_direction]
+                neighbor_coord = tuple(x + y for x, y in zip(current_coord, neighbor))
+                tile = self.tiles.get(neighbor_coord, None)
+                # Tile doesn't exist
+                if tile is None:
+                    continue
+                
+
+                # Make sure neighbor_coord not visited yet in a more efficient manner
+                movement_cost = 1 if tile.movement == -1 else 0
+                    
+                # Score to target and cost of reaching neighbor tile
+                score = current_distance + movement_cost + self.hex_heuristic(neighbor_coord, target_coord)
+                cost = current_distance + movement_cost
+                
+                heapq.heappush(to_visit, (score, cost, neighbor_coord, current_coord))
+
+        # Convert dict to list
+        full_path = []
+        if tile_coord in path:
+            current = target_coord
+            while current != tile_coord:
+                full_path.append(current)
+                current = path[current]
+            full_path.append(tile_coord)
+            full_path.reverse()
+        return full_path
+                
+
+
+
 
 
 

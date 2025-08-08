@@ -4,11 +4,13 @@ import utils as utils
 import interactions.controls as controls
 import math
 import interactions.interactables as Interact
-from map_generator.map_generator_config import MapConfig
-from players.units_utils import UnitUtils
-from players.units_utils import UnitMove
-from players.units_utils import UnitVisibility
-from players.units_utils import UnitAttack
+from generator.map_generator_config import MapConfig
+from units.units_utils import UnitUtils
+from units.units_utils import UnitMove
+from units.units_utils import UnitVisibility
+from units.units_utils import UnitAttack
+from generator.unit_generator import UnitGenerator
+
 
 WHITE = (255, 255, 255)
 GRAY = (180, 180, 180)
@@ -1122,7 +1124,14 @@ class MapGenerationMenu:
                     self.active_text = None
                     break
                 elif key == "Generate":
+                    for key in self.game_state.map.tiles.keys():
+                        tile = self.game_state.map.tiles[key]
+                        if tile.unit_id != None:
+                            self.game_state.players.get_player(self.game_state.units.get_unit(tile.unit_id).owner_id).remove_unit(tile.unit_id)
+                            self.game_state.units.remove_unit(tile.unit_id)
                     self.game_state.map.randomize_map()
+                    unit_generator = UnitGenerator(self.game_state)
+                    unit_generator.choose_spawn_locations()
                     break
                 elif self.active_button == key:
                     self.active_button = None

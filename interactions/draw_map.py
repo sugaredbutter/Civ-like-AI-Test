@@ -3,7 +3,7 @@ import math
 import random
 import config as config
 import utils as utils
-import map_generator.tile_types_config as tile_types_config
+import map.tile_types_config as tile_types_config
 import Assets.asset_manager as asset_manager
 class Map:
     def __init__(self, screen, game_state, game_manager):

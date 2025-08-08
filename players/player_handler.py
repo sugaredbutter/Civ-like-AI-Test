@@ -1,4 +1,4 @@
-import players.units_config as UnitConfig
+import units.units_config as UnitConfig
 
 
 class Player:

@@ -1,6 +1,6 @@
 import pygame
 import sys
-import map_generator.map as generate_map
+import map.map as generate_map
 import interactions.draw_map as draw_map
 import config as config
 import utils as utils
@@ -12,7 +12,7 @@ import interactions.interfaces.player_v_AI_test_interface as pvAI_test_ui
 import interactions.interfaces.interfaces as interfaces
 
 import interactions.interfaces.game_interface as game_ui
-import players.units as unit_handler
+import units.units as unit_handler
 import players.player_handler as player_handler
 import game_manager.game_manager as game
 import combat_manager.combat_manager as combat_manager

@@ -2,9 +2,9 @@ import math
 import pygame
 import utils as utils
 import random
-import map_generator.tile_types_config as tile_types_config
+import map.tile_types_config as tile_types_config
 import config as config
-from map_generator.map_generator import MapGenerator
+from generator.map_generator import MapGenerator
 class Tile:
     def __init__(self, x, y, z, biome = "Plain", terrain = "Flat", feature = None):
         self.x = x
@@ -177,7 +177,6 @@ class HexMap:
         if save:
             pass
         else:
-            print("hi")
             map_generator = MapGenerator()
             self.tiles = map_generator.generate_map(self.width, self.height)
 
