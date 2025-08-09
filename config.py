@@ -8,8 +8,8 @@ map_settings = {
     "zoom": 5,
     "offsetX": 0,
     "offsetY": 0,
-    "tile_width": 10,
-    "tile_height": 10,
+    "tile_width": 12,
+    "tile_height": 12,
     "pixel_width": 1920,
     "pixel_height": 1080
 }
