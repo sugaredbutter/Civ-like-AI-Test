@@ -49,7 +49,7 @@ class UnitGenerator:
                 player_tiles[cluster][player_index] = [tile, score]
         for cluster in player_tiles.keys():
             player_tiles[cluster].sort(reverse = True, key = lambda x: x[1])
-            print(player_tiles[cluster][0])
+        self.player_tiles = player_tiles
 
 
 
@@ -77,5 +77,9 @@ class UnitGenerator:
                 
                 queue.append((neighbor_coord, range - 1))
         return reachable
+
+    def spawn_units(self):
+        pass
+
 
     #def score_tile(self):

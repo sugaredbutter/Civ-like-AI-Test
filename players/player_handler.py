@@ -50,7 +50,7 @@ class PlayerHandler:
             "red",   
             "blue",  
             "green",  
-            "purple"  
+            "purple",  
         ]
         self.players = []
 

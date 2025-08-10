@@ -5,6 +5,7 @@ import interactions.controls as controls
 import math
 import interactions.interactables as Interact
 from generator.map_generator_config import MapConfig
+import generator.unit_generator_config as UnitGenConfig
 from units.units_utils import UnitUtils
 from units.units_utils import UnitMove
 from units.units_utils import UnitVisibility
@@ -38,9 +39,9 @@ class UserInterface:
         self.valid_hover = True
         self.active_button = None
         self.active_menu = self
-                        
-        self.Menus = [PainterMenu(screen, self, self, game_state), TerrainMenu(screen, self, self, game_state), FeatureMenu(screen, self, self, game_state), UnitMenu(screen, self, self, game_state), MapGenerationMenu(screen, self, self, game_state)]
-        menus_list = ["Biomes", "Terrain", "Features", "Units", "Map Gen"]
+        self.player_amount_menu = PlayerAmountMenu(screen, self, self, game_state)
+        self.Menus = [PainterMenu(screen, self, self, game_state), TerrainMenu(screen, self, self, game_state), FeatureMenu(screen, self, self, game_state), UnitMenu(screen, self, self, game_state, self.player_amount_menu), MapGenerationMenu(screen, self, self, game_state), UnitGenerationMenu(screen, self, self, game_state, self.player_amount_menu)]
+        menus_list = ["Biomes", "Terrain", "Features", "Units", "Map Gen", "Unit Gen"]
         self.button_menu = {}
 
         for i, name in enumerate(menus_list):
@@ -623,17 +624,19 @@ class FeatureMenu:
         return
     
 class UnitMenu:
-    def __init__(self, screen, main_menu, parent_menu, game_state):
+    def __init__(self, screen, main_menu, parent_menu, game_state, player_amount_menu):
         self.screen = screen
         self.main_menu = main_menu
         self.parent_menu = parent_menu
         self.game_state = game_state
+        self.player_amount_menu = player_amount_menu
         
         self.initX = 0
         self.initY = 0
         self.clicked = False
         self.dragging = False
         self.clicked_button = False
+        self.player_amount_menu_clicked = False
         
         self.button_width = 100
         self.button_height = 40
@@ -641,31 +644,23 @@ class UnitMenu:
         self.valid_hover = True
 
         buttons = ["Back", "Melee", "Ranged", "Cavalry", "Remove"]
-        self.player_buttons = ["Player 1", "Player 2", "Player 3", "Player 4", "Player 5"] #player 5 used as place holder for removing player
-        self.adjust_num_players = ["+", "-"]
         self.active_button = None
-        self.active_player = self.player_buttons[0]
 
         self.button_menu = {}
-        self.player_button_menu = {}
-        self.adjust_num_players_menu = {}
 
         for i, name in enumerate(buttons):
             x = WIDTH - self.button_width - self.padding
             y = self.padding + i * (self.button_height + self.padding)
             self.button_menu[name] = pygame.Rect(x, y, self.button_width, self.button_height)
             
-        for i, name in enumerate(self.player_buttons):
-            x = self.padding + (i + 1) * (self.button_width + self.padding)
-            y = self.padding
-            self.player_button_menu[name] = pygame.Rect(x, y, self.button_width, self.button_height)
             
-        self.adjust_num_players_menu[self.adjust_num_players[0]] =  self.player_button_menu["Player 3"]
     
     def left_click(self, event):
         self.clicked = True
         if self.is_clicked():
             self.clicked_button = True
+        elif self.player_amount_menu.is_clicked():
+            self.player_amount_menu_clicked = True
         elif self.active_button != None:
             self.interaction()
         self.set_init(event)
@@ -675,10 +670,13 @@ class UnitMenu:
 
         if self.clicked_button:
             self.button_clicked()   
+        elif self.player_amount_menu_clicked:
+            self.player_amount_menu.button_clicked()
 
         self.dragging = False
         self.clicked = False
         self.clicked_button = False
+        self.player_amount_menu_clicked = False
         self.valid_hover = True
     
     def right_click(self, event):
@@ -691,7 +689,7 @@ class UnitMenu:
         return
     
     def mouse_move(self, event):
-        if self.clicked and not self.clicked_button:
+        if self.clicked and not self.clicked_button and not self.player_amount_menu_clicked:
             if self.active_button:
                 self.interaction()
             else:
@@ -730,6 +728,163 @@ class UnitMenu:
     def create_menu(self):
         for key in self.button_menu.keys():
             self.draw_button(key, self.button_menu[key], self.active_button == key)
+        self.player_amount_menu.create_menu()
+            
+
+    def draw_button(self, text, rect, is_hovered):
+        font = pygame.font.SysFont(None, 24)
+        pygame.draw.rect(self.screen, DARK_GRAY if self.is_hovered(rect) or is_hovered else GRAY, rect)
+        pygame.draw.rect(self.screen, BLACK, rect, 2)  # Border
+        text_surf = font.render(text, True, BLACK)
+        text_rect = text_surf.get_rect(center=rect.center)
+        self.screen.blit(text_surf, text_rect)
+    
+    def is_hovered(self, rect):
+        if not self.valid_hover:
+            return False
+        mouse_x, mouse_y = pygame.mouse.get_pos()
+        if rect.collidepoint(mouse_x, mouse_y):
+            return True
+        return False
+    
+    def is_clicked(self):
+        mouse_x, mouse_y = pygame.mouse.get_pos()
+        for key in self.button_menu.keys():
+            if self.button_menu[key].collidepoint(mouse_x, mouse_y):
+                return True
+            
+        return False
+
+    def button_clicked(self):
+        mouse_x, mouse_y = pygame.mouse.get_pos()
+        for key in self.button_menu.keys():
+            if self.button_menu[key].collidepoint(mouse_x, mouse_y):
+                if key == "Back":
+                    self.main_menu.active_menu = self.parent_menu
+                    self.active_button = None
+                    self.active_player = self.player_amount_menu.player_buttons[0]
+                elif self.active_button == key:
+                    self.active_button = None
+                else:
+                    self.active_button = key  
+    
+    def tile_hover(self):
+        pass
+
+    def interaction(self):
+        currPlayer = self.player_amount_menu.player_buttons.index(self.player_amount_menu.active_player)
+        mouse_x, mouse_y = pygame.mouse.get_pos()
+        x, y, z = utils.click_to_hex(mouse_x, mouse_y)
+        column, row = utils.hex_coord_to_coord(x, y, z)
+        tile = self.game_state.map.get_tile(row, column)
+        if tile != None:
+            if self.active_button == "Remove":
+                if tile.unit_id is not None:
+                    self.game_state.players.get_player(self.game_state.units.get_unit(tile.unit_id).owner_id).remove_unit(tile.unit_id)
+                    self.game_state.units.remove_unit(tile.unit_id)
+            elif tile.terrain != "Mountain":
+                if tile.unit_id is not None and (currPlayer != self.game_state.units.get_unit(tile.unit_id).owner_id or self.game_state.units.get_unit(tile.unit_id).type != self.active_button):
+                    self.game_state.players.get_player(self.game_state.units.get_unit(tile.unit_id).owner_id).remove_unit(tile.unit_id)
+                    self.game_state.units.remove_unit(tile.unit_id)
+                    self.game_state.players.get_player(currPlayer).place_unit(self.active_button, x, y, z)
+                elif tile.unit_id is None:
+                    self.game_state.players.get_player(currPlayer).place_unit(self.active_button, x, y, z)
+        return
+    
+class PlayerAmountMenu:
+    def __init__(self, screen, main_menu, parent_menu, game_state):
+        self.screen = screen
+        self.main_menu = main_menu
+        self.parent_menu = parent_menu
+        self.game_state = game_state
+        
+        self.initX = 0
+        self.initY = 0
+        self.clicked = False
+        self.dragging = False
+        self.clicked_button = False
+        
+        self.button_width = 100
+        self.button_height = 40
+        self.padding = 10
+        self.valid_hover = True
+
+        self.player_buttons = ["Player 1", "Player 2", "Player 3"] 
+        self.adjust_num_players = ["+", "-"]
+        self.active_player = self.player_buttons[0]
+
+        self.player_button_menu = {}
+        self.adjust_num_players_menu = {}
+
+            
+        for i, name in enumerate(self.player_buttons):
+            x = self.padding + (i + 1) * (self.button_width + self.padding)
+            y = self.padding
+            self.player_button_menu[name] = pygame.Rect(x, y, self.button_width, self.button_height)
+            
+        self.adjust_num_players_menu[self.adjust_num_players[0]] = self.player_button_menu["Player 3"]
+    
+    def left_click(self, event):
+        self.clicked = True
+        if self.is_clicked():
+            self.clicked_button = True
+        self.set_init(event)
+    
+    def left_click_up(self):
+        mouse_x, mouse_y = pygame.mouse.get_pos()
+
+        if self.clicked_button:
+            self.button_clicked()   
+
+        self.dragging = False
+        self.clicked = False
+        self.clicked_button = False
+        self.valid_hover = True
+    
+    def right_click(self, event):
+        return
+    
+    def right_click_up(self, event):
+        return
+    
+    def key_down(self, event):
+        return
+    
+    def mouse_move(self, event):
+        if self.clicked and not self.clicked_button:
+            self.valid_hover = False
+            self.move_map(event)
+
+        if not self.clicked and self.active_button is not None:
+            self.tile_hover()
+         
+    def zoom(self, event):
+        if event.y > 0 and config.hex["radius"] < config.hex["max_radius"]:
+            config.hex["radius"] += 5
+            config.hex["inner_radius"] = config.hex["radius"] * 0.866025404
+            config.map_settings["offsetX"] -= ZOOM_SCALE * COLUMNS
+            config.map_settings["offsetY"] += ZOOM_SCALE * ROWS
+        elif event.y < 0 and config.hex["radius"] > config.hex["min_radius"]:
+            config.hex["radius"] -= 5
+            config.hex["inner_radius"] = config.hex["radius"] * 0.866025404
+            config.map_settings["offsetX"] += ZOOM_SCALE * COLUMNS
+            config.map_settings["offsetY"] -= ZOOM_SCALE * ROWS
+        config.map_change = True
+
+    def move_map(self, event):
+
+        self.dragging = True
+        config.map_settings["offsetX"] += event.pos[0] - self.initX
+        config.map_settings["offsetY"] += event.pos[1] - self.initY
+        self.initX = event.pos[0]
+        self.initY = event.pos[1]
+        config.map_change = True
+
+    def set_init(self, event):
+        self.initX = event.pos[0]
+        self.initY = event.pos[1]
+            
+    def create_menu(self):
         for i, key in enumerate(self.player_button_menu.keys()):
             if i >= config.num_players:
                 break
@@ -756,9 +911,6 @@ class UnitMenu:
     
     def is_clicked(self):
         mouse_x, mouse_y = pygame.mouse.get_pos()
-        for key in self.button_menu.keys():
-            if self.button_menu[key].collidepoint(mouse_x, mouse_y):
-                return True
         for i, key in enumerate(self.player_button_menu.keys()):
             if i >= config.num_players:
                 break
@@ -772,16 +924,6 @@ class UnitMenu:
 
     def button_clicked(self):
         mouse_x, mouse_y = pygame.mouse.get_pos()
-        for key in self.button_menu.keys():
-            if self.button_menu[key].collidepoint(mouse_x, mouse_y):
-                if key == "Back":
-                    self.main_menu.active_menu = self.parent_menu
-                    self.active_button = None
-                    self.active_player = self.player_buttons[0]
-                elif self.active_button == key:
-                    self.active_button = None
-                else:
-                    self.active_button = key  
         for i, key in enumerate(self.player_button_menu.keys()):
             if i >= config.num_players:
                 break
@@ -790,52 +932,46 @@ class UnitMenu:
                     self.active_player = key
         for key in self.adjust_num_players_menu.keys():
             if self.adjust_num_players_menu[key].collidepoint(mouse_x, mouse_y):
-                if key == "+" and config.num_players < 4:
+                if key == "+" and config.num_players < config.max_players:
                     config.num_players += 1
                     self.game_state.players.add_player()
 
-                    if config.num_players == 4:
+                    if config.num_players == config.max_players:
                         del self.adjust_num_players_menu["+"]
-                        self.adjust_num_players_menu["-"] = self.player_button_menu["Player 5"]
+                        if self.player_button_menu.get("Player " + str(config.num_players + 1), None) == None:
+                            self.add_player_rect("Player " + str(config.num_players + 1), config.num_players)
+                            self.player_buttons.append("Player " + str(config.num_players + 1))
+                        self.adjust_num_players_menu["-"] = self.player_button_menu["Player " + str(config.num_players + 1)]
                     else:
+                        if self.player_button_menu.get("Player " + str(config.num_players + 1), None) == None:
+                            self.add_player_rect("Player " + str(config.num_players + 1), config.num_players)
+                            self.player_buttons.append("Player " + str(config.num_players + 1))
+                        if self.player_button_menu.get("Player " + str(config.num_players + 2), None) == None:
+                            self.add_player_rect("Player " + str(config.num_players + 2), config.num_players + 1)
+                            self.player_buttons.append("Player " + str(config.num_players + 2))
+
                         self.adjust_num_players_menu["+"] = self.player_button_menu["Player " + str(config.num_players + 1)]
                         self.adjust_num_players_menu["-"] = self.player_button_menu["Player " + str(config.num_players + 2)]
 
-                elif key == "-" and config.num_players > 2:
+                elif key == "-" and config.num_players > config.min_players:
                     config.num_players -= 1
                     self.game_state.players.remove_player()
-                    if config.num_players == 2:
+                    if config.num_players == config.min_players:
                         del self.adjust_num_players_menu["-"]
-                        self.adjust_num_players_menu["+"] = self.player_button_menu["Player 3"]
+                        self.adjust_num_players_menu["+"] = self.player_button_menu["Player " + str(config.min_players + 1)]
                     else:
                         self.adjust_num_players_menu["+"] = self.player_button_menu["Player " + str(config.num_players + 1)]
                         self.adjust_num_players_menu["-"] = self.player_button_menu["Player " + str(config.num_players + 2)]
                 self.active_player = self.player_buttons[0]
                 return True
             
+    def add_player_rect(self, name, i):
+        x = self.padding + (i + 1) * (self.button_width + self.padding)
+        y = self.padding
+        self.player_button_menu[name] = pygame.Rect(x, y, self.button_width, self.button_height)
+    
     def tile_hover(self):
         pass
-
-    def interaction(self):
-        currPlayer = self.player_buttons.index(self.active_player)
-        mouse_x, mouse_y = pygame.mouse.get_pos()
-        x, y, z = utils.click_to_hex(mouse_x, mouse_y)
-        column, row = utils.hex_coord_to_coord(x, y, z)
-        tile = self.game_state.map.get_tile(row, column)
-        if tile != None:
-            if self.active_button == "Remove":
-                if tile.unit_id is not None:
-                    self.game_state.players.get_player(self.game_state.units.get_unit(tile.unit_id).owner_id).remove_unit(tile.unit_id)
-                    self.game_state.units.remove_unit(tile.unit_id)
-            elif tile.terrain != "Mountain":
-                if tile.unit_id is not None and (currPlayer != self.game_state.units.get_unit(tile.unit_id).owner_id or self.game_state.units.get_unit(tile.unit_id).type != self.active_button):
-                    self.game_state.players.get_player(self.game_state.units.get_unit(tile.unit_id).owner_id).remove_unit(tile.unit_id)
-                    self.game_state.units.remove_unit(tile.unit_id)
-                    self.game_state.players.get_player(currPlayer).place_unit(self.active_button, x, y, z)
-                elif tile.unit_id is None:
-                    self.game_state.players.get_player(currPlayer).place_unit(self.active_button, x, y, z)
-        return
-    
 
 class MapGenerationMenu:
     def __init__(self, screen, main_menu, parent_menu, game_state):
@@ -1157,7 +1293,340 @@ class MapGenerationMenu:
         x, y, z = utils.click_to_hex(mouse_x, mouse_y)
         column, row = utils.hex_coord_to_coord(x, y, z)
         tile = self.game_state.map.get_tile(row, column)
+        return
+    
+class UnitGenerationMenu:
+    def __init__(self, screen, main_menu, parent_menu, game_state, player_amount_menu):
+        self.screen = screen
+        self.main_menu = main_menu
+        self.parent_menu = parent_menu
+        self.game_state = game_state
+        self.player_amount_menu = player_amount_menu
         
+        self.initX = 0
+        self.initY = 0
+        self.clicked = False
+        self.dragging = False
+
+        self.clicked_button = False
+        self.player_amount_menu_clicked = False
+
+        self.active_button = None
+        self.button_width = 100
+        self.button_height = 40
+        self.padding = 10
+
+        self.clicked_slider = False
+        self.active_slider = None
+        self.slider_curr_value = -1
+        self.slider_text_height = 25
+        self.slider_length = self.button_width
+        self.slider_height = 5
+        self.knob_radius = 10
+
+        self.clicked_text = False
+        self.active_text = None
+        self.text_width = self.button_width
+        self.text_height = 40
+
+
+        self.valid_hover = True
+
+        interactables = ["Back", "Melee", "Ranged", "Cavalry", "Generate"]
+        interactables_config = [None, "Melee", "Ranged", "Cavalry", None]
+
+        buttons = ["Back", "Generate"]
+        sliders = ["Melee", "Ranged", "Cavalry"]
+        text_boxes = []
+        
+        self.button_menu = {}
+        self.slider_menu = {}
+        self.text_box_menu = {}
+        current_y = self.padding
+        for i, name in enumerate(interactables):
+            if name in buttons:
+                x = WIDTH - self.button_width - self.padding
+                y = current_y
+                current_y += self.button_height + self.padding
+                self.button_menu[name] = pygame.Rect(x, y, self.button_width, self.button_height)
+            elif name in sliders:
+                x = WIDTH - self.slider_length - self.padding
+                y = current_y
+                current_y += self.slider_text_height + self.slider_height + 2 * self.padding
+                self.slider_menu[name] = [x, y, interactables_config[i]]
+            elif name in text_boxes:
+                x = WIDTH - self.slider_length - self.padding
+                y = current_y
+                current_y += self.slider_text_height + self.slider_height + 2 * self.padding
+                self.text_box_menu[name] = [Interact.TextBox(self.screen, x, y, self.text_width, self.text_height, name), interactables_config[i]]
+
+    
+    def left_click(self, event):
+        if self.active_text != None:
+            MapConfig[self.text_box_menu[self.active_text][1]] = self.text_box_menu[self.active_text][0].text
+            self.text_box_menu[self.active_text][0].deactivate()
+            self.active_text = None
+        self.clicked = True
+        if self.is_clicked():
+            self.clicked_button = True
+        elif self.is_clicked_slider():
+            self.clicked_slider = True
+        elif self.is_clicked_text():
+            self.clicked_text = True
+        elif self.player_amount_menu.is_clicked():
+            self.player_amount_menu_clicked = True
+        self.set_init(event)
+    
+    def left_click_up(self):
+        mouse_x, mouse_y = pygame.mouse.get_pos()
+
+        if self.clicked_button:
+            self.button_clicked()
+        elif self.clicked_slider:
+            self.slider_clicked()   
+        elif self.clicked_text:
+            self.text_clicked()
+        elif self.player_amount_menu.is_clicked():
+            self.player_amount_menu.button_clicked()
+        elif self.active_button != None:
+            self.interaction()
+
+        self.dragging = False
+        self.clicked = False
+        self.clicked_button = False
+        self.clicked_slider = False
+        self.player_amount_menu_clicked = False
+        self.active_slider = None
+        self.slider_curr_value = -1
+        self.valid_hover = True
+    
+    def right_click(self, event):
+        return
+    
+    def right_click_up(self, event):
+        return
+    
+    def key_down(self, event):
+        if self.active_text:
+            text_box = self.text_box_menu[self.active_text][0]
+            if text_box.edit(event) == False:
+                MapConfig[self.text_box_menu[self.active_text][1]] = text_box.text
+                self.active_text = None
+                return
+        return
+    
+    def mouse_move(self, event):
+        if self.clicked and not self.clicked_button and not self.clicked_slider and not self.player_amount_menu_clicked:
+            if self.active_button:
+                self.interaction()
+            else:
+                self.valid_hover = False
+                self.move_map(event)
+        if not self.clicked and self.active_button is not None:
+            self.tile_hover()
+        if self.clicked_slider:
+            self.update_slider()
+        
+         
+    def zoom(self, event):
+        if event.y > 0 and config.hex["radius"] < config.hex["max_radius"]:
+            config.hex["radius"] += 5
+            config.hex["inner_radius"] = config.hex["radius"] * 0.866025404
+            config.map_settings["offsetX"] -= ZOOM_SCALE * COLUMNS
+            config.map_settings["offsetY"] += ZOOM_SCALE * ROWS
+        elif event.y < 0 and config.hex["radius"] > config.hex["min_radius"]:
+            config.hex["radius"] -= 5
+            config.hex["inner_radius"] = config.hex["radius"] * 0.866025404
+            config.map_settings["offsetX"] += ZOOM_SCALE * COLUMNS
+            config.map_settings["offsetY"] -= ZOOM_SCALE * ROWS
+        config.map_change = True
+
+    def move_map(self, event):
+        self.dragging = True
+        config.map_settings["offsetX"] += event.pos[0] - self.initX
+        config.map_settings["offsetY"] += event.pos[1] - self.initY
+        self.initX = event.pos[0]
+        self.initY = event.pos[1]
+        config.map_change = True
+
+    def set_init(self, event):
+        self.initX = event.pos[0]
+        self.initY = event.pos[1]
+    
+    def create_menu(self):
+        for key in self.button_menu.keys():
+            self.draw_button(key, self.button_menu[key], self.active_button == key)
+        for key in self.slider_menu.keys():
+            slider = self.slider_menu[key]
+            self.draw_slider(slider, key, self.active_slider == key)
+        for key in self.text_box_menu.keys():
+            self.text_box_menu[key][0].draw(self.text_box_menu[key][0].is_over())
+        self.player_amount_menu.create_menu()
+
+    def draw_button(self, text, rect, is_hovered):
+        font = pygame.font.SysFont(None, 24)
+        pygame.draw.rect(self.screen, DARK_GRAY if self.is_hovered(rect) or is_hovered else GRAY, rect)
+        pygame.draw.rect(self.screen, BLACK, rect, 2)  # Border
+        text_surf = font.render(text, True, BLACK)
+        text_rect = text_surf.get_rect(center=rect.center)
+        self.screen.blit(text_surf, text_rect)
+
+    def draw_slider(self, slider, text, is_hovered):
+        currPlayer = self.player_amount_menu.player_buttons.index(self.player_amount_menu.active_player)
+        x = slider[0]
+        y = slider[1]
+        value = UnitGenConfig.PlayerUnits[currPlayer][slider[2]]
+        min_val = UnitGenConfig.UnitSliderConfig[slider[2]]["min_val"]
+        max_val = UnitGenConfig.UnitSliderConfig[slider[2]]["max_val"]
+        font = pygame.font.SysFont(None, 24)
+        text_surf = font.render(text, True, BLACK)
+        self.screen.blit(text_surf, (x, y))
+
+        slider_y = y + self.slider_text_height + self.padding
+
+        pygame.draw.line(
+            self.screen,
+            (200, 200, 200),
+            (x, slider_y),                           # start point
+            (x + self.slider_length, y + self.slider_text_height + self.padding),      # end point
+            4
+        )
+        if text == self.active_slider:
+            slider_x = x + self.slider_length / (max_val - min_val) * (self.slider_curr_value - min_val)
+            text_surf = font.render(str(self.slider_curr_value), True, BLACK)
+            self.screen.blit(text_surf, (x - self.padding * 2, slider_y - text_surf.get_size()[1]/2))
+        else:
+            slider_x = x + self.slider_length / (max_val - min_val) * (value - min_val)
+            text_surf = font.render(str(value), True, BLACK)
+            self.screen.blit(text_surf, (x - self.padding * 2, slider_y - text_surf.get_size()[1]/2))
+        pygame.draw.circle(self.screen, DARK_GRAY if self.is_hovered_slider(slider_x, slider_y) or is_hovered else GRAY, (slider_x, slider_y), self.knob_radius)
+        pygame.draw.circle(self.screen, BLACK, (slider_x, slider_y), self.knob_radius, 2)
+
+
+
+
+    
+    def is_hovered(self, shape):
+        if not self.valid_hover:
+            return False
+        mouse_x, mouse_y = pygame.mouse.get_pos()
+        if shape.collidepoint(mouse_x, mouse_y):
+            return True
+        return False
+    
+    def is_hovered_slider(self, x, y):
+        if not self.valid_hover:
+            return False
+        mouse_x, mouse_y = pygame.mouse.get_pos()
+        dx = mouse_x - x
+        dy = mouse_y - y
+        distance_squared = dx * dx + dy * dy
+        return distance_squared <= self.knob_radius ** 2
+    
+    def is_hovered_text(self):
+        if not self.valid_hover:
+            return False
+        for key in self.text_box_menu.keys():
+            text_box = self.text_box_menu[key][0]
+            return text_box.is_hovered()
+    
+    def is_clicked(self):
+        mouse_x, mouse_y = pygame.mouse.get_pos()
+        for key in self.button_menu.keys():
+            if self.button_menu[key].collidepoint(mouse_x, mouse_y):
+                return True
+        return False
+    
+    def is_clicked_slider(self):
+        mouse_x, mouse_y = pygame.mouse.get_pos()
+        currPlayer = self.player_amount_menu.player_buttons.index(self.player_amount_menu.active_player)
+
+        for key in self.slider_menu.keys():
+            slider = self.slider_menu[key]
+            x = slider[0]
+            y = slider[1]
+            value = UnitGenConfig.PlayerUnits[currPlayer][slider[2]]
+            min_val = UnitGenConfig.UnitSliderConfig[slider[2]]["min_val"]
+            max_val = UnitGenConfig.UnitSliderConfig[slider[2]]["max_val"]
+            slider_x = x + self.slider_length / (max_val - min_val) * (value - min_val)
+            slider_y = y + self.slider_text_height + self.padding
+
+            dx = mouse_x - slider_x
+            dy = mouse_y - slider_y
+            distance_squared = dx * dx + dy * dy
+            if distance_squared <= self.knob_radius ** 2:
+                self.active_slider = key
+                self.slider_curr_value = value
+                return True
+
+    def is_clicked_text(self):
+        for key in self.text_box_menu.keys():
+            text_box = self.text_box_menu[key][0]
+            return text_box.is_over()
+    
+    def update_slider(self):
+        mouse_x, mouse_y = pygame.mouse.get_pos()
+        slider = self.slider_menu[self.active_slider]
+        x = slider[0]
+        min_val = UnitGenConfig.UnitSliderConfig[slider[2]]["min_val"]
+        max_val = UnitGenConfig.UnitSliderConfig[slider[2]]["max_val"]
+        relative_pos = mouse_x - x
+        multiple = self.slider_length / (max_val - min_val)
+        closest_value = round(relative_pos / multiple) + min_val
+        print(closest_value)
+        self.slider_curr_value = max(min_val, min(closest_value, max_val))
+
+
+
+    def tile_hover(self):
+        pass
+
+    def button_clicked(self):
+        mouse_x, mouse_y = pygame.mouse.get_pos()
+        for key in self.button_menu.keys():
+            if self.button_menu[key].collidepoint(mouse_x, mouse_y):
+                if key == "Back":
+                    self.main_menu.active_menu = self.parent_menu
+                    self.active_button = None
+                    self.active_slider = None
+                    self.active_text = None
+                    break
+                elif key == "Generate":
+                    for key in self.game_state.map.tiles.keys():
+                        tile = self.game_state.map.tiles[key]
+                        if tile.unit_id != None:
+                            self.game_state.players.get_player(self.game_state.units.get_unit(tile.unit_id).owner_id).remove_unit(tile.unit_id)
+                            self.game_state.units.remove_unit(tile.unit_id)
+                    self.game_state.map.randomize_map()
+                    unit_generator = UnitGenerator(self.game_state)
+                    unit_generator.choose_spawn_locations()
+                    break
+                elif self.active_button == key:
+                    self.active_button = None
+                    break
+                else:
+                    self.active_button = key
+                    break
+
+
+    def slider_clicked(self):
+        currPlayer = self.player_amount_menu.player_buttons.index(self.player_amount_menu.active_player)
+
+        UnitGenConfig.PlayerUnits[currPlayer][self.slider_menu[self.active_slider][2]] = self.slider_curr_value
+
+    def text_clicked(self):
+        for key in self.text_box_menu.keys():
+            text_box = self.text_box_menu[key][0]
+            if text_box.is_over():
+                self.active_text = key
+                text_box.activate()
+                return
+
+    def interaction(self):
+        mouse_x, mouse_y = pygame.mouse.get_pos()
+        x, y, z = utils.click_to_hex(mouse_x, mouse_y)
+        column, row = utils.hex_coord_to_coord(x, y, z)
+        tile = self.game_state.map.get_tile(row, column)
         return
 
 class UnitControlMenu:
