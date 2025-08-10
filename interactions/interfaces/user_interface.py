@@ -1597,9 +1597,8 @@ class UnitGenerationMenu:
                         if tile.unit_id != None:
                             self.game_state.players.get_player(self.game_state.units.get_unit(tile.unit_id).owner_id).remove_unit(tile.unit_id)
                             self.game_state.units.remove_unit(tile.unit_id)
-                    self.game_state.map.randomize_map()
                     unit_generator = UnitGenerator(self.game_state)
-                    unit_generator.choose_spawn_locations()
+                    unit_generator.generate_units()
                     break
                 elif self.active_button == key:
                     self.active_button = None

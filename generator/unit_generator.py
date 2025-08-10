@@ -9,6 +9,17 @@ class UnitGenerator:
     def __init__(self, game_state):
         self.game_state = game_state
         self.ROWS, self.COLUMNS = config.map_settings["tile_height"], config.map_settings["tile_width"]
+        self.player_tiles = {}
+
+    def generate_units(self):
+        self.choose_spawn_locations()
+        for key in self.player_tiles.keys():
+            cluster = self.player_tiles[key]
+            spawn_tile = cluster[0][0]
+            print(spawn_tile)
+
+
+            
 
 
     def choose_spawn_locations(self):
@@ -78,8 +89,8 @@ class UnitGenerator:
                 queue.append((neighbor_coord, range - 1))
         return reachable
 
-    def spawn_units(self):
+    def BFS_spawn(self):
+        #prioritize tiles by score.
         pass
-
 
     #def score_tile(self):
