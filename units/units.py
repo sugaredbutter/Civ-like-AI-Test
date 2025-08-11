@@ -19,7 +19,7 @@ class Unit:
         self.attack = units_config.units[type]["attack"]
         self.defense = units_config.units[type]["defense"]
         self.range = units_config.units[type].get("range", None)
-        self.health = random.randint(1, 100)
+        self.health = health
         self.orig_health = self.health
         self.combat_type = units_config.units[type]["combat_type"]
 
@@ -84,6 +84,8 @@ class Unit:
         self.turns_fortified = 0
         self.skip = False
         self.alive = True
+        self.AI_action = True
+        self.AI_last_move = None
 
         
     def move_to(self, destination):
@@ -156,7 +158,7 @@ class Unit:
             self.turns_fortified += 1
         self.remaining_movement = self.movement
         self.AI_action = True
-            
+        self.AI_last_move = None
 
     
     def get_visibility(self):

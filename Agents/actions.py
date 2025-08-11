@@ -7,6 +7,7 @@ from units.units_utils import UnitMoveScoring
 import utils as utils
 import Scoring.score as scoring
 import math
+import sys
 class Actions:
 
     #Culmination of actions
@@ -17,6 +18,8 @@ class Actions:
         legal_actions = []
         for unit_id in player.units:
             unit = game_state.units.get_unit(unit_id)
+            print(f"Finding actions for {unit_id} at {unit.coord}")
+
             game_state.legal_moves_dict = {}
             action = UnitAction("Move", unit, game_state, unit.coord)
             game_state.legal_moves_dict[unit.coord] = action
@@ -90,7 +93,7 @@ class UnitLegalActions:
             visibile_tiles = current_player.visible_tiles
 
             #Find next tile for unit to move to
-            self.unit.path = full_path
+            #self.unit.path = full_path
             movement_left = self.unit.remaining_movement
             next_step_tile = self.unit.coord
             if self.unit.ZOC_locked:
@@ -122,7 +125,14 @@ class UnitLegalActions:
                     break
                 else:
                     movement_left -= next_tile_movement
-            self.game_state.legal_moves_dict[destination].score += self.game_state.legal_moves_dict[next_step_tile].score
+            try:
+                self.game_state.legal_moves_dict[destination].score += self.game_state.legal_moves_dict[next_step_tile].score
+            except:
+                print("Destination", destination)
+                print("Next Step", next_step_tile)
+                print("Path", full_path)
+                sys.exit(1)
+
         
         return legal_moves
     

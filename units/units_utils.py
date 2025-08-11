@@ -124,9 +124,10 @@ class UnitUtils:
             # Calculate movement left
             if current_coord == unit.coord:
                 movement_remaining = unit.remaining_movement
+                current_distance += unit.movement - unit.remaining_movement
             else:
                 movement_remaining = (unit.movement - current_distance) % unit.movement
-
+            print(current_coord, movement_remaining)
             # Is tile in ZOC
             enter_ZOC = UnitUtils.zone_of_control(unit, current_coord, game_state)
 
@@ -175,7 +176,6 @@ class UnitUtils:
                     if current_tile.unit_id != None and tile.unit_id != None and game_state.units.get_unit(tile.unit_id).owner_id != unit.owner_id and current_coord != unit.coord:
                         continue
                     temp_movement_remaining = movement_remaining
-                    
                     #Allow unit to pass thru other units of same owner but not land on same tile
                     if tile.get_coords() in visibile_tiles:
                         if additional_cost > 0:
@@ -259,7 +259,6 @@ class UnitUtils:
         return reachable
     
 class UnitMove:
-
     # Next tile in pre-calculated path is available. Important when unit has more movement than visibility and path goes thru impassable terrain or opposing units
     def valid_tile_move(unit, next_tile, game_state):
 
@@ -897,6 +896,8 @@ class UnitScoringUtils:
             # Is tile in ZOC
             if current_tile_coord == tile_coord:
                 movement_remaining = unit.remaining_movement
+                current_distance += unit.movement - unit.remaining_movement
+
             else:
                 movement_remaining = (unit.movement - current_distance) % unit.movement
             enter_ZOC = UnitUtils.zone_of_control(unit, current_tile_coord, game_state)
