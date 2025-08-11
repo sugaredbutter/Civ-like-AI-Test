@@ -10,8 +10,8 @@ map_settings = {
     "offsetY": 0,
     "tile_width": 12,
     "tile_height": 12,
-    "pixel_width": 1920,
-    "pixel_height": 1080
+    "pixel_width": 1200,
+    "pixel_height": 750
 }
 health_bar = {
     "width_ratio": .7,

@@ -290,6 +290,13 @@ class UnitHandler:
             return True
         return False
     
+    def remove_all_units(self):
+        for unit in self.units.values():
+            unit.remove()
+        self.units.clear()
+        self.id_counter = 0
+        
+    
     def end_game_reset(self):
         for unit in self.units.values():
             unit.reset_location()

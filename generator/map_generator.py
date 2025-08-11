@@ -17,7 +17,6 @@ class MapGenerator:
 
     def generate_map(self, width, height):
         seed = map_generator_config.MapConfig["seed"]
-        print("Seed", seed)
         self.rng = random.Random(seed) if seed != '' else random.Random()
         q_elevation_offset = self.rng.randint(-10000, 10000)
         r_elevation_offset = self.rng.randint(-10000, 10000)
@@ -348,7 +347,6 @@ class MapGenerator:
         if len(localized_areas) > 1:
             for index in range(1, len(localized_areas)):
                 path = self.A_star_connect_areas(start_coord, localized_areas[index][0])
-                print(path)
                 for path_tile_coord in path:
                     tile = self.tiles[path_tile_coord]
                     if tile.movement == -1:

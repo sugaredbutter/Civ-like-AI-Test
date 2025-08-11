@@ -1241,7 +1241,6 @@ class MapGenerationMenu:
         relative_pos = mouse_x - x
         multiple = self.slider_length / (max_val - min_val)
         closest_value = round(relative_pos / multiple) + min_val
-        print(closest_value)
         self.slider_curr_value = max(min_val, min(closest_value, max_val))
 
 
@@ -1573,7 +1572,6 @@ class UnitGenerationMenu:
         relative_pos = mouse_x - x
         multiple = self.slider_length / (max_val - min_val)
         closest_value = round(relative_pos / multiple) + min_val
-        print(closest_value)
         self.slider_curr_value = max(min_val, min(closest_value, max_val))
 
 

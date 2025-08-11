@@ -1,22 +1,37 @@
 import config as config
 import utils as utils
+import generator.unit_generator_config as unit_generator_config
+import generator.map_generator_config as map_generator_config
+
+import random
 from sklearn.cluster import KMeans
 from collections import deque
+import heapq
 
 
 
 class UnitGenerator:
     def __init__(self, game_state):
+        seed = map_generator_config.MapConfig["seed"]
+        self.rng = random.Random(seed) if seed != '' else random.Random()
         self.game_state = game_state
         self.ROWS, self.COLUMNS = config.map_settings["tile_height"], config.map_settings["tile_width"]
         self.player_tiles = {}
+        self.tile_scores = {}
 
     def generate_units(self):
+        self.game_state.units.remove_all_units()
         self.choose_spawn_locations()
         for key in self.player_tiles.keys():
+            num_units = unit_generator_config.PlayerUnits[key]["Melee"] + unit_generator_config.PlayerUnits[key]["Ranged"] + unit_generator_config.PlayerUnits[key]["Cavalry"]
             cluster = self.player_tiles[key]
             spawn_tile = cluster[0][0]
-            print(spawn_tile)
+            tiles = self.BFS_spawn(spawn_tile, num_units, key)
+            units = ["Melee"] * unit_generator_config.PlayerUnits[key]["Melee"] + ["Ranged"] * unit_generator_config.PlayerUnits[key]["Ranged"] + ["Cavalry"] * unit_generator_config.PlayerUnits[key]["Cavalry"]
+            self.rng.shuffle(units)
+            for i, tile in enumerate(tiles):
+                self.game_state.players.get_player(key).place_unit(units[i], *tile)
+
 
 
             
@@ -58,6 +73,7 @@ class UnitGenerator:
                 spawnable_tiles = self.BFS_area(tile, 2)
                 score = len(spawnable_tiles) * (distance_to_enemy_tile / (distance_to_enemy_tile + 1))
                 player_tiles[cluster][player_index] = [tile, score]
+                self.tile_scores[tile] = score
         for cluster in player_tiles.keys():
             player_tiles[cluster].sort(reverse = True, key = lambda x: x[1])
         self.player_tiles = player_tiles
@@ -89,8 +105,39 @@ class UnitGenerator:
                 queue.append((neighbor_coord, range - 1))
         return reachable
 
-    def BFS_spawn(self):
+    def BFS_spawn(self, tile_coord, num_units, player):
         #prioritize tiles by score.
-        pass
+        to_visit = []
+        visited = []
+        spawnable_tiles = []
+        heapq.heappush(to_visit, (0, tile_coord))
+        
+        while to_visit and len(spawnable_tiles) < num_units:
+            # Predicted Score, Distance to tile, Current Coord, Parent's Coord
+            current_score, current_coord = heapq.heappop(to_visit)
+
+            # If tile has been reached in a more efficient manner already, then ignore and continue
+            if current_coord in visited:
+                continue
+            
+            visited.append(current_coord)
+            if [current_coord, -current_score] in self.player_tiles[player]:
+                spawnable_tiles.append(current_coord)
+                if len(spawnable_tiles) >= num_units:
+                    break
+            
+            # Neighboring tiles
+            for neighbor_direction in utils.CUBE_DIRECTIONS_DICT.keys():
+                neighbor = utils.CUBE_DIRECTIONS_DICT[neighbor_direction]
+                neighbor_coord = tuple(x + y for x, y in zip(current_coord, neighbor))
+                tile = self.game_state.map.get_tile_hex(*neighbor_coord)
+                # Tile doesn't exist
+                if tile is None or tile.movement == -1:
+                    continue
+                
+                
+                heapq.heappush(to_visit, (-self.tile_scores[neighbor_coord], neighbor_coord))
+
+        return spawnable_tiles
 
     #def score_tile(self):
