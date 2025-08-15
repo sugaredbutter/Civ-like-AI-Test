@@ -18,7 +18,7 @@ class Actions:
         legal_actions = []
         for unit_id in player.active_units:
             unit = game_state.units.get_unit(unit_id)
-            print(f"Finding actions for {unit_id} at {unit.coord}")
+            #print(f"Finding actions for {unit_id} at {unit.coord}")
 
             game_state.legal_moves_dict = {}
             action = UnitAction("Move", unit, game_state, unit.coord, find_score)
@@ -177,7 +177,6 @@ class UnitAction:
         self.unit = unit
         self.score = 0
         self.find_score = find_score
-        print(find_score)
         self.game_state = game_state
         self.target = target
         self.next_tile = None

@@ -28,7 +28,8 @@ class GameTransformer(nn.Module):
         cross_layer = nn.TransformerEncoderLayer(d_model=embed_dim, nhead=nhead)
         self.action_encoder = nn.TransformerEncoder(cross_layer, num_layers=num_layers)
         
-        self.action_head = nn.Linear(embed_dim, 1)  # score for each action
+        self.action_head = nn.Linear(embed_dim, 1)   # score for each action
+        self.value_head = nn.Linear(embed_dim, 1)    # value estimate for the map
 
     def forward(self, map_feats, action_feats):
         """
@@ -52,14 +53,17 @@ class GameTransformer(nn.Module):
 
         # Score each action
         action_scores = self.action_head(action_context).squeeze(-1)  # (num_actions,)
-        return action_scores
+        value = self.value_head(map_summary)  # (1, 1)
+
+        return action_scores, value
     
 
 
 def train_model():
     num_games = 100
     env_state = MLEnv()
-    tokens, attn_mask, candidates, action_mask = tokenize_game(env_state, 0)
+    player_id = env_state.current_player_id  # Or similar
+    tokens, attn_mask, candidates, action_mask = tokenize_game(env_state, player_id)
     tile_tokens = [t for t in tokens if t["token_type"] == 0]
     action_tokens = [t for t in tokens if t["token_type"] == 1]
     tile_dim = len(token_to_vector(tile_tokens[0]))
@@ -78,22 +82,26 @@ def train_model():
         ep_values = []
 
         while not env_state.game_win():
-            print('hi')
+            print('Next loop')
             player_id = env_state.current_player_id  # Or similar
 
             # Encode game state
             tokens, attn_mask, candidates, action_mask = tokenize_game(env_state, player_id)
-
-            tokens = torch.tensor(tokens).unsqueeze(0)  # [1, seq_len, feat_dim]
-            attn_mask = torch.tensor(attn_mask).unsqueeze(0)
-            action_mask = torch.tensor(action_mask).unsqueeze(0)
-
+                        
             # Forward pass
-            logits, value = model(tokens, attn_mask, candidates, action_mask)
+            tile_tokens = [t for t in tokens if t["token_type"] == 0]
+            action_tokens = [t for t in tokens if t["token_type"] == 1]
+            print("# Tile tokens:", len(tile_tokens), "# Action tokens:", len(action_tokens))
+            map_feats = torch.tensor([token_to_vector(t) for t in tile_tokens], dtype=torch.float32)
+            action_feats = torch.tensor([token_to_vector(t) for t in action_tokens], dtype=torch.float32)
+            print("Before")
+            logits, value = model(map_feats, action_feats)
+            print("After")
 
             # Mask invalid actions before softmax
             masked_logits = logits.clone()
-            masked_logits[action_mask == 0] = -1e9
+            action_mask = torch.tensor(action_mask, dtype=torch.bool)
+            masked_logits[~action_mask] = -1e9
 
             probs = torch.softmax(masked_logits, dim=-1)
             dist = torch.distributions.Categorical(probs)
@@ -101,7 +109,8 @@ def train_model():
 
             # Step environment
             chosen_action = candidates[action_idx.item()]
-            next_state, reward, done, _ = env_state.step(chosen_action)
+            print(tokens[chosen_action])
+            next_state, reward, done, _ = env_state.next_action(tokens[chosen_action])
 
             # Store experience
             ep_rewards.append(reward)
@@ -146,7 +155,6 @@ def tokenize_game(env_state, player_id):
 
     for row in range(ROWS): 
         for column in range(COLUMNS):     
-            print(row, column)
             x, y, z = utils.coord_to_hex_coord(row, column)
             tile = env_state.map.tiles[(x, y, z)]
             revealed = 1 if (x, y, z) in revealed_tiles else 0
@@ -198,6 +206,8 @@ def tokenize_game(env_state, player_id):
                         target_column, target_row = utils.hex_coord_to_coord(*action.target)
                         if action.next_tile != None:
                             destination_column, destination_row = utils.hex_coord_to_coord(*action.next_tile)
+                        else:
+                            destination_column, destination_row = target_column, target_row
                         axial_path = []
                         for coord in action.path:
                             axial_path.append(utils.hex_coord_to_coord(*coord))
@@ -238,7 +248,7 @@ def tokenize_game(env_state, player_id):
                         })
                     elif action.type == "Attack":
                         action_id = 2
-                        friendly_tile = action.unit.coord
+                        friendly_tile = env_state.game_state.map.get_tile_hex(*action.unit.coord)
                         friendly_unit = action.unit
                         enemy_tile = env_state.game_state.map.get_tile_hex(*action.target)
                         enemy_unit = env_state.game_state.units.get_unit(enemy_tile.unit_id)
@@ -306,7 +316,7 @@ def tokenize_game(env_state, player_id):
                         })
                     elif action.type == "Fortify":
                         action_id = 3
-                        target_column, target_row = utils.hex_coord_to_coord(*action.target)
+                        #target_column, target_row = utils.hex_coord_to_coord(*action.target)
                         tokens.append({
                             "token_type": 1,     #ACTION
                             "action_type": action_id,
@@ -324,9 +334,9 @@ def tokenize_game(env_state, player_id):
                             "prob_enemy_killed": 0.0,
                         })
     attn_mask = [1] * len(tokens)
-    action_mask = [0] * len(tokens)
-    for i in action_tokens_indexes:
-        action_mask[i] = 1
+    action_mask = [0] * len(action_tokens_indexes)
+    #for i in action_tokens_indexes:
+    #    action_mask[i] = 1
 
     return tokens, attn_mask, action_tokens_indexes, action_mask
 
@@ -336,22 +346,21 @@ def tokenize_game(env_state, player_id):
             # Unit id? (need to connect this so it knows what unit is completing action)
 
 def token_to_vector(token):
-    """
-    Converts a single token dict (tile or action) into a numeric vector.
-    """
-    if token["token_type"] == 0:  # TILE/UNIT
-        vec = token["feat_vec"] + [
+    if token["token_type"] == 0:  # TILE
+        return [
+            0,  # token_type: TILE
             token.get("terrain_type", 0),
             token.get("feature_type", 0),
-            token.get("type", 0),
-            token.get("health", 0.0),
-            token.get("total_movement", 0.0),
-            token.get("movement_left", 0.0),
-            token.get("fortified", 0),
-            token.get("owner", 0)
+            token.get("owner", -1),
+            token.get("city_present", 0),
+            token.get("unit_present", 0),
+            token.get("coord_x", 0),
+            token.get("coord_y", 0),
+            0, 0, 0, 0, 0, 0, 0, 0
         ]
     elif token["token_type"] == 1:  # ACTION
-        vec = [
+        return [
+            1,  # token_type: ACTION
             token.get("action_type", 0),
             token.get("combat_type", 0),
             token.get("coord_x", 0),
@@ -360,11 +369,12 @@ def token_to_vector(token):
             token.get("target_y", 0),
             token.get("dest_x", 0),
             token.get("dest_y", 0),
-            token.get("damage_dealt", 0.0),
-            token.get("damage_taken", 0.0),
-            int(token.get("prob_unit_killed", False)),
-            int(token.get("prob_enemy_killed", False)),
-            len(token.get("path", []))  # optional: could also flatten path coords if needed
+            token.get("damage_dealt", 0),
+            token.get("damage_taken", 0),
+            float(token.get("prob_unit_killed", 0)),
+            float(token.get("prob_enemy_killed", 0)),
+            0, 0, 0
         ]
-    return vec
+    else:
+        raise ValueError(f"Unknown token type: {token['token_type']}")
 train_model()
