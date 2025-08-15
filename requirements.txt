@@ -1,3 +1,4 @@
 noise
 pygame
 scikit-learn
+torch

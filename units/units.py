@@ -143,7 +143,8 @@ class Unit:
         self.ZOC_locked = False
         if self.fortified:
             health_healed = 5 * (self.remaining_movement / self.movement) + min(10, self.turns_fortified * 5)
-            self.visual_effects.add_heal(health_healed, self.coord)
+            if self.visual_effects != None:
+                self.visual_effects.add_heal(health_healed, self.coord)
             self.health = min(self.health + health_healed, 100)
             if self.health == 100 and self.fortify_and_heal:
                 self.fortify_and_heal = False
@@ -200,11 +201,14 @@ class Unit:
             damage_inflicted, damage_taken = CombatManager.estimate_combat(self, enemy_unit, current_tile, enemy_tile, "ranged")
             self_CS, enemy_CS = CombatManager.get_combat_strength(self, enemy_unit, current_tile, enemy_tile, "ranged")
             self_CS_bonus, enemy_CS_bonus = CombatManager.get_combat_bonus(self, enemy_unit, current_tile, enemy_tile, "ranged")
+            #print(CombatManager.combat_death_probability(self, enemy_unit, current_tile, enemy_tile, "ranged"))
             return(damage_inflicted, 0, self, enemy_unit, self_CS, enemy_CS, self_CS_bonus, enemy_CS_bonus)
         else:
             damage_inflicted, damage_taken = CombatManager.estimate_combat(self, enemy_unit, current_tile, enemy_tile, "melee")
             self_CS, enemy_CS = CombatManager.get_combat_strength(self, enemy_unit, current_tile, enemy_tile, "melee")
             self_CS_bonus, enemy_CS_bonus = CombatManager.get_combat_bonus(self, enemy_unit, current_tile, enemy_tile, "melee")
+            #print(CombatManager.combat_death_probability(self, enemy_unit, current_tile, enemy_tile, "melee"))
+
             return(damage_inflicted, damage_taken, self, enemy_unit, self_CS, enemy_CS, self_CS_bonus, enemy_CS_bonus)
 
 
@@ -258,11 +262,11 @@ class Unit:
             self.skip = True
             self.action = False
             
-    
     def killed(self):
         self.alive = False
         player = self.game_state.players.get_player(self.owner_id)
         player.elim_units.append(self.id)
+        player.active_units.remove(self.id)
         player.update_visibility()
             
 

@@ -49,6 +49,9 @@ class Tile:
     def get_coords(self):
         return (self.x, self.y, self.z)
     
+    def get_axial_coords(self):
+        return utils.hex_coord_to_coord(self.x, self.y, self.z)
+    
     def set_biome(self, biome):
         if biome == "Desert":
             if self.feature == "Forest":

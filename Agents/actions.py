@@ -11,19 +11,19 @@ import sys
 class Actions:
 
     #Culmination of actions
-    def get_actions(player_id, game_state):
+    def get_actions(player_id, game_state, find_score = True):
         tile_attackable_by = Actions.get_enemy_attackable_tiles(player_id, game_state)
         game_state.tile_attackable_by = tile_attackable_by
         player = game_state.players.get_player(player_id)
         legal_actions = []
-        for unit_id in player.units:
+        for unit_id in player.active_units:
             unit = game_state.units.get_unit(unit_id)
             print(f"Finding actions for {unit_id} at {unit.coord}")
 
             game_state.legal_moves_dict = {}
-            action = UnitAction("Move", unit, game_state, unit.coord)
+            action = UnitAction("Move", unit, game_state, unit.coord, find_score)
             game_state.legal_moves_dict[unit.coord] = action
-            unit_legal_actions = UnitLegalActions(unit, player, game_state)
+            unit_legal_actions = UnitLegalActions(unit, player, game_state, find_score)
             if unit.AI_action == True and unit.ZOC_locked == False and unit.alive == True:
                 legal_actions += unit_legal_actions.get_moves()
             if unit.AI_action == True and unit.alive == True:
@@ -32,7 +32,7 @@ class Actions:
             
         return legal_actions
         
-    
+    #tiles attackable by enemies
     def get_enemy_attackable_tiles(player_id, game_state):
         player = game_state.players.get_player(player_id)
         tile_attackable_by = {}
@@ -49,18 +49,37 @@ class Actions:
                             tile_attackable_by[enemy_attackable_tile] = {tile.unit_id}
                         else:
                             tile_attackable_by[enemy_attackable_tile].add(tile.unit_id)
-
-                        
                         
         return tile_attackable_by
+    
+    def get_enemy_attackable_tiles_coord(player_id, game_state):
+        player = game_state.players.get_player(player_id)
+        tile_attackable_by = {}
+        visible_tiles = player.visible_tiles
+        for tile_coord in visible_tiles:
+            tile = game_state.map.get_tile_hex(*tile_coord)
+            if tile.unit_id is not None:
+                unit = game_state.units.get_unit(tile.unit_id)
+                if unit.owner_id != player_id:
+                    enemy_attackable_tiles = UnitMoveScoring.get_attackable_tiles(unit, tile_coord, game_state)
+                    enemy_attackable_tiles &= visible_tiles
+                    for enemy_attackable_tile in enemy_attackable_tiles:
+                        if tile_attackable_by.get(enemy_attackable_tile, None) is None:
+                            tile_attackable_by[enemy_attackable_tile] = [tile.get_axial_coords()]
+                        else:
+                            tile_attackable_by[enemy_attackable_tile].append(tile.get_axial_coords())
+                        
+        return tile_attackable_by
+    
                     
         
 
 class UnitLegalActions:
-    def __init__(self, unit, player, game_state):
+    def __init__(self, unit, player, game_state, find_score = True):
         self.unit = unit
         self.player = player
         self.game_state = game_state
+        self.find_score = find_score
 
     def get_moves(self):
         visible_tiles = self.player.visible_tiles
@@ -70,11 +89,11 @@ class UnitLegalActions:
         for tile_coord in tiles.keys():
             tile = self.game_state.map.get_tile_hex(*tile_coord)
             if tile_coord in moveable_tiles.keys() and (tile.unit_id == None or tile_coord not in visible_tiles):
-                action = UnitAction("Move", self.unit, self.game_state, tile_coord)
+                action = UnitAction("Move", self.unit, self.game_state, tile_coord, self.find_score)
                 self.game_state.legal_moves_dict[tile_coord] = action
                 legal_moves.append(action)
             elif UnitUtils.valid_swappable(self.unit, tile_coord, self.game_state):
-                legal_moves.append(UnitAction("Swap", self.unit, self.game_state, tile_coord))
+                legal_moves.append(UnitAction("Swap", self.unit, self.game_state, tile_coord, self.find_score))
                 pass
             
         for destination in self.game_state.legal_moves_dict.keys():
@@ -126,7 +145,10 @@ class UnitLegalActions:
                 else:
                     movement_left -= next_tile_movement
             try:
-                self.game_state.legal_moves_dict[destination].score += self.game_state.legal_moves_dict[next_step_tile].score
+                if next_step_tile != destination:
+                    self.game_state.legal_moves_dict[destination].score += self.game_state.legal_moves_dict[next_step_tile].score
+                    self.game_state.legal_moves_dict[destination].next_tile = next_step_tile
+                self.game_state.legal_moves_dict[destination].path = full_path
             except:
                 print("Destination", destination)
                 print("Next Step", next_step_tile)
@@ -140,23 +162,28 @@ class UnitLegalActions:
         attackable_enemies = UnitMoveScoring.get_attackable_units(self.unit, self.unit.coord, self.game_state)
         legal_moves = []
         for tile_coord in attackable_enemies:
-            action = UnitAction("Attack", self.unit, self.game_state, tile_coord)
+            action = UnitAction("Attack", self.unit, self.game_state, tile_coord, self.find_score)
             legal_moves.append(action)
         return legal_moves
     
     def get_secondary(self):
-        return [UnitAction("Fortify", self.unit, self.game_state)]
+        return [UnitAction("Fortify", self.unit, self.game_state, None, self.find_score)]
 
 
 
 class UnitAction:
-    def __init__(self, type, unit, game_state, target = None):
+    def __init__(self, type, unit, game_state, target = None, find_score = True):
         self.type = type    #move, swap_move, attack
         self.unit = unit
         self.score = 0
+        self.find_score = find_score
+        print(find_score)
         self.game_state = game_state
         self.target = target
-        self.get_score()
+        self.next_tile = None
+        self.path = None
+        if self.find_score:
+            self.get_score()
 
     def get_score(self):
         if self.type == "Move":

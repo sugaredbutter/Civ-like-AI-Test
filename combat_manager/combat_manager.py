@@ -138,3 +138,46 @@ class CombatManager:
     def get_offensive_CS(unit):
         unit_1_combat_strength = round(unit.attack - (10 * (100 - unit.health)) / 100)
         return unit_1_combat_strength
+    
+    def combat_death_probability(unit_1, unit_2, tile_1, tile_2, combat_type):
+        # Compute combat strengths
+        unit_1_combat_strength = unit_1.attack - round((10 * (100 - unit_1.health)) / 100)
+        unit_2_combat_strength = unit_2.defense - round((10 * (100 - unit_2.health)) / 100)
+        
+        unit_2_combat_bonus = 0
+        if type == "melee":
+            direction = utils.get_relative_position(tile_1.get_coords(), tile_2.get_coords())
+            if direction is not None and tile_1.rivers[direction]:
+                unit_2_combat_bonus += combat_bonus.river["defensive_bonus"]
+        unit_2_combat_bonus += combat_bonus.terrain.get(tile_2.terrain, {}).get("defensive_bonus", 0)
+        unit_2_combat_bonus += combat_bonus.feature.get(tile_2.feature, {}).get("defensive_bonus", 0)
+        
+        if unit_2.fortified:
+            unit_2_combat_bonus += unit_config.units[unit_2.type]["fortified"]
+            if unit_2.turns_fortified >= 1:
+                unit_2_combat_bonus += unit_config.units[unit_2.type]["fortified"]
+        
+        unit_2_combat_strength += unit_2_combat_bonus
+        
+        if unit_2.type == "Ranged" and type == "melee":
+            unit_2_combat_strength -= round(
+                unit_2_combat_strength * unit_config.units[unit_2.type]["melee_attack_defensive_debuff"]
+            )
+        
+        base_damage_1 = 30 * math.exp(0.04 * (unit_1_combat_strength - unit_2_combat_strength))
+        base_damage_2 = 30 * math.exp(0.04 * (unit_2_combat_strength - unit_1_combat_strength))
+
+        # Compute death probabilities using random.uniform(0.8,1.2)
+        def death_prob(base_damage, health):
+            threshold = health / base_damage
+            if threshold <= 0.8:
+                return 1.0  # Guaranteed death
+            elif threshold >= 1.2:
+                return 0.0  # Cannot die
+            else:
+                return (1.2 - threshold) / 0.4  # Linear interpolation
+
+        p_unit_1_dies = death_prob(base_damage_2, unit_1.health)
+        p_unit_2_dies = death_prob(base_damage_1, unit_2.health)
+
+        return p_unit_1_dies, p_unit_2_dies

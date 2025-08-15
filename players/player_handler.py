@@ -7,6 +7,7 @@ class Player:
         self.color = color
         self.game_state = game_state
         self.units = []
+        self.active_units = []
         self.elim_units = []
         self.AI = False
         self.eliminated = False
@@ -70,17 +71,21 @@ class PlayerHandler:
             players.visible_tiles = set()
             players.eliminated = False
             players.elim_units = []
+            players.active_units = []
 
     def start_game(self, type):
         print("hi")
         if type == "Test":
             self.players[0].update_visibility()
-            
         elif type == "PvAITest" or type == "PvAI":
             self.players[0].update_visibility()
             for x in range(1, len(self.players)):
                 self.players[x].AI = True
-        for x in self.players:
-            print(x.AI)
+        elif type == "AIvAITest" or type == "AIvAI":
+            self.players[0].update_visibility()
+            for x in range(0, len(self.players)):
+                self.players[x].AI = True
+        for player in self.players:
+            player.active_units = player.units.copy()
 
     

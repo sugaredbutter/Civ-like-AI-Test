@@ -245,7 +245,6 @@ class UnitAttackScore:
                 #Find next tile for unit to move to
                 print(self.player.id, self.unit.coord, full_path)
                 if self.target_coord in full_path:
-                    self.unit.path = full_path
                     movement_left = self.unit.remaining_movement
                     for x in range(len(full_path)):
                         tile = self.game_state.map.get_tile_hex(*full_path[x])

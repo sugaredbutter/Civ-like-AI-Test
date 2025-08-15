@@ -12,7 +12,7 @@ units = {
     },
     "Ranged": {
         "health": 100,
-        "attack": 25,
+        "attack": 20,
         "defense": 20,
         "movement": 2,
         "visibility": 2,

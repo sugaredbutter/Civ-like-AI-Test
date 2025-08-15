@@ -127,7 +127,6 @@ class UnitUtils:
                 current_distance += unit.movement - unit.remaining_movement
             else:
                 movement_remaining = (unit.movement - current_distance) % unit.movement
-            print(current_coord, movement_remaining)
             # Is tile in ZOC
             enter_ZOC = UnitUtils.zone_of_control(unit, current_coord, game_state)
 
@@ -632,7 +631,8 @@ class UnitAttack:
 
         
         unit.remaining_movement = 0
-        visual_effects.add_damage(damage_inflicted, enemy_tile.get_coords(), True)
+        if visual_effects != None:
+            visual_effects.add_damage(damage_inflicted, enemy_tile.get_coords(), True)
         UnitAttack.clear_attackable(unit, game_state)
         UnitMove.clear_hover_path(unit, game_state)
 
@@ -694,8 +694,9 @@ class UnitAttack:
         current_tile = game_state.map.get_tile_hex(*unit.coord)
         enemy_unit = game_state.units.get_unit(enemy_tile.unit_id)
         damage_inflicted, damage_taken = CombatManager.combat(unit, enemy_unit, current_tile, enemy_tile, "melee")
-        visual_effects.add_damage(damage_inflicted, enemy_tile.get_coords(), True)
-        visual_effects.add_damage(damage_taken, current_tile.get_coords(), False)
+        if visual_effects != None:
+            visual_effects.add_damage(damage_inflicted, enemy_tile.get_coords(), True)
+            visual_effects.add_damage(damage_taken, current_tile.get_coords(), False)
 
         unit.health -= damage_taken
         enemy_unit.health -= damage_inflicted
