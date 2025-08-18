@@ -8,14 +8,27 @@ import config as config
 from machine_learning.environment_setup import MLEnv
 from Agents.actions import Actions
 from Agents.actions import CompleteUnitAction
+from Agents.agent import ScoreAgent
 from combat_manager.combat_manager import CombatManager
 from units.units_utils import UnitUtils
+import random
+import copy
+from logs.logging import LoggingML
+from logs.logging import Logging
 
+
+import pynvml
+import psutil
+import gc
+# Initialize NVML
+pynvml.nvmlInit()
 
 ROWS, COLUMNS = config.map_settings["tile_height"], config.map_settings["tile_width"]
 
 
 # Reference
+import torch.utils.checkpoint as checkpoint
+
 class GameTransformer(nn.Module):
     def __init__(self, tile_dim, action_dim, embed_dim=128, nhead=4, num_layers=2):
         super().__init__()
@@ -28,39 +41,27 @@ class GameTransformer(nn.Module):
         cross_layer = nn.TransformerEncoderLayer(d_model=embed_dim, nhead=nhead)
         self.action_encoder = nn.TransformerEncoder(cross_layer, num_layers=num_layers)
         
-        self.action_head = nn.Linear(embed_dim, 1)   # score for each action
-        self.value_head = nn.Linear(embed_dim, 1)    # value estimate for the map
+        self.action_head = nn.Linear(embed_dim, 1)
+        self.value_head = nn.Linear(embed_dim, 1)
 
     def forward(self, map_feats, action_feats):
-        """
-        map_feats: (num_tiles, tile_dim)
-        action_feats: (num_actions, action_dim)
-        """
-        # Embed and add positional encodings
-        map_emb = self.tile_embed(map_feats)  # (num_tiles, embed_dim)
-        action_emb = self.action_embed(action_feats)  # (num_actions, embed_dim)
+        map_emb = self.tile_embed(map_feats)
+        action_emb = self.action_embed(action_feats)
 
-        # Encode map (context)
-        map_context = self.map_encoder(map_emb.unsqueeze(1)).squeeze(1)  # (num_tiles, embed_dim)
+        # Gradient checkpointing for encoders
+        map_context = checkpoint.checkpoint(self.map_encoder, map_emb.unsqueeze(1)).squeeze(1)
+        map_summary = map_context.mean(dim=0, keepdim=True)
+        action_context = action_emb + map_summary
+        action_context = checkpoint.checkpoint(self.action_encoder, action_context.unsqueeze(1)).squeeze(1)
 
-        # Here we could use cross-attention, but for simplicity:
-        # Concatenate map context to each action's embedding
-        map_summary = map_context.mean(dim=0, keepdim=True)  # (1, embed_dim)
-        action_context = action_emb + map_summary  # broadcast map info
-
-        # Encode actions with context
-        action_context = self.action_encoder(action_context.unsqueeze(1)).squeeze(1)  # (num_actions, embed_dim)
-
-        # Score each action
-        action_scores = self.action_head(action_context).squeeze(-1)  # (num_actions,)
-        value = self.value_head(map_summary)  # (1, 1)
-
+        action_scores = self.action_head(action_context).squeeze(-1)
+        value = self.value_head(map_summary)
         return action_scores, value
     
 
 
 def train_model():
-    num_games = 100
+    num_games = 2000
     env_state = MLEnv()
     player_id = env_state.current_player_id  # Or similar
     tokens, attn_mask, candidates, action_mask = tokenize_game(env_state, player_id)
@@ -71,58 +72,181 @@ def train_model():
     #map_feats = torch.tensor([token_to_vector(t) for t in tile_tokens], dtype=torch.float32)
     #action_feats = torch.tensor([token_to_vector(t) for t in action_tokens], dtype=torch.float32)
 
-    model = GameTransformer(tile_dim=tile_dim, action_dim=action_dim)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model = GameTransformer(tile_dim=tile_dim, action_dim=action_dim).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=3e-4)
 
+    num_model_checkpoints = 5
+    model_checkpoints = [copy.deepcopy(model)]
     for game in range(num_games):
+        print("New Game")
         done = False
 
         ep_rewards = []
         ep_log_probs = []
         ep_values = []
+        other_player_models = []
+        
+        for player_id in range(config.num_players):
+            if player_id == 0:
+                other_player_models.append(None)
+            elif game < 1000:
+                other_player_models.append(None)
+            elif game < 1001:
+                if player_id <= 2:
+                    other_player_models.append(None)
+                else:
+                    other_player_models.append(random.choice(model_checkpoints))
+            else:
+                other_player_models.append(random.choice(model_checkpoints))
 
-        while not env_state.game_win():
-            print('Next loop')
+        AI_prev_turn = []
+        turn_count = 0
+        while not env_state.game_win() and turn_count < 150:
             player_id = env_state.current_player_id  # Or similar
+            print(f"Turn {turn_count}, Player {player_id}")
 
-            # Encode game state
-            tokens, attn_mask, candidates, action_mask = tokenize_game(env_state, player_id)
+            actions = True
+            if player_id == 0:
+                AI_prev_turn = []
+                while actions == True:
+                    # Encode game state
+                    tokens, attn_mask, candidates, action_mask = tokenize_game(env_state, player_id)
+                                
+                    # Forward pass
+                    tile_tokens = [t for t in tokens if t["token_type"] == 0]
+                    action_tokens = [t for t in tokens if t["token_type"] == 1]
+                    if len(action_tokens) == 0:
+                        env_state.next_turn()
+                        actions = False
+                        continue
+                    print("# Tile tokens:", len(tile_tokens), "# Action tokens:", len(action_tokens))
+                    map_feats = torch.tensor([token_to_vector(t) for t in tile_tokens], dtype=torch.float32).to(device)
+                    action_feats = torch.tensor([token_to_vector(t) for t in action_tokens], dtype=torch.float32).to(device)
+                    logits, value = model(map_feats, action_feats)
+
+                    # Mask invalid actions before softmax
+                    masked_logits = logits.clone()
+                    action_mask = torch.tensor(action_mask, dtype=torch.bool)
+                    masked_logits[~action_mask] = -1e9
+
+                    probs = torch.softmax(masked_logits, dim=-1)
+                    dist = torch.distributions.Categorical(probs)
+                    action_idx = dist.sample()
+
+                    # Step environment
+                    chosen_action_idx = action_idx.item()  # this is an index into action_tokens
+                    chosen_action = action_tokens[chosen_action_idx]  # directly use the action token
+                    reward, unit_id, target_unit_id = env_state.next_action(chosen_action)
+
+                    # Store experience
+                    ep_rewards.append(reward)
+                    ep_log_probs.append(dist.log_prob(action_idx))
+                    ep_values.append(value.squeeze())
+
+                    AI_prev_turn.append((unit_id, len(ep_rewards) - 1))
+                    if len(AI_prev_turn) > 0:
+                        unit_action_indexes = []
+                        split_reward = reward / len(AI_prev_turn)
+                        for i, action in enumerate(AI_prev_turn):
+                            ep_rewards[action[1]] += split_reward
+                            if action[0] == unit_id:
+                                unit_action_indexes.append(i)
+                        if len(unit_action_indexes) > 0:
+                            split_reward = reward / len(unit_action_indexes)
+                            for i in unit_action_indexes:
+                                ep_rewards[AI_prev_turn[i][1]] += split_reward
+                        else:
+                            for i, action in enumerate(AI_prev_turn):
+                                ep_rewards[action[1]] += split_reward
+
+                    del map_feats, action_feats, logits, value, masked_logits, probs, dist, action_idx
+            elif other_player_models[player_id] == None:
+                while actions == True:
+                    actions, reward, unit_id, target_unit_id = env_state.score_choose_best_action()
+                    if actions and len(AI_prev_turn) > 0:
+                        unit_action_indexes = []
+                        split_reward = reward / len(AI_prev_turn)
+                        for i, action in enumerate(AI_prev_turn):
+                            ep_rewards[action[1]] += split_reward
+                            if action[0] == target_unit_id:
+                                unit_action_indexes.append(i)
+                        if len(unit_action_indexes) > 0:
+                            split_reward = reward / len(unit_action_indexes)
+                            for i in unit_action_indexes:
+                                ep_rewards[AI_prev_turn[i][1]] += split_reward
+                        else:
+                            for i, action in enumerate(AI_prev_turn):
+                                ep_rewards[action[1]] += split_reward
+                env_state.next_turn()
+            else:
+                while actions == True:
+                    player_model = other_player_models[player_id][1]
+
+                    # Encode game state
+                    tokens, attn_mask, candidates, action_mask = tokenize_game(env_state, player_id)
+                                
+                    # Forward pass
+                    tile_tokens = [t for t in tokens if t["token_type"] == 0]
+                    action_tokens = [t for t in tokens if t["token_type"] == 1]
+                    if len(action_tokens) == 0:
+                        env_state.next_turn()
+                        actions = False
+                        continue
+                    print("# Tile tokens:", len(tile_tokens), "# Action tokens:", len(action_tokens))
+                    map_feats = torch.tensor([token_to_vector(t) for t in tile_tokens], dtype=torch.float32).to(device)
+                    action_feats = torch.tensor([token_to_vector(t) for t in action_tokens], dtype=torch.float32).to(device)
+                    with torch.no_grad():
+                        logits, value = player_model(map_feats, action_feats)
+
+                    # Mask invalid actions before softmax
+                    masked_logits = logits.clone()
+                    action_mask = torch.tensor(action_mask, dtype=torch.bool)
+                    masked_logits[~action_mask] = -1e9
+
+                    probs = torch.softmax(masked_logits, dim=-1)
+                    dist = torch.distributions.Categorical(probs)
+                    action_idx = dist.sample()
+
+                    # Step environment
+                    chosen_action_idx = action_idx.item()  # this is an index into action_tokens
+                    chosen_action = action_tokens[chosen_action_idx]  # directly use the action token
+                    reward, unit_id, target_unit_id = env_state.next_action(chosen_action)
+                    if len(AI_prev_turn) > 0:
+                        unit_action_indexes = []
+                        split_reward = reward / len(AI_prev_turn)
+                        for i, action in enumerate(AI_prev_turn):
+                            ep_rewards[action[1]] += split_reward
+                            if action[0] == target_unit_id:
+                                unit_action_indexes.append(i)
+                        if len(unit_action_indexes) > 0:
+                            split_reward = reward / len(unit_action_indexes)
+                            for i in unit_action_indexes:
+                                ep_rewards[AI_prev_turn[i][1]] += split_reward
+                        else:
+                            for i, action in enumerate(AI_prev_turn):
+                                ep_rewards[action[1]] += split_reward
+            torch.cuda.empty_cache()
+            turn_count += 1
                         
-            # Forward pass
-            tile_tokens = [t for t in tokens if t["token_type"] == 0]
-            action_tokens = [t for t in tokens if t["token_type"] == 1]
-            print("# Tile tokens:", len(tile_tokens), "# Action tokens:", len(action_tokens))
-            map_feats = torch.tensor([token_to_vector(t) for t in tile_tokens], dtype=torch.float32)
-            action_feats = torch.tensor([token_to_vector(t) for t in action_tokens], dtype=torch.float32)
-            print("Before")
-            logits, value = model(map_feats, action_feats)
-            print("After")
 
-            # Mask invalid actions before softmax
-            masked_logits = logits.clone()
-            action_mask = torch.tensor(action_mask, dtype=torch.bool)
-            masked_logits[~action_mask] = -1e9
 
-            probs = torch.softmax(masked_logits, dim=-1)
-            dist = torch.distributions.Categorical(probs)
-            action_idx = dist.sample()
+        if env_state.winner == 0: 
+            win_reward = env_state.AI_win_score
+            num_actions = len(ep_rewards)
+            if num_actions > 0:
+                reward_per_action = win_reward / num_actions
 
-            # Step environment
-            chosen_action = candidates[action_idx.item()]
-            print(tokens[chosen_action])
-            next_state, reward, done, _ = env_state.next_action(tokens[chosen_action])
-
-            # Store experience
-            ep_rewards.append(reward)
-            ep_log_probs.append(dist.log_prob(action_idx))
-            ep_values.append(value.squeeze())
-
+                for i in range(num_actions):
+                    ep_rewards[i] += reward_per_action
         # End of episode — compute returns & advantages
         returns = compute_returns(ep_rewards, gamma=0.99)
         values = torch.stack(ep_values)
         log_probs = torch.stack(ep_log_probs)
-
+        returns = returns.to(device)
+        values = values.to(device)
         advantage = returns - values
+        advantage = (advantage - advantage.mean()) / (advantage.std() + 1e-8)
 
         # Losses
         policy_loss = -(log_probs * advantage.detach()).mean()
@@ -133,8 +257,72 @@ def train_model():
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
+        info = {
+            "Game": game,
+            "Turns": turn_count,
+            "Num_Players": config.num_players,
+            "Players": env_state.player_stats,
+            "Models": [None if x is None else x[0] for x in other_player_models],
+            "AI_score": sum(ep_rewards),
+            "Loss": f"{loss.item():.4f}",
+            "Winner": env_state.winner
+        }
+        sys_stats = get_system_stats()
 
+        LoggingML.log_ML_stats(info, sys_stats)
+        # Example logging
         print(f"Game {game} — Loss: {loss.item():.4f}")
+        if game % 5 == 0 and game != 0:
+            model_checkpoints.append((game, copy.deepcopy(model)))
+        if len(model_checkpoints) > num_model_checkpoints:
+            model_checkpoints.pop(0)
+        print("Check 1")
+        torch.cuda.empty_cache()
+        print("Check 2")
+
+        gc.collect()
+        print("Check 3")
+        del env_state
+        env_state = MLEnv()
+        print("Check 4")
+
+def compute_returns(rewards, gamma):
+    returns = []
+    G = 0
+    for r in reversed(rewards):
+        G = r + gamma * G
+        returns.insert(0, G)
+    return torch.tensor(returns, dtype=torch.float32)
+
+# Quick thing to figure out random killed. Turns out wasn't memory, but just infinite for loop that occurs incredibly rarely in river generation. Fixed for now using counter limit in offending
+# while loop. Not sure why its infinitely looping.
+def get_system_stats():
+    handle = pynvml.nvmlDeviceGetHandleByIndex(0)  # GPU 0
+    
+    # GPU utilization
+    utilization = pynvml.nvmlDeviceGetUtilizationRates(handle)
+    gpu_load = utilization.gpu  # %
+    gpu_mem = utilization.memory  # %
+
+    # VRAM usage
+    mem_info = pynvml.nvmlDeviceGetMemoryInfo(handle)
+    vram_used = mem_info.used / (1024 ** 2)  # MB
+    vram_total = mem_info.total / (1024 ** 2)  # MB
+
+    # System RAM usage
+    ram = psutil.virtual_memory()
+    ram_used = ram.used / (1024 ** 2)  # MB
+    ram_total = ram.total / (1024 ** 2)  # MB
+
+    return {
+        "GPU Load (%)": gpu_load,
+        "VRAM Used (MB)": vram_used,
+        "VRAM Total (MB)": vram_total,
+        "VRAM %": str(vram_used / vram_total * 100) + "%",
+        "System RAM Used (MB)": ram_used,
+        "System RAM Total (MB)": ram_total,
+        "System RAM %": str(ram_used / ram_total * 100) + "%",
+    }
 
 
 def tokenize_game(env_state, player_id):
@@ -156,7 +344,7 @@ def tokenize_game(env_state, player_id):
     for row in range(ROWS): 
         for column in range(COLUMNS):     
             x, y, z = utils.coord_to_hex_coord(row, column)
-            tile = env_state.map.tiles[(x, y, z)]
+            tile = env_state.game_state.map.tiles[(x, y, z)]
             revealed = 1 if (x, y, z) in revealed_tiles else 0
             visible = 1 if (x, y, z) in visibile_tiles else 0
             terrain_id = terrain_dict.get(tile.terrain, 0) if revealed else 0
@@ -200,14 +388,13 @@ def tokenize_game(env_state, player_id):
             if owner == 0:
                 legal_actions = Actions.get_actions(player_id, env_state.game_state)
                 for action in legal_actions:
-                    action_tokens_indexes.append(len(tokens))
                     if action.type == "Move":
                         action_id = 0
                         target_column, target_row = utils.hex_coord_to_coord(*action.target)
+
+                        #Remove ability to path to further tiles as that added too many tokens.
                         if action.next_tile != None:
-                            destination_column, destination_row = utils.hex_coord_to_coord(*action.next_tile)
-                        else:
-                            destination_column, destination_row = target_column, target_row
+                            continue
                         axial_path = []
                         for coord in action.path:
                             axial_path.append(utils.hex_coord_to_coord(*coord))
@@ -219,8 +406,8 @@ def tokenize_game(env_state, player_id):
                             "coord_y": row,
                             "target_x": target_column,
                             "target_y": target_row,
-                            "dest_x": destination_column,
-                            "dest_y": destination_row,
+                            "dest_x": target_column,
+                            "dest_y": target_row,
                             "path": axial_path,
                             "damage_dealt": 0,
                             "damage_taken": 0,
@@ -255,13 +442,14 @@ def tokenize_game(env_state, player_id):
 
                         damage_inflicted, damage_taken = CombatManager.estimate_combat(friendly_unit, enemy_unit, friendly_tile, enemy_tile, friendly_unit.combat_type)
                         unit_killed_prob, enemy_killed_prob = CombatManager.combat_death_probability(friendly_unit, enemy_unit, friendly_tile, enemy_tile, friendly_unit.combat_type)
+                        target_column, target_row = utils.hex_coord_to_coord(*action.target)
 
                         if friendly_unit.combat_type == "melee":
                             full_path = UnitUtils.A_star(friendly_unit, action.target, env_state.game_state, False, True)
                             current_player = env_state.game_state.players.get_player(friendly_unit.owner_id)
                             revealed_tiles = current_player.revealed_tiles
                             visibile_tiles = current_player.visible_tiles
-                            tile_before = None
+                            tile_before = friendly_unit.coord
                             if action.target in full_path:
                                 movement_left = friendly_unit.remaining_movement
                                 for x in range(len(full_path)):
@@ -296,8 +484,6 @@ def tokenize_game(env_state, player_id):
                             destination_column, destination_row = utils.hex_coord_to_coord(*tile_before)
                         else:
                             destination_column, destination_row = (target_column, target_row)
-
-                        target_column, target_row = utils.hex_coord_to_coord(*action.target)
                         tokens.append({
                             "token_type": 1,     #ACTION
                             "action_type": action_id,
@@ -333,6 +519,8 @@ def tokenize_game(env_state, player_id):
                             "prob_unit_killed": 0.0,
                             "prob_enemy_killed": 0.0,
                         })
+                    action_tokens_indexes.append(len(tokens))
+
     attn_mask = [1] * len(tokens)
     action_mask = [0] * len(action_tokens_indexes)
     #for i in action_tokens_indexes:
@@ -377,4 +565,5 @@ def token_to_vector(token):
         ]
     else:
         raise ValueError(f"Unknown token type: {token['token_type']}")
+    
 train_model()

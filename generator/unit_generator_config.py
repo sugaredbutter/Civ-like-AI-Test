@@ -1,15 +1,15 @@
 UnitSliderConfig = dict(
     Melee = dict(
         min_val = 0,
-        max_val = 7,
+        max_val = 3,
     ),
     Ranged = dict(
         min_val = 0,
-        max_val = 7,
+        max_val = 3,
     ),
     Cavalry = dict(
         min_val = 0,
-        max_val = 7,
+        max_val = 3,
     )
 )
 

@@ -45,8 +45,8 @@ class Player:
     
     
 class PlayerHandler:
-    def __init__(self):
-        self.game_state = None
+    def __init__(self, game_state):
+        self.game_state = game_state
         self.colors = [
             "red",   
             "blue",  
@@ -74,7 +74,6 @@ class PlayerHandler:
             players.active_units = []
 
     def start_game(self, type):
-        print("hi")
         if type == "Test":
             self.players[0].update_visibility()
         elif type == "PvAITest" or type == "PvAI":

@@ -1,6 +1,5 @@
 import pygame
 import sys
-import map.map as generate_map
 import interactions.draw_map as draw_map
 import config as config
 import utils as utils
@@ -12,31 +11,22 @@ import interactions.interfaces.player_v_AI_test_interface as pvAI_test_ui
 import interactions.interfaces.interfaces as interfaces
 
 import interactions.interfaces.game_interface as game_ui
-import units.units as unit_handler
-import players.player_handler as player_handler
 import game_manager.game_manager as game
-import combat_manager.combat_manager as combat_manager
-import interactions.visual_effects as visual_effects_manager
 import gamestate as gamestate
-pygame.init()
+
 
 WIDTH, HEIGHT = config.map_settings["pixel_width"], config.map_settings["pixel_height"]
 ROWS, COLUMNS = config.map_settings["tile_height"], config.map_settings["tile_width"]
+
+pygame.init()
+
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Hex Map")
 
 BACKGROUND_COLOR = (255, 255, 255)  # White
-generated_map = generate_map.HexMap(ROWS, COLUMNS)
 
-visual_effects = visual_effects_manager.VisualEffectHandler(screen)
-units = unit_handler.UnitHandler(visual_effects)
-players = player_handler.PlayerHandler()
-game_state = gamestate.GameState(players, units, generated_map)
-players.game_state = game_state
-units.game_state = game_state
+game_state = gamestate.GameState(screen)
 
-players.add_player()  # player 1
-players.add_player()  # player 2
 
 user_interface = ui.UserInterface(screen, game_state)
 test_user_interface = test_ui.UserInterface(screen, game_state)
@@ -53,7 +43,7 @@ player_v_AI_test_interface.set_game_manager(game_manager)
 game_control_interface.set_game_manager(game_manager)
 mouse_controls = controls.MouseControls(screen, game_state, game_control_interface, game_manager, all_interfaces)
 
-map = draw_map.Map(screen, game_state, game_manager)
+map = draw_map.Map(screen, game_state)
 
 running = True
 clicked = False
@@ -102,7 +92,7 @@ while running:
     elif game_manager.type == "PvAITest":
         player_v_AI_test_interface.active_menu.create_menu()
 
-    visual_effects.display_visuals()
+    game_state.visual_effects.display_visuals()
     pygame.display.flip()
     
     delta_time = clock.tick(60) / 1000

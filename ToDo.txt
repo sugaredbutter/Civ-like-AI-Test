@@ -54,13 +54,15 @@ Phase 6 (AI Foundations and features needed/recommended prior to AI training)
 x Map Generation (So AI does not learn from a single map and can adapt)
 x UI for Map Generation
 x River Generation
-/ Unit placement and loadouts
-/ Clustering approach for unit spawn locations
+x Unit placement and loadouts
+x Clustering approach for unit spawn locations
 
 
 Phase 6.5 (ML-Based AI):
-- Investigate and Implement ML techniques
-- AI v AI
+/ Investigate and Implement ML techniques
+x Logging Each Game's outcome during training
+- Log actions and damages for match replay of AI
+/ AI v AI
 - Player v AI
 
 Phase 7 (Improving Combat (Not priority)):

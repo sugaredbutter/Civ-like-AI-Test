@@ -3,6 +3,7 @@ import psutil, os
 import game_manager.turn_manager as turn_manager
 import utils as utils
 from Agents.agent import ScoreAgent 
+from logs.logging import Logging
 class GameManager:
     def __init__(self, screen, game_state, interfaces):
         self.type = None
@@ -28,6 +29,7 @@ class GameManager:
         config.game_type = game_type
         self.game_state.players.start_game(game_type)
         self.game_state.map.start_game()
+        Logging.log_game_init(self.game_state)
         return True
 
     def start_game_check(self, game_type):
@@ -51,17 +53,17 @@ class GameManager:
     def end_game(self):
         print("Ending game of type:", self.type)
         self.type = None
-        self.game_state.map.end_game_reset()
-        self.game_state.units.end_game_reset()
         self.interfaces.test_user_interface.end_game_reset()
         self.interfaces.player_v_AI_interface.end_game_reset()
         self.interfaces.player_v_AI_test_interface.end_game_reset()
         self.current_player = 0
-        self.game_state.players.end_game_reset()
         self.interfaces.game_control_interface.active_button = "Start"
+        self.game_state.reset()
         config.game_type = None
+        config.log_file = -1
         
     def next_turn(self):
+        turn = False
         if self.type == "Test":
             current_player = self.game_state.players.get_player(self.current_player)
 
@@ -70,6 +72,7 @@ class GameManager:
             current_player.update_visibility()
             if self.current_player >= len(self.game_state.players.players) - 1:
                 self.current_player = 0
+                turn = True
             else:
                 self.current_player += 1
                 
@@ -77,6 +80,7 @@ class GameManager:
             while current_player.eliminated:
                 if self.current_player >= len(self.game_state.players.players) - 1:
                     self.current_player = 0
+                    turn = True
                 else:
                     self.current_player += 1
                 current_player = self.game_state.players.get_player(self.current_player)
@@ -93,12 +97,14 @@ class GameManager:
             current_player.update_visibility()
             if self.current_player >= len(self.game_state.players.players) - 1:
                 self.current_player = 0
+                turn = True
             else:
                 self.current_player += 1
             current_player = self.game_state.players.get_player(self.current_player)
             while current_player.eliminated:
                 if self.current_player >= len(self.game_state.players.players) - 1:
                     self.current_player = 0
+                    turn = True
                 else:
                     self.current_player += 1
                 current_player = self.game_state.players.get_player(self.current_player)
@@ -111,6 +117,9 @@ class GameManager:
             #if current_player.AI:
             #    ScoreAgent.choose_best_actions(self.current_player, self.game_state)
             #    self.next_turn()
+        self.game_state.current_player = self.current_player
+        if turn: 
+            self.game_state.current_turn += 1
         process = psutil.Process(os.getpid())
         print("Memory (MB):", process.memory_info().rss / (1024 * 1024))
     def cycle_unit(self):

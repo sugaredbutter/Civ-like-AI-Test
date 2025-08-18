@@ -8,7 +8,7 @@ class ScoreAgent:
             if ScoreAgent.choose_best_action(player_id, game_state, game_manager) == False:
                 return
 
-    def choose_best_action(player_id, game_state, game_manager):
+    def choose_best_action(player_id, game_state, game_manager = None):
         legal_actions = Actions.get_actions(player_id, game_state)
         if legal_actions == []:
             return False
@@ -28,7 +28,8 @@ class ScoreAgent:
             CompleteUnitAction.move_unit(best_action.unit, best_action.target)
         elif best_action.type == "Attack":
             CompleteUnitAction.attack(best_action.unit, best_action.target)
-            game_manager.check_win()
+            if game_manager != None:
+                game_manager.check_win()
         elif best_action.type == "Fortify":
             CompleteUnitAction.fortify(best_action.unit)
 

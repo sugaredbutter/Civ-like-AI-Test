@@ -8,10 +8,11 @@ from units.units_utils import UnitUtils
 from units.units_utils import UnitMove
 from units.units_utils import UnitVisibility
 from units.units_utils import UnitAttack
+from logs.logging import Logging
 
 from combat_manager.combat_manager import CombatManager
 class Unit:
-    def __init__(self, owner_id, id, type, health, vision, coord, visual_effects, game_state):
+    def __init__(self, owner_id, id, type, health, coord, visual_effects, game_state):
         self.visual_effects = visual_effects
         self.owner_id = owner_id
         self.id = id
@@ -24,7 +25,7 @@ class Unit:
         self.combat_type = units_config.units[type]["combat_type"]
 
 
-        self.vision = vision
+        self.vision = units_config.units[type]["visibility"]
         self.has_ZOC = units_config.units[type]["defense_zoc"]
         self.follows_ZOC = units_config.units[type]["attack_zoc"]
         
@@ -96,7 +97,17 @@ class Unit:
             if destination_unit.owner_id == self.owner_id:
                 UnitMove.swap_units(self, destination, destination_unit, self.game_state)
                 current_player.update_visibility()
+                action = {
+                    "Type": "Move",
+                    "Unit ID": self.id,
+                    "Current": str(self.coord),
+                    "Destination": str(destination),
+                    "Swap": True
+                }
+                Logging.log_action(action, self.game_state)
+                self.destination = None
                 return self.remaining_movement
+            self.destination = None
                 
         done_move = False
         while done_move == False:
@@ -106,6 +117,14 @@ class Unit:
         else:
             self.action = False
         current_player.update_visibility()
+        action = {
+            "Type": "Move",
+            "Unit ID": self.id,
+            "Current": str(self.coord),
+            "Destination": str(destination),
+            "Swap": False
+        }
+        Logging.log_action(action, self.game_state)
         return self.remaining_movement
 
                     
@@ -132,6 +151,8 @@ class Unit:
         if self.remaining_movement > 0 and self.destination is not None and not self.ZOC_locked:
             if self.coord != self.destination:
                 self.move_to(self.destination)
+                if self.destination == self.coord:
+                    self.destination = None
         if self.remaining_movement > 0 and not self.fortified:
             self.skip = True
             self.fortified = True
@@ -236,6 +257,12 @@ class Unit:
             self.destination = None
             self.fortified = True
             self.action = False
+        action = {
+            "Type": "Fortify",
+            "Unit ID": self.id,
+        }
+        Logging.log_action(action, self.game_state)
+        
     
     def heal(self):
         if self.remaining_movement > 0:
@@ -244,6 +271,12 @@ class Unit:
             self.fortified = True
             self.fortify_and_heal = True
             self.action = False
+        action = {
+            "Type": "Heal",
+            "Unit ID": self.id,
+        }
+        Logging.log_action(action, self.game_state)
+
             
     def cancel_action(self):
         self.path = None
@@ -253,7 +286,12 @@ class Unit:
         self.turns_fortified = 0
         if self.remaining_movement > 0:
             self.action = True
-    
+        action = {
+            "Type": "Cancel",
+            "Unit ID": self.id,
+        }
+        Logging.log_action(action, self.game_state)
+  
     def skip_turn(self):
         if self.remaining_movement > 0:
             self.path = None
@@ -261,6 +299,12 @@ class Unit:
             self.fortified = True
             self.skip = True
             self.action = False
+        action = {
+            "Type": "Skip",
+            "Unit ID": self.id,
+        }
+        Logging.log_action(action, self.game_state)
+
             
     def killed(self):
         self.alive = False
@@ -274,14 +318,14 @@ class Unit:
   
     
 class UnitHandler:
-    def __init__(self, visual_effects):
+    def __init__(self, visual_effects, game_state):
         self.visual_effects = visual_effects
         self.units = {}
         self.id_counter = 0
-        self.game_state = None
+        self.game_state = game_state
 
     def add_unit(self, owner, type, coord):
-        unit = Unit(owner, self.id_counter, type, units_config.units[type]["health"], units_config.units[type]["visibility"], coord, self.visual_effects, self.game_state)
+        unit = Unit(owner, self.id_counter, type, units_config.units[type]["health"], coord, self.visual_effects, self.game_state)
         self.units[unit.id] = unit
         self.id_counter += 1
         return unit.id

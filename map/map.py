@@ -6,7 +6,7 @@ import map.tile_types_config as tile_types_config
 import config as config
 from generator.map_generator import MapGenerator
 class Tile:
-    def __init__(self, x, y, z, biome = "Plain", terrain = "Flat", feature = None):
+    def __init__(self, x, y, z, biome = "Plain", terrain = "Flat", feature = None, rivers = None):
         self.x = x
         self.y = y
         self.z = z
@@ -19,8 +19,6 @@ class Tile:
         self.moisture = 0
         
         self.movement = 1
-        self.defense = 0
-        self.offense = 0
         self.unit_id = None
         
         self.path = False
@@ -35,15 +33,19 @@ class Tile:
         self.init_mountains()
         self.tree_list = []
         self.init_trees()
-        
-        self.rivers = {
-            "W": False,
-            "NW": False,
-            "NE": False,
-            "E": False,
-            "SE": False,
-            "SW": False
-        }
+        if rivers != None:
+            self.rivers = rivers
+        else:
+            self.rivers = {
+                "W": False,
+                "NW": False,
+                "NE": False,
+                "E": False,
+                "SE": False,
+                "SW": False
+            }
+
+        self.set_movement()
         
         
     def get_coords(self):

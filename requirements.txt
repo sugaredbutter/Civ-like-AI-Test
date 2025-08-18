@@ -2,3 +2,4 @@ noise
 pygame
 scikit-learn
 torch
+nvidia-ml-py3

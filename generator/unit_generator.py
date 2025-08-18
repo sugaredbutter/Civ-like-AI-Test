@@ -12,7 +12,7 @@ import heapq
 
 class UnitGenerator:
     def __init__(self, game_state):
-        seed = map_generator_config.MapConfig["seed"]
+        seed = random.randint(0, 2**32 - 1)
         self.rng = random.Random(seed) if seed != '' else random.Random()
         self.game_state = game_state
         self.ROWS, self.COLUMNS = config.map_settings["tile_height"], config.map_settings["tile_width"]

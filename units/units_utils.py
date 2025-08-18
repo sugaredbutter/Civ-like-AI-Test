@@ -5,6 +5,7 @@ from collections import deque
 import map.tile_types_config as tile_config
 import random
 from combat_manager.combat_manager import CombatManager
+from logs.logging import Logging
 
 class UnitUtils:
     # Checks to see that given the player's info, a destination is able to be reached
@@ -371,6 +372,9 @@ class UnitMove:
                 else:
                     movement_left -= next_tile_movement
             unit.remaining_movement = movement_left
+        else:
+            unit.destination = None
+
         if unit.coord == unit.destination:
             unit.destination = None
             unit.path = None
@@ -628,11 +632,24 @@ class UnitAttack:
         if enemy_unit.health <= 0:
             enemy_unit.killed()
             enemy_tile.unit_id = None
+            game_state.deaths[enemy_unit.owner_id] += 1
+            game_state.kills[unit.owner_id] += 1
 
         
         unit.remaining_movement = 0
         if visual_effects != None:
             visual_effects.add_damage(damage_inflicted, enemy_tile.get_coords(), True)
+        action = {
+            "Type": "Attack",
+            "Id": unit.id,
+            "Current": str(unit.coord),
+            "Destination": str(destination),
+            "DMG_Inflicted": damage_inflicted,
+            "DMG_Taken": damage_taken,
+            "Unit_alive": unit.alive,
+            "Enemy_alive": enemy_unit.alive
+        }
+        Logging.log_action(action, game_state)
         UnitAttack.clear_attackable(unit, game_state)
         UnitMove.clear_hover_path(unit, game_state)
 
@@ -698,21 +715,63 @@ class UnitAttack:
             visual_effects.add_damage(damage_inflicted, enemy_tile.get_coords(), True)
             visual_effects.add_damage(damage_taken, current_tile.get_coords(), False)
 
-        unit.health -= damage_taken
-        enemy_unit.health -= damage_inflicted
-        if enemy_unit.health <= 0:
-            enemy_unit.killed()
-            enemy_tile.unit_id = unit.id
-            current_tile.unit_id = None
-            unit.coord = enemy_tile.get_coords()
-            current_tile = game_state.map.get_tile_hex(*unit.coord)
+        unit_new_health = unit.health - damage_taken
+        enemy_new_health = enemy_unit.health - damage_inflicted
 
-        if unit.health <= 0:
-            unit.killed()
-            current_tile.unit_id = None
+        # Only one unit can die (both units in combat cannot die)
+        if unit_new_health <= 0 and enemy_new_health <= 0:
+            if unit_new_health > enemy_new_health:
+                unit.health = .01
+                enemy_unit.health -= damage_inflicted
+                enemy_unit.killed()
+                enemy_tile.unit_id = unit.id
+                current_tile.unit_id = None
+                unit.coord = enemy_tile.get_coords()
+                current_tile = game_state.map.get_tile_hex(*unit.coord)
+
+                game_state.deaths[enemy_unit.owner_id] += 1
+                game_state.kills[unit.owner_id] += 1
+            else:
+                unit.health -= damage_taken
+                enemy_unit.health = .01
+                unit.killed()
+                current_tile.unit_id = None
+
+                game_state.deaths[unit.owner_id] += 1
+                game_state.kills[enemy_unit.owner_id] += 1
+        else:
+            unit.health -= damage_taken
+            enemy_unit.health -= damage_inflicted
+            if enemy_unit.health <= 0:
+                enemy_unit.killed()
+                enemy_tile.unit_id = unit.id
+                current_tile.unit_id = None
+                unit.coord = enemy_tile.get_coords()
+                current_tile = game_state.map.get_tile_hex(*unit.coord)
+
+                game_state.deaths[enemy_unit.owner_id] += 1
+                game_state.kills[unit.owner_id] += 1
+
+            if unit.health <= 0:
+                unit.killed()
+                current_tile.unit_id = None
+
+                game_state.deaths[unit.owner_id] += 1
+                game_state.kills[enemy_unit.owner_id] += 1
         
         unit.remaining_movement = 0
-            
+        action = {
+            "Type": "Attack",
+            "Id": unit.id,
+            "Current": str(unit.coord),
+            "Destination": str(destination),
+            "DMG_Inflicted": damage_inflicted,
+            "DMG_Taken": damage_taken,
+            "Unit_alive": unit.alive,
+            "Enemy_alive": enemy_unit.alive
+        }
+        Logging.log_action(action, game_state)
+
         UnitAttack.clear_attackable(unit, game_state)
         UnitMove.clear_hover_path(unit, game_state)
 

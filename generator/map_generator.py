@@ -17,7 +17,9 @@ class MapGenerator:
 
     def generate_map(self, width, height):
         seed = map_generator_config.MapConfig["seed"]
-        self.rng = random.Random(seed) if seed != '' else random.Random()
+        if seed == '':
+            seed = random.randint(0, 2**32 - 1)
+        self.rng = random.Random(seed)
         q_elevation_offset = self.rng.randint(-10000, 10000)
         r_elevation_offset = self.rng.randint(-10000, 10000)
         q_temperature_offset = self.rng.randint(-10000, 10000)
@@ -244,7 +246,8 @@ class MapGenerator:
             hex_river_edges.append(utils.DIRECTIONS[direction_index])
 
             # Loop around hex until river can reach next tile
-            while utils.RIVER_TILE_MAPPINGS.get((next_tile_direction, utils.DIRECTIONS[direction_index]), None) == None:
+            count = 0
+            while utils.RIVER_TILE_MAPPINGS.get((next_tile_direction, utils.DIRECTIONS[direction_index]), None) == None and count < 6:
                 if tile.rivers[utils.DIRECTIONS[direction_index]] == True:
                     reached_next_tile = False
                     break
@@ -254,6 +257,8 @@ class MapGenerator:
                 elif direction_index == 6:
                     direction_index = 0
                 hex_river_edges.append(utils.DIRECTIONS[direction_index])
+                count += 1
+
             
             return (reached_next_tile, hex_river_edges)
         else:
@@ -268,7 +273,8 @@ class MapGenerator:
             hex_river_edges.append(utils.DIRECTIONS[direction_index])
             reached_edge = False
             # Loop around hex until river can reach next tile
-            while reached_edge == False:
+            count = 0
+            while reached_edge == False and count < 6:
                 if tile.rivers[utils.DIRECTIONS[direction_index]] == True:
                     break
                 for directions in out_of_bound_tile_directions:
@@ -281,6 +287,7 @@ class MapGenerator:
                 elif direction_index == 6:
                     direction_index = 0
                 hex_river_edges.append(utils.DIRECTIONS[direction_index])
+                count += 1
 
             return (reached_edge, hex_river_edges)
 

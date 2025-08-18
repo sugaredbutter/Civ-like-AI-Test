@@ -6,14 +6,13 @@ import utils as utils
 import map.tile_types_config as tile_types_config
 import Assets.asset_manager as asset_manager
 class Map:
-    def __init__(self, screen, game_state, game_manager):
+    def __init__(self, screen, game_state):
         self.screen = screen
         self.game_state = game_state
-        self.game_manager = game_manager
         self.asset_manager = asset_manager.AssetManager()
 
         self.hex_radius = config.hex["radius"]
-        self.current_player = self.game_state.players.get_player(self.game_manager.current_player)
+        self.current_player = self.game_state.players.get_player(self.game_state.current_player)
         self.width, self.height = config.map_settings["pixel_width"], config.map_settings["pixel_height"]
 
         self.saved_info = {}
@@ -64,7 +63,7 @@ class Map:
         self.border_surface = pygame.Surface(self.screen.get_size(), pygame.SRCALPHA)
         self.width, self.height = config.map_settings["pixel_width"], config.map_settings["pixel_height"]
         self.hex_radius = config.hex["radius"]
-        self.current_player = self.game_state.players.get_player(self.game_manager.current_player)
+        self.current_player = self.game_state.players.get_player(self.game_state.current_player)
         self.border_surface.fill((0, 0, 0, 0))  # fully transparent
 
         self.fog_surface = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
