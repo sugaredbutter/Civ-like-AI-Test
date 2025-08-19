@@ -3,6 +3,8 @@ import map.map as generate_map
 import units.units as unit_handler
 import players.player_handler as player_handler
 import interactions.visual_effects as visual_effects_manager
+import random
+import uuid
 WIDTH, HEIGHT = config.map_settings["pixel_width"], config.map_settings["pixel_height"]
 ROWS, COLUMNS = config.map_settings["tile_height"], config.map_settings["tile_width"]
 class GameState:
@@ -22,6 +24,8 @@ class GameState:
         self.current_player = 0
         self.current_turn = 1
         self.kills = [0] * config.num_players
+        self.deaths = [0] * config.num_players
+        self.game_id = str(uuid.uuid4())
         self.winner = -1
 
     def start(self):
@@ -30,6 +34,9 @@ class GameState:
         self.kills = [0] * config.num_players
         self.deaths = [0] * config.num_players
         self.remaining = [len(player.units) for player in self.players.players]
+        self.game_id = str(uuid.uuid4())
+        self.players.start_game(config.game_type)
+        self.map.start_game()
 
     def reset(self):
         self.map.end_game_reset()

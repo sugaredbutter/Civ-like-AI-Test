@@ -21,6 +21,7 @@ class ScoreAgent:
         # To handle scenario where unit paths to farther location but due to terrain, still has remaining movement. Want to do a double check if they really want to move there.
         if best_action.unit.AI_last_move == (best_action.type, best_action.target):
             best_action.unit.AI_action = False
+            return True
         else:
             best_action.unit.AI_last_move = (best_action.type, best_action.target)
 

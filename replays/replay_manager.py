@@ -10,7 +10,10 @@ class ReplayManager:
     def __init__(self, game_state):
         self.game_state = game_state
         self.data = None
-        self.current_turn = 1
+        self.current_turn_index = 0
+        self.current_player = 0
+        self.current_action_index = 0
+        self.num_turns = 0
     
     def setup(self, log_num):
         self.current_turn = 1
@@ -56,7 +59,31 @@ class ReplayManager:
 
         self.game_state.map.tiles = new_map
         self.game_state.units.units = new_units
+        self.num_turns = len(self.data["turns"])
 
-    def next_action():
-        
+    def complete_next_action(self):
+        next_action = self.find_next_action()
+        print(next_action)
+
+    def find_next_action(self):
+        next_action = None
+        for i in range(self.current_turn_index, self.num_turns):
+            current_turn = self.data["turns"][i]
+            for player_id in current_turn.keys():
+                if int(player_id) >= self.current_player:
+                    current_player_actions = current_turn[player_id]
+                    for j in range(self.current_action_index, len(current_player_actions)):
+                        self.current_turn_index = i
+                        self.current_player = int(player_id)
+                        self.current_action_index = j + 1
+                        next_action = current_player_actions[j]
+                        return next_action
+                    self.current_action_index = 0
+            self.current_player = 0
+        return next_action
+
+            
+
+
+
         pass

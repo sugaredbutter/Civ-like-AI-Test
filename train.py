@@ -102,8 +102,14 @@ def train_model():
 
         AI_prev_turn = []
         turn_count = 0
-        while not env_state.game_win() and turn_count < 150:
+        while not env_state.game_win() and turn_count < 100:
+            last_player = player_id
             player_id = env_state.current_player_id  # Or similar
+            env_state.game_state.current_player = player_id
+
+            if last_player > player_id: 
+                env_state.game_state.current_turn += 1
+            turn_count = env_state.game_state.current_turn
             print(f"Turn {turn_count}, Player {player_id}")
 
             actions = True
@@ -112,7 +118,7 @@ def train_model():
                 while actions == True:
                     # Encode game state
                     tokens, attn_mask, candidates, action_mask = tokenize_game(env_state, player_id)
-                                
+                          
                     # Forward pass
                     tile_tokens = [t for t in tokens if t["token_type"] == 0]
                     action_tokens = [t for t in tokens if t["token_type"] == 1]
@@ -120,7 +126,6 @@ def train_model():
                         env_state.next_turn()
                         actions = False
                         continue
-                    print("# Tile tokens:", len(tile_tokens), "# Action tokens:", len(action_tokens))
                     map_feats = torch.tensor([token_to_vector(t) for t in tile_tokens], dtype=torch.float32).to(device)
                     action_feats = torch.tensor([token_to_vector(t) for t in action_tokens], dtype=torch.float32).to(device)
                     logits, value = model(map_feats, action_feats)
@@ -129,6 +134,7 @@ def train_model():
                     masked_logits = logits.clone()
                     action_mask = torch.tensor(action_mask, dtype=torch.bool)
                     masked_logits[~action_mask] = -1e9
+
 
                     probs = torch.softmax(masked_logits, dim=-1)
                     dist = torch.distributions.Categorical(probs)
@@ -227,9 +233,9 @@ def train_model():
                             for i, action in enumerate(AI_prev_turn):
                                 ep_rewards[action[1]] += split_reward
             torch.cuda.empty_cache()
-            turn_count += 1
                         
 
+        Logging.log_end_game_stats(env_state.game_state)
 
         if env_state.winner == 0: 
             win_reward = env_state.AI_win_score
@@ -259,6 +265,7 @@ def train_model():
         optimizer.step()
         info = {
             "Game": game,
+            "Game_id": env_state.game_state.game_id,
             "Turns": turn_count,
             "Num_Players": config.num_players,
             "Players": env_state.player_stats,
@@ -276,15 +283,13 @@ def train_model():
             model_checkpoints.append((game, copy.deepcopy(model)))
         if len(model_checkpoints) > num_model_checkpoints:
             model_checkpoints.pop(0)
-        print("Check 1")
         torch.cuda.empty_cache()
-        print("Check 2")
 
         gc.collect()
-        print("Check 3")
         del env_state
+        config.game_type = None
+        config.log_file = -1
         env_state = MLEnv()
-        print("Check 4")
 
 def compute_returns(rewards, gamma):
     returns = []
@@ -340,6 +345,7 @@ def tokenize_game(env_state, player_id):
     action_tokens_indexes = []
     tokens = []
     enemy_attackable_tiles = Actions.get_enemy_attackable_tiles_coord(player_id, env_state.game_state)
+    legal_actions_dict = Actions.get_actions_dict(player_id, env_state.game_state)
 
     for row in range(ROWS): 
         for column in range(COLUMNS):     
@@ -385,9 +391,9 @@ def tokenize_game(env_state, player_id):
                 "attackable_by": attackable_by,     #Tile attackable by enemy units
                 "owner": owner
             })
-            if owner == 0:
-                legal_actions = Actions.get_actions(player_id, env_state.game_state)
-                for action in legal_actions:
+            if owner == 0 and tile.unit_id != None:
+                for action in legal_actions_dict.get(tile.unit_id, []):
+                    unit = action.unit
                     if action.type == "Move":
                         action_id = 0
                         target_column, target_row = utils.hex_coord_to_coord(*action.target)
@@ -522,10 +528,9 @@ def tokenize_game(env_state, player_id):
                     action_tokens_indexes.append(len(tokens))
 
     attn_mask = [1] * len(tokens)
-    action_mask = [0] * len(action_tokens_indexes)
+    action_mask = [1] * len(action_tokens_indexes)
     #for i in action_tokens_indexes:
     #    action_mask[i] = 1
-
     return tokens, attn_mask, action_tokens_indexes, action_mask
 
             # type (move, attack, heal, etc.)

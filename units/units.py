@@ -97,13 +97,21 @@ class Unit:
             if destination_unit.owner_id == self.owner_id:
                 UnitMove.swap_units(self, destination, destination_unit, self.game_state)
                 current_player.update_visibility()
+                if self.remaining_movement > 0:
+                    self.action = True
+                else:
+                    self.action = False
+                    self.AI_action = False
                 action = {
                     "Type": "Move",
                     "Unit ID": self.id,
                     "Current": str(self.coord),
                     "Destination": str(destination),
-                    "Swap": True
+                    "Remaining": self.remaining_movement,
+                    "Swap": True,
+                    "AI_action": self.AI_action
                 }
+
                 Logging.log_action(action, self.game_state)
                 self.destination = None
                 return self.remaining_movement
@@ -116,13 +124,16 @@ class Unit:
             self.action = True
         else:
             self.action = False
+            self.AI_action = False
         current_player.update_visibility()
         action = {
             "Type": "Move",
             "Unit ID": self.id,
             "Current": str(self.coord),
             "Destination": str(destination),
-            "Swap": False
+            "Remaining": self.remaining_movement,
+            "Swap": False,
+            "AI_action": self.AI_action
         }
         Logging.log_action(action, self.game_state)
         return self.remaining_movement
@@ -242,6 +253,7 @@ class Unit:
             self.action = True
         else:
             self.action = False
+            self.AI_action = False
         self.fortified = False
         self.turns_fortified = 0
         self.fortify_and_heal = False
@@ -257,9 +269,13 @@ class Unit:
             self.destination = None
             self.fortified = True
             self.action = False
+            self.AI_action = False
+
         action = {
             "Type": "Fortify",
             "Unit ID": self.id,
+            "Remaining": self.remaining_movement,
+            "AI_action": self.AI_action
         }
         Logging.log_action(action, self.game_state)
         
@@ -271,9 +287,13 @@ class Unit:
             self.fortified = True
             self.fortify_and_heal = True
             self.action = False
+            self.AI_action = False
+
         action = {
             "Type": "Heal",
             "Unit ID": self.id,
+            "Remaining": self.remaining_movement,
+
         }
         Logging.log_action(action, self.game_state)
 
@@ -289,6 +309,7 @@ class Unit:
         action = {
             "Type": "Cancel",
             "Unit ID": self.id,
+            "Remaining": self.remaining_movement,
         }
         Logging.log_action(action, self.game_state)
   
@@ -302,6 +323,7 @@ class Unit:
         action = {
             "Type": "Skip",
             "Unit ID": self.id,
+            "Remaining": self.remaining_movement,
         }
         Logging.log_action(action, self.game_state)
 

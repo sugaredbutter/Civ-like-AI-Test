@@ -12,6 +12,9 @@ import players.player_handler as player_handler
 
 import interactions.visual_effects as visual_effects_manager
 import gamestate as gamestate
+
+import time
+
 pygame.init()
 
 WIDTH, HEIGHT = config.map_settings["pixel_width"], config.map_settings["pixel_height"]
@@ -26,6 +29,7 @@ mouse_controls = replay_controls.MouseControls(screen, game_state)
 map = draw_map.Map(screen, game_state)
 replay = replay_manager.ReplayManager(game_state)
 
+start_time = 0
 
 file_num = ""
 while True:
@@ -33,6 +37,7 @@ while True:
     if file_num == "q":
         break
     setup = replay.setup(file_num)
+    start_time = time.time()
     if setup == False:
         continue
 
@@ -47,10 +52,12 @@ while True:
     delta_time = 0.1
     x = 0
 
-
+    start = time.time()
     while running:
+        if time.time() - start_time >= .5:
+            replay.complete_next_action()
+            start_time = time.time()
         screen.fill(BACKGROUND_COLOR)
-
         x += 50 * delta_time
 
         for event in pygame.event.get():

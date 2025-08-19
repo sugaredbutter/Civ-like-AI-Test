@@ -16,6 +16,8 @@ import utils
 
 import random
 
+from logs.logging import Logging
+
 WIDTH, HEIGHT = config.map_settings["pixel_width"], config.map_settings["pixel_height"]
 ROWS, COLUMNS = config.map_settings["tile_height"], config.map_settings["tile_width"]
 
@@ -40,6 +42,7 @@ class MLEnv:
     def create_env(self):
         self.num_players = 2 #random.randint(config.min_players, config.max_players)
         config.num_players = self.num_players
+        config.game_type == "AIvAI"
         while config.num_players != len(self.game_state.players.players):
             if config.num_players < len(self.game_state.players.players):
                 self.game_state.players.remove_player()
@@ -51,7 +54,9 @@ class MLEnv:
         self.randomize_units(False)
         print("Units Randomized")
         self.allocate_scores()
-        self.game_state.players.start_game("AIvAI")
+        self.game_state.start()
+        Logging.log_game_init(self.game_state)
+
 
     def randomize_map(self):
         # Randomize config variables
@@ -288,6 +293,7 @@ class MLEnv:
                 if current_player.eliminated == False:
                     self.winner = player_id
                     self.player_stats[player_id]["Score"] += self.AI_win_score
+                    self.game_state.winner = player_id 
                     break
             return True
         return False

@@ -27,8 +27,7 @@ class GameManager:
         self.type = game_type
         print("Game started successfully with type:", game_type)
         config.game_type = game_type
-        self.game_state.players.start_game(game_type)
-        self.game_state.map.start_game()
+        self.game_state.start()
         Logging.log_game_init(self.game_state)
         return True
 
@@ -52,6 +51,7 @@ class GameManager:
     
     def end_game(self):
         print("Ending game of type:", self.type)
+        Logging.log_end_game_stats(self.game_state)
         self.type = None
         self.interfaces.test_user_interface.end_game_reset()
         self.interfaces.player_v_AI_interface.end_game_reset()
@@ -142,7 +142,11 @@ class GameManager:
                 current_player.eliminated = True
             if current_player.eliminated == False:
                 num_alive += 1
-        print(num_alive)
+        if num_alive <= 1:
+            for player_id in range(num_players):
+                current_player = self.game_state.players.get_player(player_id)
+                if current_player.eliminated == False:
+                    self.game_state.winner = player_id 
         if num_alive <= 1:
             self.end_game()
 

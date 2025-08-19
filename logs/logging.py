@@ -29,6 +29,7 @@ class LoggingML:
         with open(log_file, "a") as f:
             f.write("=====================================================================\n")
             f.write(f"Game: {info["Game"]} - Turns: {info["Turns"]}\n")
+            f.write(f"Game ID: {info["Game_id"]}\n")
             f.write(f"Winner: {info["Winner"]}\n")
             for player in range(info["Num_Players"]):
                 f.write(f"Player {player} - Model: {'Latest' if player == 0 else info['Models'][player] if info['Models'][player] is not None else 'Score-based'}\n")
@@ -91,7 +92,7 @@ class Logging:
                     "health": unit.health,
                     "coord": str(unit.coord)
                 }
-
+            game_info["id"] = game_state.game_id
             game_info["num_players"] = config.num_players
             game_info["map"] = saved_map
             game_info["units"] = saved_units
@@ -120,6 +121,7 @@ class Logging:
                 game_info["player_stats"][player_id] = player_stats
 
             game_info["turns"] = []
+            game_info["num_turns"] = game_state.current_turn
             json.dump(game_info, f, indent=2)
 
 
@@ -130,17 +132,43 @@ class Logging:
         log_file = os.path.join(folder, f"game_log_{config.log_file}.json")
         with open(log_file, "r") as f:
             data = json.load(f)
+        data["num_turns"] = game_state.current_turn
         turn_data = data["turns"]
         while(len(turn_data) < game_state.current_turn):
             turn_data.append({})
         if turn_data[-1].get(str(game_state.current_player), None) == None:
             turn_data[-1][str(game_state.current_player)] = []
         turn_data[-1][str(game_state.current_player)].append(action)
+        game_stats = data["player_stats"]
+        for player_id in range(config.num_players):
+            player = game_state.players.get_player(player_id)
+            num_units = len(player.units)
+            game_stats[str(player_id)]["Kills"] = game_state.kills[player_id]
+            game_stats[str(player_id)]["Deaths"] = game_state.deaths[player_id]
+            game_stats[str(player_id)]["Remaining"] = num_units - game_state.deaths[player_id]
         with open(log_file, "w") as f:
             json.dump(data, f, indent=2)
 
     def log_end_game_stats(game_state):
-        pass
+        if config.log_file == -1:
+            Logging.log_game_init(game_state)
+        folder = os.path.join(os.path.dirname(__file__), "game_logs")  
+        log_file = os.path.join(folder, f"game_log_{config.log_file}.json")
+        with open(log_file, "r") as f:
+            data = json.load(f)
+        data["num_turns"] = game_state.current_turn
+        game_stats = data["player_stats"]
+        for player_id in range(config.num_players):
+            player = game_state.players.get_player(player_id)
+            num_units = len(player.units)
+            game_stats[str(player_id)]["Kills"] = game_state.kills[player_id]
+            game_stats[str(player_id)]["Deaths"] = game_state.deaths[player_id]
+            game_stats[str(player_id)]["Remaining"] = num_units - game_state.deaths[player_id]
+        data["winner"] = game_state.winner
+        with open(log_file, "w") as f:
+            json.dump(data, f, indent=2)
+
+
 
             
             

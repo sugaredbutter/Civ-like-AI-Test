@@ -637,6 +637,7 @@ class UnitAttack:
 
         
         unit.remaining_movement = 0
+        unit.AI_action = False
         if visual_effects != None:
             visual_effects.add_damage(damage_inflicted, enemy_tile.get_coords(), True)
         action = {
@@ -644,6 +645,7 @@ class UnitAttack:
             "Id": unit.id,
             "Current": str(unit.coord),
             "Destination": str(destination),
+            "Remaining": unit.remaining_movement,
             "DMG_Inflicted": damage_inflicted,
             "DMG_Taken": damage_taken,
             "Unit_alive": unit.alive,
@@ -760,11 +762,13 @@ class UnitAttack:
                 game_state.kills[enemy_unit.owner_id] += 1
         
         unit.remaining_movement = 0
+        unit.AI_action = False
         action = {
             "Type": "Attack",
             "Id": unit.id,
             "Current": str(unit.coord),
             "Destination": str(destination),
+            "Remaining": unit.remaining_movement,
             "DMG_Inflicted": damage_inflicted,
             "DMG_Taken": damage_taken,
             "Unit_alive": unit.alive,
@@ -946,7 +950,6 @@ class UnitScoringUtils:
         path = {}
         heap = [(0, tile_coord)]
         tile_score[tile_coord] = 0
-        visibile_tiles.add(tile_coord)
         
         while heap:
             current_distance, current_tile_coord = heapq.heappop(heap)
@@ -988,7 +991,7 @@ class UnitScoringUtils:
                     additional_cost = 0
                 else:
                     additional_cost = unit.movement - movement_remaining
-                    if current_tile.unit_id != None:
+                    if current_tile.unit_id != None and current_tile_coord != unit.coord:
                         continue
                 temp_movement_remaining = movement_remaining
 

@@ -31,6 +31,28 @@ class Actions:
                 legal_actions += unit_legal_actions.get_secondary()
             
         return legal_actions
+    
+    def get_actions_dict(player_id, game_state, find_score = True):
+        tile_attackable_by = Actions.get_enemy_attackable_tiles(player_id, game_state)
+        game_state.tile_attackable_by = tile_attackable_by
+        player = game_state.players.get_player(player_id)
+        legal_actions = {}
+        for unit_id in player.active_units:
+            legal_actions[unit_id] = []
+            unit = game_state.units.get_unit(unit_id)
+            #print(f"Finding actions for {unit_id} at {unit.coord}")
+
+            game_state.legal_moves_dict = {}
+            action = UnitAction("Move", unit, game_state, unit.coord, find_score)
+            game_state.legal_moves_dict[unit.coord] = action
+            unit_legal_actions = UnitLegalActions(unit, player, game_state, find_score)
+            if unit.AI_action == True and unit.ZOC_locked == False and unit.alive == True:
+                legal_actions[unit_id] += unit_legal_actions.get_moves()
+            if unit.AI_action == True and unit.alive == True:
+                legal_actions[unit_id] += unit_legal_actions.get_attacks()
+                legal_actions[unit_id] += unit_legal_actions.get_secondary()
+            
+        return legal_actions
         
     #tiles attackable by enemies
     def get_enemy_attackable_tiles(player_id, game_state):
@@ -149,10 +171,20 @@ class UnitLegalActions:
                     self.game_state.legal_moves_dict[destination].score += self.game_state.legal_moves_dict[next_step_tile].score
                     self.game_state.legal_moves_dict[destination].next_tile = next_step_tile
                 self.game_state.legal_moves_dict[destination].path = full_path
-            except:
-                print("Destination", destination)
-                print("Next Step", next_step_tile)
-                print("Path", full_path)
+            except Exception as e:
+                import traceback
+                print("Origin", self.unit.coord)
+                print("Destination:", destination)
+                print("Next Step:", next_step_tile)
+                print("Path:", full_path)
+                print("Error Type:", type(e).__name__)
+                print("Error Message:", e)
+                print(self.game_state.legal_moves_dict)
+                tile = self.game_state.map.get_tile_hex(*next_step_tile)
+                print(tile.unit_id)
+                print(tile.terrain)
+
+                traceback.print_exc()   # prints full stack trace
                 sys.exit(1)
 
         
