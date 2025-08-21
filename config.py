@@ -24,3 +24,5 @@ min_players = 2
 max_players = 4
 log_file = -1
 ML_log_file = -1
+logging = True
+replay = False

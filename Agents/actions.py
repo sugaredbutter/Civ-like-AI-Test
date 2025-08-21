@@ -109,6 +109,8 @@ class UnitLegalActions:
         legal_moves = []
         moveable_tiles = UnitScoringUtils.djikstra(self.unit, self.unit.coord, self.game_state)
         for tile_coord in tiles.keys():
+            if tile_coord == self.unit.coord:
+                continue
             tile = self.game_state.map.get_tile_hex(*tile_coord)
             if tile_coord in moveable_tiles.keys() and (tile.unit_id == None or tile_coord not in visible_tiles):
                 action = UnitAction("Move", self.unit, self.game_state, tile_coord, self.find_score)
@@ -116,8 +118,8 @@ class UnitLegalActions:
                 legal_moves.append(action)
             elif UnitUtils.valid_swappable(self.unit, tile_coord, self.game_state):
                 legal_moves.append(UnitAction("Swap", self.unit, self.game_state, tile_coord, self.find_score))
-                pass
-            
+                
+        invalid_destinations = []
         for destination in self.game_state.legal_moves_dict.keys():
             full_path = []
 
@@ -167,10 +169,13 @@ class UnitLegalActions:
                 else:
                     movement_left -= next_tile_movement
             try:
-                if next_step_tile != destination:
-                    self.game_state.legal_moves_dict[destination].score += self.game_state.legal_moves_dict[next_step_tile].score
-                    self.game_state.legal_moves_dict[destination].next_tile = next_step_tile
                 self.game_state.legal_moves_dict[destination].path = full_path
+                if next_step_tile != destination:
+                    if self.game_state.legal_moves_dict.get(next_step_tile, None) == None:
+                        invalid_destinations.append(destination)
+                    else:
+                        self.game_state.legal_moves_dict[destination].score += self.game_state.legal_moves_dict[next_step_tile].score
+                        self.game_state.legal_moves_dict[destination].next_tile = next_step_tile
             except Exception as e:
                 import traceback
                 print("Origin", self.unit.coord)
@@ -186,6 +191,8 @@ class UnitLegalActions:
 
                 traceback.print_exc()   # prints full stack trace
                 sys.exit(1)
+        for invalid in invalid_destinations:
+            del self.game_state.legal_moves_dict[invalid]
 
         
         return legal_moves

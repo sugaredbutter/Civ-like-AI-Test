@@ -32,6 +32,8 @@ replay = replay_manager.ReplayManager(game_state)
 start_time = 0
 
 file_num = ""
+config.logging = False
+config.replay = True
 while True:
     file_num = input("Enter # representing log file you want to replay (Ex: 1). Type q to quit.: ")
     if file_num == "q":
@@ -53,9 +55,10 @@ while True:
     x = 0
 
     start = time.time()
-    while running:
+    response = True
+    while running and response:
         if time.time() - start_time >= .5:
-            replay.complete_next_action()
+            response = replay.complete_next_action()
             start_time = time.time()
         screen.fill(BACKGROUND_COLOR)
         x += 50 * delta_time
@@ -87,6 +90,6 @@ while True:
         delta_time = clock.tick(60) / 1000
         delta_time = max(0.001, min(0.1, delta_time))
         
-
+    game_state.reset()
 pygame.quit()
 sys.exit()

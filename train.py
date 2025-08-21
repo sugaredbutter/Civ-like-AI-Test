@@ -16,10 +16,11 @@ import copy
 from logs.logging import LoggingML
 from logs.logging import Logging
 
-
+import os
 import pynvml
 import psutil
 import gc
+import sys
 # Initialize NVML
 pynvml.nvmlInit()
 
@@ -61,7 +62,7 @@ class GameTransformer(nn.Module):
 
 
 def train_model():
-    num_games = 2000
+    num_games = 10000
     env_state = MLEnv()
     player_id = env_state.current_player_id  # Or similar
     tokens, attn_mask, candidates, action_mask = tokenize_game(env_state, player_id)
@@ -74,10 +75,12 @@ def train_model():
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = GameTransformer(tile_dim=tile_dim, action_dim=action_dim).to(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=3e-4)
+    optimizer = torch.optim.Adam(model.parameters(), lr=2e-4)
 
     num_model_checkpoints = 5
     model_checkpoints = [copy.deepcopy(model)]
+    total_games = 0 # Not including games where nobody wins
+    AI_wins = 0
     for game in range(num_games):
         print("New Game")
         done = False
@@ -90,7 +93,7 @@ def train_model():
         for player_id in range(config.num_players):
             if player_id == 0:
                 other_player_models.append(None)
-            elif game < 1000:
+            elif game < 100000:
                 other_player_models.append(None)
             elif game < 1001:
                 if player_id <= 2:
@@ -102,7 +105,7 @@ def train_model():
 
         AI_prev_turn = []
         turn_count = 0
-        while not env_state.game_win() and turn_count < 100:
+        while not env_state.game_win() and turn_count < 150:
             last_player = player_id
             player_id = env_state.current_player_id  # Or similar
             env_state.game_state.current_player = player_id
@@ -115,10 +118,12 @@ def train_model():
             actions = True
             if player_id == 0:
                 AI_prev_turn = []
-                while actions == True:
+                while actions == True and not env_state.game_win():
                     # Encode game state
                     tokens, attn_mask, candidates, action_mask = tokenize_game(env_state, player_id)
-                          
+                    if turn_count == 0:
+                        Logging.log_first_tokens(env_state.game_state, tokens)
+
                     # Forward pass
                     tile_tokens = [t for t in tokens if t["token_type"] == 0]
                     action_tokens = [t for t in tokens if t["token_type"] == 1]
@@ -146,7 +151,7 @@ def train_model():
                     reward, unit_id, target_unit_id = env_state.next_action(chosen_action)
 
                     # Store experience
-                    ep_rewards.append(reward)
+                    ep_rewards.append(0)
                     ep_log_probs.append(dist.log_prob(action_idx))
                     ep_values.append(value.squeeze())
 
@@ -162,31 +167,38 @@ def train_model():
                             split_reward = reward / len(unit_action_indexes)
                             for i in unit_action_indexes:
                                 ep_rewards[AI_prev_turn[i][1]] += split_reward
+                            ep_rewards[-1] += reward
                         else:
                             for i, action in enumerate(AI_prev_turn):
                                 ep_rewards[action[1]] += split_reward
-
                     del map_feats, action_feats, logits, value, masked_logits, probs, dist, action_idx
+                if len(AI_prev_turn) > 0:
+                    split_reward = env_state.AI_turn_score / len(AI_prev_turn)
+                    for i, action in enumerate(AI_prev_turn):
+                        ep_rewards[action[1]] += split_reward
+
             elif other_player_models[player_id] == None:
-                while actions == True:
+                while actions == True and not env_state.game_win():
                     actions, reward, unit_id, target_unit_id = env_state.score_choose_best_action()
-                    if actions and len(AI_prev_turn) > 0:
-                        unit_action_indexes = []
-                        split_reward = reward / len(AI_prev_turn)
-                        for i, action in enumerate(AI_prev_turn):
-                            ep_rewards[action[1]] += split_reward
-                            if action[0] == target_unit_id:
-                                unit_action_indexes.append(i)
-                        if len(unit_action_indexes) > 0:
-                            split_reward = reward / len(unit_action_indexes)
-                            for i in unit_action_indexes:
-                                ep_rewards[AI_prev_turn[i][1]] += split_reward
-                        else:
+                    if target_unit_id != None:
+                        if actions and len(AI_prev_turn) > 0:
+                            unit_action_indexes = []
+                            split_reward = reward / len(AI_prev_turn)
                             for i, action in enumerate(AI_prev_turn):
                                 ep_rewards[action[1]] += split_reward
+                                if action[0] == target_unit_id:
+                                    unit_action_indexes.append(i)
+                            if len(unit_action_indexes) > 0:
+                                split_reward = reward / len(unit_action_indexes)
+                                for i in unit_action_indexes:
+                                    ep_rewards[AI_prev_turn[i][1]] += split_reward
+                                ep_rewards[AI_prev_turn[unit_action_indexes[-1]][1]] += reward
+                            else:
+                                for i, action in enumerate(AI_prev_turn):
+                                    ep_rewards[action[1]] += split_reward
                 env_state.next_turn()
             else:
-                while actions == True:
+                while actions == True and not env_state.game_win():
                     player_model = other_player_models[player_id][1]
 
                     # Encode game state
@@ -218,26 +230,28 @@ def train_model():
                     chosen_action_idx = action_idx.item()  # this is an index into action_tokens
                     chosen_action = action_tokens[chosen_action_idx]  # directly use the action token
                     reward, unit_id, target_unit_id = env_state.next_action(chosen_action)
-                    if len(AI_prev_turn) > 0:
-                        unit_action_indexes = []
-                        split_reward = reward / len(AI_prev_turn)
-                        for i, action in enumerate(AI_prev_turn):
-                            ep_rewards[action[1]] += split_reward
-                            if action[0] == target_unit_id:
-                                unit_action_indexes.append(i)
-                        if len(unit_action_indexes) > 0:
-                            split_reward = reward / len(unit_action_indexes)
-                            for i in unit_action_indexes:
-                                ep_rewards[AI_prev_turn[i][1]] += split_reward
-                        else:
+                    if target_unit_id != None:
+                        if len(AI_prev_turn) > 0:
+                            unit_action_indexes = []
+                            split_reward = reward / len(AI_prev_turn)
                             for i, action in enumerate(AI_prev_turn):
                                 ep_rewards[action[1]] += split_reward
+                                if action[0] == target_unit_id:
+                                    unit_action_indexes.append(i)
+                            if len(unit_action_indexes) > 0:
+                                split_reward = reward / len(unit_action_indexes)
+                                for i in unit_action_indexes:
+                                    ep_rewards[AI_prev_turn[i][1]] += split_reward
+                                ep_rewards[AI_prev_turn[unit_action_indexes[-1]][1]] += reward
+                            else:
+                                for i, action in enumerate(AI_prev_turn):
+                                    ep_rewards[action[1]] += split_reward
             torch.cuda.empty_cache()
                         
-
         Logging.log_end_game_stats(env_state.game_state)
 
         if env_state.winner == 0: 
+            AI_wins += 1
             win_reward = env_state.AI_win_score
             num_actions = len(ep_rewards)
             if num_actions > 0:
@@ -245,6 +259,10 @@ def train_model():
 
                 for i in range(num_actions):
                     ep_rewards[i] += reward_per_action
+        
+        if env_state.winner != -1:
+            total_games += 1
+        
         # End of episode — compute returns & advantages
         returns = compute_returns(ep_rewards, gamma=0.99)
         values = torch.stack(ep_values)
@@ -264,7 +282,7 @@ def train_model():
         loss.backward()
         optimizer.step()
         info = {
-            "Game": game,
+            "Game": game + 1,
             "Game_id": env_state.game_state.game_id,
             "Turns": turn_count,
             "Num_Players": config.num_players,
@@ -276,13 +294,16 @@ def train_model():
         }
         sys_stats = get_system_stats()
 
-        LoggingML.log_ML_stats(info, sys_stats)
+        LoggingML.log_ML_stats(info, AI_wins, total_games, sys_stats)
         # Example logging
         print(f"Game {game} — Loss: {loss.item():.4f}")
         if game % 5 == 0 and game != 0:
             model_checkpoints.append((game, copy.deepcopy(model)))
         if len(model_checkpoints) > num_model_checkpoints:
             model_checkpoints.pop(0)
+
+        if game % 250 == 0:
+            save_model(model, game)
         torch.cuda.empty_cache()
 
         gc.collect()
@@ -290,6 +311,16 @@ def train_model():
         config.game_type = None
         config.log_file = -1
         env_state = MLEnv()
+
+def save_model(model, game_num):
+    PREFIX = "1v1"
+    folder = os.path.join(os.path.dirname(__file__), "machine_learning", "models")  
+    if not os.path.exists(folder):
+        os.makedirs(folder)
+
+    file = os.path.join(folder, f"{PREFIX}_model_{game_num}.pt")
+    torch.save(model.state_dict(), file)
+
 
 def compute_returns(rewards, gamma):
     returns = []

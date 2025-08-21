@@ -32,17 +32,19 @@ class MLEnv:
         self.AI_kill_enemy_score = 0
         self.AI_kill_friendly_score = 0
         self.AI_win_score = 0
+        self.AI_attack_score = 0
 
         self.winner = -1
 
         self.player_stats = []
 
         self.create_env()
-    
+        Logging.log_game_init(self.game_state)
+
     def create_env(self):
         self.num_players = 2 #random.randint(config.min_players, config.max_players)
         config.num_players = self.num_players
-        config.game_type == "AIvAI"
+        config.game_type = "AIvAI"
         while config.num_players != len(self.game_state.players.players):
             if config.num_players < len(self.game_state.players.players):
                 self.game_state.players.remove_player()
@@ -55,7 +57,6 @@ class MLEnv:
         print("Units Randomized")
         self.allocate_scores()
         self.game_state.start()
-        Logging.log_game_init(self.game_state)
 
 
     def randomize_map(self):
@@ -136,6 +137,10 @@ class MLEnv:
         self.AI_kill_enemy_score = ml_config.KILL_SCORE_TOTAL / self.total_enemy_units
         self.AI_kill_friendly_score = ml_config.DEATH_SCORE_TOTAL / self.total_friendly_units
         self.AI_win_score = ml_config.WIN_TOTAL
+        self.AI_attack_score = ml_config.ATTACK_SCORE
+        self.AI_discover_score = ml_config.DISCOVER_SCORE
+        self.AI_turn_score = ml_config.TURN_SCORE
+
 
 
     def score_choose_best_action(self):
@@ -166,16 +171,16 @@ class MLEnv:
             CompleteUnitAction.attack(best_action.unit, best_action.target)
             if self.current_player_id == 0:
                 if destination_unit.alive == False:
-                    score = self.AI_kill_enemy_score
-
+                    score += self.AI_kill_enemy_score
                 elif origin_unit.alive == False:
-                    score = self.AI_kill_friendly_score
+                    score += self.AI_kill_friendly_score
+                score += self.AI_attack_score
 
             elif destination_unit.owner_id == 0:
                 if destination_unit.alive == False:
-                    score = self.AI_kill_friendly_score
+                    score += self.AI_kill_friendly_score
                 elif origin_unit.alive == False:
-                    score = self.AI_kill_enemy_score
+                    score += self.AI_kill_enemy_score
 
 
             if destination_unit.alive == False:
@@ -211,6 +216,10 @@ class MLEnv:
         best_action = UnitAction(action_dict[action["action_type"]], origin_unit, self.game_state, axial_destination, find_score=False)
         score = 0
         destination_unit_id = None
+
+        current_player = self.game_state.players.get_player(self.current_player_id)
+        current_num_revealed_tiles = len(current_player.revealed_tiles)
+
         if best_action.type == "Move" or best_action.type == "Swap":
             print(f"Action: Move - Unit {origin_tile.unit_id} at {axial_origin} moves to {axial_destination}")
             CompleteUnitAction.move_unit(best_action.unit, best_action.target)
@@ -222,16 +231,17 @@ class MLEnv:
             CompleteUnitAction.attack(best_action.unit, best_action.target)
             if self.current_player_id == 0:
                 if destination_unit.alive == False:
-                    score = self.AI_kill_enemy_score
+                    score += self.AI_kill_enemy_score
 
                 elif origin_unit.alive == False:
-                    score = self.AI_kill_friendly_score
+                    score += self.AI_kill_friendly_score
+                score += self.AI_attack_score
 
             elif destination_unit.owner_id == 0:
                 if destination_unit.alive == False:
-                    score = self.AI_kill_friendly_score
+                    score += self.AI_kill_friendly_score
                 elif origin_unit.alive == False:
-                    score = self.AI_kill_enemy_score
+                    score += self.AI_kill_enemy_score
 
 
             if destination_unit.alive == False:
@@ -252,6 +262,9 @@ class MLEnv:
             CompleteUnitAction.fortify(best_action.unit)
             self.player_stats[self.current_player_id]["Fortify"] += 1
 
+        if self.current_player_id == 0:
+            revealed_tile_diff = len(current_player.revealed_tiles) - current_num_revealed_tiles
+            score += self.AI_discover_score * revealed_tile_diff
 
         return (score, origin_unit.id, destination_unit_id)
             

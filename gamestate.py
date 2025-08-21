@@ -9,11 +9,12 @@ WIDTH, HEIGHT = config.map_settings["pixel_width"], config.map_settings["pixel_h
 ROWS, COLUMNS = config.map_settings["tile_height"], config.map_settings["tile_width"]
 class GameState:
     def __init__(self, screen = None):
-        if screen:
+        if screen != None:
             self.visual_effects = visual_effects_manager.VisualEffectHandler(screen)
         else:
             self.visual_effects = None
-        self.players =  player_handler.PlayerHandler(self)
+        print(self.visual_effects)
+        self.players = player_handler.PlayerHandler(self)
 
         self.units = unit_handler.UnitHandler(self.visual_effects, self)
         self.map = generate_map.HexMap(ROWS, COLUMNS)
@@ -22,15 +23,16 @@ class GameState:
         self.tile_attackable_by = None
         self.legal_moves_dict = None
         self.current_player = 0
-        self.current_turn = 1
+        self.current_turn = 0
         self.kills = [0] * config.num_players
         self.deaths = [0] * config.num_players
         self.game_id = str(uuid.uuid4())
         self.winner = -1
 
     def start(self):
+        print("STARTING")
         self.current_player = 0
-        self.current_turn = 1
+        self.current_turn = 0
         self.kills = [0] * config.num_players
         self.deaths = [0] * config.num_players
         self.remaining = [len(player.units) for player in self.players.players]

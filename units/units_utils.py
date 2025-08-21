@@ -620,14 +620,17 @@ class UnitAttack:
                     queue.append((tile.get_coords(), visibility - neighbor_visibility_penalty, distance - 1))
         return visibile 
     
-    def ranged_attack(unit, destination, game_state, visual_effects):
+    def ranged_attack(unit, destination, game_state, visual_effects, damage):
         attackable_tiles = UnitAttack.get_attackable_units(unit, game_state)
         if destination not in attackable_tiles or unit.remaining_movement == 0:
             return unit.movement
         enemy_tile = game_state.map.get_tile_hex(*destination)
         current_tile = game_state.map.get_tile_hex(*unit.coord)
         enemy_unit = game_state.units.get_unit(enemy_tile.unit_id)
-        damage_inflicted, damage_taken = CombatManager.combat(unit, enemy_unit, current_tile, enemy_tile, "ranged")
+        if damage != None:
+            damage_inflicted, damage_taken = damage
+        else:
+            damage_inflicted, damage_taken = CombatManager.combat(unit, enemy_unit, current_tile, enemy_tile, "ranged")
         enemy_unit.health -= damage_inflicted
         if enemy_unit.health <= 0:
             enemy_unit.killed()
@@ -642,7 +645,7 @@ class UnitAttack:
             visual_effects.add_damage(damage_inflicted, enemy_tile.get_coords(), True)
         action = {
             "Type": "Attack",
-            "Id": unit.id,
+            "ID": unit.id,
             "Current": str(unit.coord),
             "Destination": str(destination),
             "Remaining": unit.remaining_movement,
@@ -655,12 +658,15 @@ class UnitAttack:
         UnitAttack.clear_attackable(unit, game_state)
         UnitMove.clear_hover_path(unit, game_state)
 
-    def melee_attack(unit, destination, game_state, visual_effects):
+    def melee_attack(unit, destination, game_state, visual_effects, damage):
+        origin = unit.coord
         attackable_tiles = UnitAttack.get_attackable_units(unit, game_state)
         if destination not in attackable_tiles or unit.remaining_movement == 0:
+            current_player = game_state.players.get_player(unit.owner_id)
             return unit.movement
         full_path = UnitUtils.A_star(unit, destination, game_state, False, True)
         current_player = game_state.players.get_player(unit.owner_id)
+
         revealed_tiles = current_player.revealed_tiles
         visibile_tiles = current_player.visible_tiles
 
@@ -712,7 +718,10 @@ class UnitAttack:
         enemy_tile = game_state.map.get_tile_hex(*destination)
         current_tile = game_state.map.get_tile_hex(*unit.coord)
         enemy_unit = game_state.units.get_unit(enemy_tile.unit_id)
-        damage_inflicted, damage_taken = CombatManager.combat(unit, enemy_unit, current_tile, enemy_tile, "melee")
+        if damage != None:
+            damage_inflicted, damage_taken = damage
+        else:
+            damage_inflicted, damage_taken = CombatManager.combat(unit, enemy_unit, current_tile, enemy_tile, "melee")
         if visual_effects != None:
             visual_effects.add_damage(damage_inflicted, enemy_tile.get_coords(), True)
             visual_effects.add_damage(damage_taken, current_tile.get_coords(), False)
@@ -760,14 +769,14 @@ class UnitAttack:
 
                 game_state.deaths[unit.owner_id] += 1
                 game_state.kills[enemy_unit.owner_id] += 1
-        
         unit.remaining_movement = 0
         unit.AI_action = False
         action = {
             "Type": "Attack",
-            "Id": unit.id,
-            "Current": str(unit.coord),
+            "ID": unit.id,
+            "Current": str(origin),
             "Destination": str(destination),
+            "Next_Step": str(unit.coord),
             "Remaining": unit.remaining_movement,
             "DMG_Inflicted": damage_inflicted,
             "DMG_Taken": damage_taken,

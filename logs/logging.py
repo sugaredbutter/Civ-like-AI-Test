@@ -3,7 +3,7 @@ import config
 from pathlib import Path
 import json
 class LoggingML:
-    def log_ML_stats(info, sys_stats = None):
+    def log_ML_stats(info, AI_wins, total_games, sys_stats = None):
         folder = os.path.join(os.path.dirname(__file__), "ml_logs")  
         if not os.path.exists(folder):
             os.makedirs(folder)
@@ -45,6 +45,7 @@ class LoggingML:
 
             f.write(f"AI score: {info["AI_score"]}\n")
             f.write(f"Loss: {info["Loss"]}\n")
+            f.write(f"AI win rate {AI_wins}/{total_games} = {AI_wins/max(1, total_games)*100:.2f}%\n")
 
             if sys_stats != None:
                 for k, v in sys_stats.items():
@@ -52,6 +53,8 @@ class LoggingML:
 
 class Logging:
     def log_game_init(game_state):
+        if config.logging == False:
+            return
         folder = os.path.join(os.path.dirname(__file__), "game_logs")  
         if not os.path.exists(folder):
             os.makedirs(folder)
@@ -126,6 +129,8 @@ class Logging:
 
 
     def log_action(action, game_state):
+        if config.logging == False:
+            return
         if config.log_file == -1:
             Logging.log_game_init(game_state)
         folder = os.path.join(os.path.dirname(__file__), "game_logs")  
@@ -150,6 +155,8 @@ class Logging:
             json.dump(data, f, indent=2)
 
     def log_end_game_stats(game_state):
+        if config.logging == False:
+            return
         if config.log_file == -1:
             Logging.log_game_init(game_state)
         folder = os.path.join(os.path.dirname(__file__), "game_logs")  
@@ -168,6 +175,19 @@ class Logging:
         with open(log_file, "w") as f:
             json.dump(data, f, indent=2)
 
+    def log_first_tokens(game_state, tokens):
+        if config.logging == False:
+            return
+        if config.log_file == -1:
+            Logging.log_game_init(game_state)
+        folder = os.path.join(os.path.dirname(__file__), "game_logs")  
+        log_file = os.path.join(folder, f"game_log_{config.log_file}.json")
+        with open(log_file, "r") as f:
+            data = json.load(f)
+        data.setdefault("tokens", []).append(tokens)
+        
+        with open(log_file, "w") as f:
+            json.dump(data, f, indent=2)
 
 
             

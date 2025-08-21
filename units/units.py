@@ -90,6 +90,7 @@ class Unit:
 
         
     def move_to(self, destination):
+        origin = self.coord
         destination_tile = self.game_state.map.get_tile_hex(*destination)
         current_player = self.game_state.players.get_player(self.owner_id)
         if destination_tile != None and destination_tile.unit_id != None and not self.ZOC_locked:
@@ -104,8 +105,8 @@ class Unit:
                     self.AI_action = False
                 action = {
                     "Type": "Move",
-                    "Unit ID": self.id,
-                    "Current": str(self.coord),
+                    "ID": self.id,
+                    "Current": str(origin),
                     "Destination": str(destination),
                     "Remaining": self.remaining_movement,
                     "Swap": True,
@@ -128,8 +129,8 @@ class Unit:
         current_player.update_visibility()
         action = {
             "Type": "Move",
-            "Unit ID": self.id,
-            "Current": str(self.coord),
+            "ID": self.id,
+            "Current": str(origin),
             "Destination": str(destination),
             "Remaining": self.remaining_movement,
             "Swap": False,
@@ -244,11 +245,13 @@ class Unit:
             return(damage_inflicted, damage_taken, self, enemy_unit, self_CS, enemy_CS, self_CS_bonus, enemy_CS_bonus)
 
 
-    def attack_enemy(self, destination):
+    def attack_enemy(self, destination, damage = None):
+        print("1")
         if self.type == "Ranged":
-            UnitAttack.ranged_attack(self, destination, self.game_state, self.visual_effects)
+            UnitAttack.ranged_attack(self, destination, self.game_state, self.visual_effects, damage)
         else:
-            UnitAttack.melee_attack(self, destination, self.game_state, self.visual_effects)
+            print("2")
+            UnitAttack.melee_attack(self, destination, self.game_state, self.visual_effects, damage)
         if self.remaining_movement > 0:
             self.action = True
         else:
@@ -273,7 +276,7 @@ class Unit:
 
         action = {
             "Type": "Fortify",
-            "Unit ID": self.id,
+            "ID": self.id,
             "Remaining": self.remaining_movement,
             "AI_action": self.AI_action
         }
@@ -291,7 +294,7 @@ class Unit:
 
         action = {
             "Type": "Heal",
-            "Unit ID": self.id,
+            "ID": self.id,
             "Remaining": self.remaining_movement,
 
         }
@@ -308,7 +311,7 @@ class Unit:
             self.action = True
         action = {
             "Type": "Cancel",
-            "Unit ID": self.id,
+            "ID": self.id,
             "Remaining": self.remaining_movement,
         }
         Logging.log_action(action, self.game_state)
@@ -322,7 +325,7 @@ class Unit:
             self.action = False
         action = {
             "Type": "Skip",
-            "Unit ID": self.id,
+            "ID": self.id,
             "Remaining": self.remaining_movement,
         }
         Logging.log_action(action, self.game_state)

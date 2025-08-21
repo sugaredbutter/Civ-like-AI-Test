@@ -109,7 +109,7 @@ class Map:
                 corners = info[0]
                 x, y = info[1]
                 tile = self.game_state.map.get_tile(row, column)
-                if config.game_type != None and tile.get_coords() not in self.current_player.revealed_tiles:
+                if config.game_type != None and config.replay == False and tile.get_coords() not in self.current_player.revealed_tiles:
                     continue
                 elif tile.get_coords() == self.current_mouse_pos:
                     self.draw_hex(corners, tile, True)
@@ -125,7 +125,7 @@ class Map:
                 corners = info[0]
                 x, y = info[1]
                 tile = self.game_state.map.get_tile(row, column)
-                if config.game_type != None and tile.get_coords() not in self.current_player.revealed_tiles:
+                if config.game_type != None and config.replay == False and tile.get_coords() not in self.current_player.revealed_tiles:
                     continue
                 self.draw_rivers_helper(corners, tile)
     
@@ -136,7 +136,7 @@ class Map:
                 corners = info[0]
                 x, y = info[1]
                 tile = self.game_state.map.get_tile(row, column)
-                if config.game_type != None and tile.get_coords() not in self.current_player.revealed_tiles:
+                if config.game_type != None and config.replay == False and tile.get_coords() not in self.current_player.revealed_tiles:
                     continue
                 if tile.terrain == "Hill":
                     if tile.get_coords() == self.current_mouse_pos:
@@ -171,7 +171,7 @@ class Map:
         for column in range(self.game_state.map.width):
             for row in range(self.game_state.map.height):
                 tile = self.game_state.map.get_tile(row, column)
-                if config.game_type != None and tile.get_coords() not in self.current_player.visible_tiles:
+                if config.game_type != None and config.replay == False and tile.get_coords() not in self.current_player.visible_tiles:
                     continue
                 if tile.unit_id != None:
                     x, y = self.axial_to_pixel(column, row, self.hex_radius, self.height)
@@ -243,11 +243,11 @@ class Map:
                 corners = info[0]
                 x, y = info[1]
                 tile = self.game_state.map.get_tile(row, column)
-                if config.game_type != None and tile.get_coords() not in self.current_player.revealed_tiles:
+                if config.game_type != None and config.replay == False and tile.get_coords() not in self.current_player.revealed_tiles:
                     continue
-                if config.game_type != None and tile.get_coords() not in self.current_player.visible_tiles:
+                if config.game_type != None and config.replay == False  and tile.get_coords() not in self.current_player.visible_tiles:
                     pygame.draw.polygon(self.fog_surface, (0, 0, 0, 100), corners)
-                elif config.game_type != None and tile.attackable == True:
+                elif config.game_type != None and config.replay == False  and tile.attackable == True:
                     pygame.draw.polygon(self.attackable_surface, (255, 34, 18, 100), corners)
 
     def draw_mountain(self, corners, tile, hover = False):
